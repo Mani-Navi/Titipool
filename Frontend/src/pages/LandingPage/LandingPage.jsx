@@ -5,6 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 import { useAuthStore } from '../../stores/auth.store';
 import { isTokenExpired } from '../../utils/jwt';
+import { usePageTitle } from '../../hooks/usePageTitle';
 
 import { Navbar } from '../../components/landing/Navbar';
 import { Hero } from '../../components/landing/Hero';
@@ -22,6 +23,7 @@ import { Footer } from '../../components/landing/Footer';
 gsap.registerPlugin(ScrollTrigger);
 
 export default function LandingPage() {
+    usePageTitle("میز مجازی بازی‌های رومیزی و D&D");
     const navigate = useNavigate();
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const token = useAuthStore((state) => state.token);

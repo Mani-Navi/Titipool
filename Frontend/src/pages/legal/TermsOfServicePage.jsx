@@ -2,8 +2,10 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, FileText, AlertTriangle, ShieldAlert, Award } from "lucide-react";
 import { Footer } from "../../components/layout/Footer.jsx";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 export const TermsOfServicePage = () => {
+    usePageTitle("شرایط و قوانین استفاده");
     return (
         <div className="min-h-screen w-full bg-[#090a0f] text-zinc-100 flex flex-col font-fa select-text" dir="rtl">
             <header className="h-16 shrink-0 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-xl px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30">

@@ -4,9 +4,11 @@ import { LoginForm } from "../../components/auth/LoginForm";
 import { Footer } from "../../components/layout/Footer.jsx";
 import { useAuthStore } from "../../stores/auth.store";
 import { isTokenExpired } from "../../utils/jwt";
+import { usePageTitle } from "../../hooks/usePageTitle";
 import { Dices, Sparkles, ShieldCheck, ArrowRight } from "lucide-react";
 
 export const LoginPage = () => {
+  usePageTitle("ورود به حساب کاربری");
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const token = useAuthStore((state) => state.token);

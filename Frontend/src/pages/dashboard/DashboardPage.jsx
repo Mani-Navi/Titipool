@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useRooms } from "../../hooks/useRooms";
 import { useAuth } from "../../hooks/useAuth";
+import { usePageTitle } from "../../hooks/usePageTitle";
 import { RoomCard } from "../../components/dashboard/RoomCard";
 import { CreateRoomModal } from "../../components/dashboard/CreateRoomModal";
 import { JoinRoomModal } from "../../components/dashboard/JoinRoomModal";
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 
 export const DashboardPage = () => {
+  usePageTitle("داشبورد بازی‌ها");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { rooms, isLoading, error, fetchRooms, createRoom, updateRoom, deleteRoom, leaveRoom } = useRooms();

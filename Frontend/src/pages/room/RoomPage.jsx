@@ -15,6 +15,7 @@ import { useRoomStore } from "../../stores/room.store";
 import { useDiceStore } from "../../features/dice/state/dice.store";
 import { useWebSocket } from "../../hooks/useWebSocket.js";
 import { usePermissions } from "../../hooks/usePermissions";
+import { usePageTitle } from "../../hooks/usePageTitle";
 import { wsService } from "../../services/websocket.service";
 import { roomApi } from "../../api/room.api";
 import { toast } from "../../stores/toast.store";
@@ -85,6 +86,8 @@ export const RoomPage = () => {
     const [onlineMembers, setOnlineMembers] = useState([]);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+    usePageTitle(roomData?.name ? `${roomData.name} — اتاق بازی` : "اتاق بازی");
 
     const effectiveRoomId = urlParamId;
     const { isGM, permissions: userPermissions } = usePermissions(roomData);
