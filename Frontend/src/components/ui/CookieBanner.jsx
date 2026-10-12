@@ -1,21 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { Cookie, X } from "lucide-react";
 
 export const CookieBanner = () => {
     const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
-        const consent = localStorage.getItem("vtt_cookie_ack");
-        if (!consent) {
-            // با تاخیر ۱.۵ ثانیه‌ای ظاهر می‌شود تا مانع لودینگ اولیه کاربر نشود
-            const timer = setTimeout(() => setIsOpen(true), 1500);
-            return () => clearTimeout(timer);
+        try {
+            const consent = localStorage.getItem("vtt_cookie_ack");
+            if (!consent) {
+                const timer = setTimeout(() => setIsOpen(true), 1500);
+                return () => clearTimeout(timer);
+            }
+        } catch {
+            // در صورت محدود بودن دسترسی به localStorage
         }
     }, []);
 
     const handleAcknowledge = () => {
-        localStorage.setItem("vtt_cookie_ack", "true");
+        try {
+            localStorage.setItem("vtt_cookie_ack", "true");
+        } catch {}
         setIsOpen(false);
     };
 
@@ -45,12 +49,12 @@ export const CookieBanner = () => {
 
             <p className="text-[11px] sm:text-xs text-zinc-400 leading-relaxed">
                 این میز بازی برای حفظ ورود و نگهداری تنظیمات بوم صرفاً از حافظه ضروری مرورگر استفاده می‌کند و فاقد هرگونه کوکی ردیاب تبلیغاتی است.{" "}
-                <Link
-                    to="/cookie-policy"
+                <a
+                    href="/cookie-policy"
                     className="text-amber-400 hover:text-amber-300 underline underline-offset-2 font-medium"
                 >
                     مطالعه جزئیات
-                </Link>
+                </a>
             </p>
 
             <div className="flex justify-end gap-2 pt-1 border-t border-zinc-900">
