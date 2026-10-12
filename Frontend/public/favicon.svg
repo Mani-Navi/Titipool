@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+    <defs>
+        <linearGradient id="goldD20" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fde68a" />
+            <stop offset="50%" stop-color="#f59e0b" />
+            <stop offset="100%" stop-color="#b45309" />
+        </linearGradient>
+        <linearGradient id="bgTile" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#18181b" />
+            <stop offset="100%" stop-color="#090a0f" />
+        </linearGradient>
+    </defs>
+
+    <!-- پس‌زمینه گرد مدرن -->
+    <rect width="64" height="64" rx="16" fill="url(#bgTile)" />
+    <rect width="64" height="64" rx="16" fill="none" stroke="#27272a" stroke-width="2" />
+
+    <!-- اشکال هندسی تاس بیست‌وجهی -->
+    <g transform="translate(7, 7)">
+        <polygon points="25,4 46,16 46,39 25,51 4,39 4,16" fill="#1c1917" stroke="url(#goldD20)" stroke-width="2.5" stroke-linejoin="round" />
+        <polygon points="25,4 25,51 46,39" fill="none" stroke="#fbbf24" stroke-width="1.2" opacity="0.65" />
+        <polygon points="25,4 4,39 25,51" fill="none" stroke="#fbbf24" stroke-width="1.2" opacity="0.65" />
+        <polygon points="25,4 4,16 46,16" fill="none" stroke="#fbbf24" stroke-width="1.2" opacity="0.75" />
+        <!-- عدد 20 نماد کریتیکال -->
+        <text x="25" y="32" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="900" fill="#fbbf24" text-anchor="middle" letter-spacing="-0.5">20</text>
+    </g>
+</svg>
