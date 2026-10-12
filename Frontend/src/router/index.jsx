@@ -29,6 +29,9 @@ const RoomPage = lazy(() =>
     }))
 );
 
+// لود تنبل صفحه خوش‌آمدگویی پس از ثبت‌نام
+const WelcomePage = lazy(() => import("../pages/WelcomePage.jsx"));
+
 // لود تنبل صفحه ۴۰۴
 const NotFoundPage = lazy(() => import("../pages/NotFoundPage.jsx"));
 
@@ -106,6 +109,15 @@ export const router = createBrowserRouter([
                 errorElement: <RouteErrorBoundary />,
             },
             {
+                path: "/welcome",
+                errorElement: <RouteErrorBoundary />,
+                element: (
+                    <Suspense fallback={<LoadingFallback />}>
+                        <WelcomePage />
+                    </Suspense>
+                ),
+            },
+            {
                 path: "/profile",
                 errorElement: <RouteErrorBoundary />,
                 element: (
@@ -126,7 +138,7 @@ export const router = createBrowserRouter([
         ],
     },
 
-    // روت Catch-all برای صفحات یافت نشده (404)
+    // روت Catch-all برای صفحات ۴۰۴
     {
         path: "*",
         errorElement: <RouteErrorBoundary />,

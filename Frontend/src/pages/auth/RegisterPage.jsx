@@ -116,7 +116,7 @@ export const RegisterPage = () => {
                   </p>
                 </div>
 
-                <RegisterForm onSuccess={() => navigate("/dashboard", { replace: true })} />
+                <RegisterForm onSuccess={() => navigate("/welcome", { replace: true })} />
               </div>
 
               <div className="mt-4 sm:mt-5 text-center text-xs text-zinc-400 pt-3 border-t border-zinc-800/80">
