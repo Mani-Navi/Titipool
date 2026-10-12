@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, ShieldCheck, Database, Lock, Eye, Trash2 } from "lucide-react";
+import { ArrowRight, ShieldCheck, Database, Lock, Eye, Trash2, Mail } from "lucide-react";
 import { Footer } from "../../components/layout/Footer.jsx";
 import { usePageTitle } from "../../hooks/usePageTitle";
 
@@ -71,6 +71,25 @@ export const PrivacyPolicyPage = () => {
                     <p>
                         مطابق با اصول GDPR و حقوق کاربران، شما در هر زمان حق دارید حساب کاربری خود، تمامی اتاق‌های ایجادشده و فایل‌های آپلودی را به طور دائم از سرورهای سیستم حذف نمایید. جهت اعمال حق درخواست حذف مستقیم، می‌توانید از طریق بخش پروفایل یا ایمیل پشتیبانی اقدام نمایید.
                     </p>
+                </section>
+
+                <section className="space-y-2 p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800">
+                    <h2 className="text-sm sm:text-base font-bold text-zinc-100 flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-amber-400" aria-hidden="true" />
+                        ۵. تماس با مسئول حفاظت از داده‌ها (DPO)
+                    </h2>
+                    <p className="text-xs text-zinc-400">
+                        برای هرگونه سوال، استعلام یا اعمال حقوق حریم خصوصی و حذف اطلاعات، می‌توانید مستقیماً با آدرس پشتیبانی ما در تماس باشید:
+                    </p>
+                    <div className="pt-1">
+                        <a
+                            href="mailto:support@titipool.ir"
+                            className="text-amber-400 hover:text-amber-300 font-mono font-bold text-xs inline-flex items-center gap-1.5"
+                            dir="ltr"
+                        >
+                            <span>support@titipool.ir</span>
+                        </a>
+                    </div>
                 </section>
             </main>
 

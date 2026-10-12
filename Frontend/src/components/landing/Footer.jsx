@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Dices } from 'lucide-react';
+import { Dices, Mail } from 'lucide-react';
 
 export const Footer = () => {
     return (
@@ -68,6 +68,25 @@ export const Footer = () => {
                                 </li>
                             </ul>
                         </div>
+
+                        <div>
+                            <h4 className="font-bold text-neutral-900 mb-3">ارتباط و پشتیبانی</h4>
+                            <ul className="space-y-2 text-neutral-500 font-medium">
+                                <li>
+                                    <a
+                                        href="mailto:support@titipool.ir"
+                                        className="hover:text-neutral-900 transition-colors inline-flex items-center gap-1.5 font-mono text-[11px]"
+                                        dir="ltr"
+                                    >
+                                        <Mail className="w-3.5 h-3.5 text-[#f59e0b]" />
+                                        <span>support@titipool.ir</span>
+                                    </a>
+                                </li>
+                                <li className="text-[11px] text-neutral-400">
+                                    پاسخگویی روزهای کاری
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
 
@@ -76,6 +95,10 @@ export const Footer = () => {
                     <div className="flex items-center gap-4">
                         <span className="font-mono">پلتفرم امن بازی رومیزی</span>
                         <span>·</span>
+                        <a href="mailto:support@titipool.ir" className="hover:underline font-mono">
+                            support@titipool.ir
+                        </a>
+                        <span>·</span>
                         <span>ارتباط رمزنگاری‌شده سرتاسری</span>
                     </div>
                 </div>
@@ -83,3 +106,5 @@ export const Footer = () => {
         </footer>
     );
 };
+
+export default Footer;

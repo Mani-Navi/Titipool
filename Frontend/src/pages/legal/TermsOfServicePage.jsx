@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, FileText, AlertTriangle, ShieldAlert, Award } from "lucide-react";
+import { ArrowRight, FileText, AlertTriangle, ShieldAlert, Award, Mail } from "lucide-react";
 import { Footer } from "../../components/layout/Footer.jsx";
 import { usePageTitle } from "../../hooks/usePageTitle";
 
@@ -58,6 +58,25 @@ export const TermsOfServicePage = () => {
                     <p>
                         سرویس به صورت «همان‌گونه که هست» (AS-IS) ارائه می‌شود. تیم توسعه نهایت تلاش خود را برای پایداری ۲۴/۷ و نگهداری فایل‌ها مبذول می‌دارد، اما هیچ‌گونه ضمانت اجرایی در برابر اختلالات موقت شبکه، فیلترینگ یا قطعی‌های زیرساخت ابری ارائه نمی‌شود.
                     </p>
+                </section>
+
+                <section className="space-y-2 p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800">
+                    <h2 className="text-sm sm:text-base font-bold text-zinc-100 flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-amber-400" aria-hidden="true" />
+                        ۴. ارتباط با واحد امور حقوقی و گزارش تخلف
+                    </h2>
+                    <p className="text-xs text-zinc-400">
+                        جهت ارسال گزارش نقض قوانین، کپی‌رایت یا مکاتبات رسمی حقوقی:
+                    </p>
+                    <div className="pt-1">
+                        <a
+                            href="mailto:legal@titipool.ir"
+                            className="text-amber-400 hover:text-amber-300 font-mono font-bold text-xs inline-flex items-center gap-1.5"
+                            dir="ltr"
+                        >
+                            <span>legal@titipool.ir</span>
+                        </a>
+                    </div>
                 </section>
             </main>
 
