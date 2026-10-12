@@ -34,6 +34,7 @@ const resolveAssetUrl = (asset) => {
   if (!asset) return "";
   if (typeof asset === "string") return getAssetUrl(asset);
   const raw =
+      asset.avatarUrl ||
       asset.fileUrl ||
       asset.url ||
       asset.assetUrl ||
