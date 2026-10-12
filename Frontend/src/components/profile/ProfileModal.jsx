@@ -246,7 +246,7 @@ export const ProfileModal = memo(({ isOpen, onClose }) => {
                             <div className="w-full h-full rounded-full bg-zinc-950 overflow-hidden border-2 border-zinc-900 flex items-center justify-center">
                                 <img
                                     src={currentAvatar}
-                                    alt={user?.username}
+                                    alt={user?.username ? `آواتار ${user.username}` : "آواتار کاربر ماجراجو"}
                                     className="w-full h-full object-cover"
                                 />
                             </div>
@@ -458,7 +458,7 @@ export const ProfileModal = memo(({ isOpen, onClose }) => {
                                                 <div className="w-14 h-14 rounded-full bg-zinc-950 overflow-hidden border border-zinc-800 p-1">
                                                     <img
                                                         src={avatar.url}
-                                                        alt={avatar.name}
+                                                        alt={avatar.name ? `آواتار ${avatar.name}` : "آواتار آماده"}
                                                         className="w-full h-full object-cover"
                                                     />
                                                 </div>

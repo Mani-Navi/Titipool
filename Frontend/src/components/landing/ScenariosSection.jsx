@@ -79,7 +79,7 @@ export const ScenariosSection = ({ onSelectScenario }) => {
                                 >
                                     <img
                                         src={scenario.image}
-                                        alt={scenario.title}
+                                        alt={scenario.title ? `پوستر سناریوی ماجراجویی ${scenario.title}` : "پوستر سناریوی ماجراجویی"}
                                         referrerPolicy="no-referrer"
                                         crossOrigin="anonymous"
                                         loading="lazy"
@@ -152,7 +152,7 @@ export const ScenariosSection = ({ onSelectScenario }) => {
                             <div className="relative h-64 sm:h-72">
                                 <img
                                     src={inspectedScenario.image}
-                                    alt={inspectedScenario.title}
+                                    alt={inspectedScenario.title ? `تصویر تفصیلی سناریوی ${inspectedScenario.title}` : "تصویر سناریوی ماجراجویی"}
                                     referrerPolicy="no-referrer"
                                     crossOrigin="anonymous"
                                     loading="lazy"

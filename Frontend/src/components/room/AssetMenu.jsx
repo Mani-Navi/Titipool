@@ -407,7 +407,7 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
                       >
                         <img
                             src={resolveAssetUrl(map)}
-                            alt={map.name}
+                            alt={map.nameFa ? `نقشه بازی ${map.nameFa}` : `نقشه بازی ${map.name}`}
                             crossOrigin="anonymous"
                             className="w-full h-24 object-cover group-hover:brightness-105 transition-all"
                             loading="lazy"
@@ -443,7 +443,7 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
                       >
                         <img
                             src={resolveAssetUrl(token)}
-                            alt={token.name}
+                            alt={token.nameFa ? `توکن کاراکتر ${token.nameFa}` : `توکن کاراکتر ${token.name}`}
                             crossOrigin="anonymous"
                             className="w-12 h-12 rounded-full object-cover border-2 border-amber-500/40 shadow-md group-hover:border-amber-400 transition-all"
                             loading="lazy"
@@ -485,7 +485,7 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
                           <div className="w-12 h-12 rounded-xl overflow-hidden bg-zinc-900 flex items-center justify-center border border-zinc-800 relative">
                             <img
                                 src={itemUrl}
-                                alt=""
+                                alt={asset.name ? `منبع آپلودشده ${asset.name}` : "تصویر منبع کاربر"}
                                 crossOrigin="anonymous"
                                 className="w-full h-full object-cover"
                                 loading="lazy"

@@ -196,7 +196,7 @@ export const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
                                 {tpl.baseMapUrl ? (
                                     <img
                                         src={tpl.baseMapUrl}
-                                        alt={tpl.title}
+                                        alt={tpl.title ? `پیش‌نمایش نقشه قالب ${tpl.title}` : "پیش‌نمایش نقشه قالب"}
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (
