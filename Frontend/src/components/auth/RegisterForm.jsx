@@ -131,7 +131,6 @@ export const RegisterForm = ({ onSuccess }) => {
     const onSubmit = async (data) => {
         setServerError("");
         try {
-            /* فقط فیلدهای کاربری ارسال می‌شوند و مقادیر توافق‌نامه تنها در کلاینت ولیدیت می‌شوند */
             await registerUser(data.username, data.email, data.password);
             onSuccess?.();
         } catch (err) {
@@ -363,8 +362,10 @@ export const RegisterForm = ({ onSuccess }) => {
                     isLoading={isSubmitting}
                     aria-busy={isSubmitting}
                 >
-                    <UserPlus className="w-4 h-4 ml-1.5" aria-hidden="true" />
-                    ساخت حساب و شروع بازی
+                    {!isSubmitting && (
+                        <UserPlus className="w-4 h-4 ml-1.5" aria-hidden="true" />
+                    )}
+                    <span>{isSubmitting ? "در حال ساخت حساب کاربری..." : "ساخت حساب و شروع بازی"}</span>
                 </Button>
             </form>
         </div>

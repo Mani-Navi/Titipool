@@ -167,9 +167,12 @@ export const LoginForm = ({ onSuccess }) => {
                     variant="amber"
                     className="w-full mt-2 font-bold shadow-md shadow-amber-500/10 hover:shadow-lg hover:shadow-amber-500/20 active:scale-[0.98] transition-all duration-150 h-11 sm:h-11 text-xs sm:text-sm flex items-center justify-center"
                     isLoading={isSubmitting}
+                    aria-busy={isSubmitting}
                 >
-                    <LogIn className="w-4 h-4 ml-2 transition-transform duration-200 group-hover:translate-x-0.5" />
-                    ورود به حساب کاربری
+                    {!isSubmitting && (
+                        <LogIn className="w-4 h-4 ml-2 transition-transform duration-200 group-hover:translate-x-0.5" />
+                    )}
+                    <span>{isSubmitting ? "در حال ورود..." : "ورود به حساب کاربری"}</span>
                 </Button>
             </form>
         </div>
