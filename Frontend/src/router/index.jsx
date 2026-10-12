@@ -29,6 +29,9 @@ const RoomPage = lazy(() =>
     }))
 );
 
+// لود تنبل صفحه ۴۰۴
+const NotFoundPage = lazy(() => import("../pages/NotFoundPage.jsx"));
+
 // پس‌زمینه خام بدون هیچ انیمیشن یا اسپینر لودینگ
 const LoadingFallback = () => <div className="min-h-screen w-full bg-[#090a0f]" />;
 
@@ -121,5 +124,16 @@ export const router = createBrowserRouter([
                 ),
             },
         ],
+    },
+
+    // روت Catch-all برای صفحات یافت نشده (404)
+    {
+        path: "*",
+        errorElement: <RouteErrorBoundary />,
+        element: (
+            <Suspense fallback={<LoadingFallback />}>
+                <NotFoundPage />
+            </Suspense>
+        ),
     },
 ]);
