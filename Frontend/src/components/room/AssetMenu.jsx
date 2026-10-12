@@ -35,9 +35,9 @@ const resolveAssetUrl = (asset) => {
   if (typeof asset === "string") return getAssetUrl(asset);
   const raw =
       asset.avatarUrl ||
-      asset.fileUrl ||
-      asset.url ||
       asset.assetUrl ||
+      asset.url ||
+      asset.fileUrl ||
       asset.thumbnailUrl ||
       asset.filePath ||
       asset.path ||
@@ -408,6 +408,7 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
                         <img
                             src={resolveAssetUrl(map)}
                             alt={map.name}
+                            crossOrigin="anonymous"
                             className="w-full h-24 object-cover group-hover:brightness-105 transition-all"
                             loading="lazy"
                         />
@@ -443,7 +444,8 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
                         <img
                             src={resolveAssetUrl(token)}
                             alt={token.name}
-                            className="w-12 h-12 rounded-full object-cover border border-amber-500/30"
+                            crossOrigin="anonymous"
+                            className="w-12 h-12 rounded-full object-cover border-2 border-amber-500/40 shadow-md group-hover:border-amber-400 transition-all"
                             loading="lazy"
                         />
                         <span className="text-[11px] font-bold text-zinc-300 truncate max-w-full">
@@ -484,6 +486,7 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
                             <img
                                 src={itemUrl}
                                 alt=""
+                                crossOrigin="anonymous"
                                 className="w-full h-full object-cover"
                                 loading="lazy"
                                 onError={(e) => {
