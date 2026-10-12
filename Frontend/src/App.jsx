@@ -7,6 +7,7 @@ import { ENV } from "./config/validateEnv";
 import { decodeToken, isTokenExpired } from "./utils/jwt";
 import { ToastContainer } from "./components/ui/ToastContainer.jsx";
 import { ConfirmModal } from "./components/ui/ConfirmModal.jsx";
+import { CookieBanner } from "./components/ui/CookieBanner.jsx";
 
 export default function App() {
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -48,6 +49,7 @@ export default function App() {
         <GoogleOAuthProvider clientId={ENV.GOOGLE_CLIENT_ID || "MOCK_GOOGLE_CLIENT_ID"}>
             <ToastContainer />
             <ConfirmModal />
+            <CookieBanner />
             <RouterProvider router={router} />
         </GoogleOAuthProvider>
     );
