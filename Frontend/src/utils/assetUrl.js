@@ -3,6 +3,9 @@ import { ENV } from "../config/validateEnv";
 // الگوی مجاز برای Data URLهای تصویری امن (SVG و HTML به دلیل ریسک اجرای اسکریپت فیلتر شده‌اند)
 const SAFE_DATA_URL_REGEX = /^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/i;
 
+// کش یک‌باره آدرس ریشه سرور جهت پرهیز از ارزیابی‌های رشته‌ای تکراری
+const BACKEND_BASE = (ENV.API_BASE_URL || "http://localhost:8080").replace(/\/api\/?$/, "");
+
 export function getFullAssetUrl(url) {
     if (!url) return "";
     const trimmed = String(url).trim();
@@ -33,8 +36,6 @@ export function getFullAssetUrl(url) {
     }
 
     // نرمال‌سازی مسیر آدرس‌های آپلودشده محلی سرور
-    const backendBase = ENV.API_BASE_URL.replace(/\/api\/?$/, "") || "http://localhost:8080";
     const cleanPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-
-    return `${backendBase}${cleanPath}`;
+    return `${BACKEND_BASE}${cleanPath}`;
 }

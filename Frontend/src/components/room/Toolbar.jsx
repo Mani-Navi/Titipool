@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, memo } from "react";
+import React, { useEffect, useCallback, useMemo, memo } from "react";
 import {
   MousePointer,
   Hand,
@@ -40,25 +40,30 @@ export const Toolbar = memo(({ isGM: propIsGM, permissions = {} }) => {
   const isAssetOpen = useCanvasStore((state) => state.isAssetMenuOpen);
   const isSettingsOpen = useCanvasStore((state) => state.isSettingsMenuOpen);
 
-  const currentScene = useSceneStore((state) => state.currentScene);
+  const hasActiveMap = useSceneStore((state) => Boolean(state.currentScene?.assetUrl || state.currentScene?.mapUrl));
+  const sceneTokens = useSceneStore((state) => state.currentScene?.tokens);
+  const mapW = useSceneStore((state) => state.currentScene?.mapWidth) || 2000;
+  const mapH = useSceneStore((state) => state.currentScene?.mapHeight) || 1500;
   const addToken = useSceneStore((state) => state.addToken);
   const currentUser = useAuthStore((state) => state.user);
 
-  const hasActiveMap = Boolean(currentScene?.assetUrl || currentScene?.mapUrl);
   const isGM = propIsGM ?? true;
 
   const currentUserId = String(currentUser?.id || currentUser?.userId || "").toLowerCase().trim();
   const currentUsername = String(currentUser?.username || "").toLowerCase().trim();
   const currentUserEmail = String(currentUser?.email || "").toLowerCase().trim();
 
-  const myExistingToken = currentScene?.tokens?.find((t) => {
-    const cb = String(t.controlledBy || "").toLowerCase().trim();
-    const lbl = String(t.label || t.name || "").toLowerCase().trim();
-    return (
-        (cb && (cb === currentUserId || cb === currentUsername || cb === currentUserEmail)) ||
-        (lbl && lbl === currentUsername)
-    );
-  });
+  const myExistingToken = useMemo(() => {
+    if (!sceneTokens) return null;
+    return sceneTokens.find((t) => {
+      const cb = String(t.controlledBy || "").toLowerCase().trim();
+      const lbl = String(t.label || t.name || "").toLowerCase().trim();
+      return (
+          (cb && (cb === currentUserId || cb === currentUsername || cb === currentUserEmail)) ||
+          (lbl && lbl === currentUsername)
+      );
+    });
+  }, [sceneTokens, currentUserId, currentUsername, currentUserEmail]);
 
   const handleToolClick = useCallback(
       (toolId) => {
@@ -155,9 +160,6 @@ export const Toolbar = memo(({ isGM: propIsGM, permissions = {} }) => {
         charName
     )}&backgroundColor=b6e3f4`;
 
-    const mapW = currentScene?.mapWidth || 2000;
-    const mapH = currentScene?.mapHeight || 1500;
-
     addToken({
       name: charName,
       label: charName,
@@ -178,8 +180,8 @@ export const Toolbar = memo(({ isGM: propIsGM, permissions = {} }) => {
     hasActiveMap,
     myExistingToken,
     currentUser?.username,
-    currentScene?.mapWidth,
-    currentScene?.mapHeight,
+    mapW,
+    mapH,
     addToken,
     currentUserId,
     currentUsername,

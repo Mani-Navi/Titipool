@@ -54,8 +54,7 @@ const MemberCard = memo(
          currentUser,
          isGM,
          isExpanded,
-         speakingMap,
-         isMicEnabled,
+         isSpeaking,
          hostTitle,
          playerTitle,
          customInputVal,
@@ -77,9 +76,6 @@ const MemberCard = memo(
         const displayTitle = isMemberGM ? hostTitle : playerTitle;
         const targetType = isMemberGM ? "HOST" : "PLAYER";
         const availablePresets = isMemberGM ? HOST_ROLE_PRESETS : PLAYER_ROLE_PRESETS;
-
-        const memberUid = String(member.userId || member.id || "");
-        const isSpeaking = Boolean(speakingMap[memberUid] || (isSelf && isMicEnabled));
 
         return (
             <div
@@ -622,12 +618,21 @@ export const PlayerMenu = memo(
             setCustomInputMap((prev) => ({ ...prev, [memberId]: val }));
         }, []);
 
+        const handleToggleExpand = useCallback((id) => {
+            setExpandedMemberId((prev) => (prev === id ? null : id));
+        }, []);
+
         const displayCode =
             roomData?.code || (roomId ? roomId.substring(0, 6).toUpperCase() : "------");
         const mySelfTitle = isGM ? hostTitle : playerTitle;
 
-        const hostMembers = membersList.filter((m) => m.role === "GM" || m.role === "ADMIN");
-        const playerMembers = membersList.filter((m) => m.role !== "GM" && m.role !== "ADMIN");
+        const hostMembers = useMemo(() => {
+            return membersList.filter((m) => m.role === "GM" || m.role === "ADMIN");
+        }, [membersList]);
+
+        const playerMembers = useMemo(() => {
+            return membersList.filter((m) => m.role !== "GM" && m.role !== "ADMIN");
+        }, [membersList]);
 
         return (
             <>
@@ -681,28 +686,32 @@ export const PlayerMenu = memo(
                           <span>— {hostTitle} ({hostMembers.length}) —</span>
                         </span>
                                             </div>
-                                            {hostMembers.map((member) => (
-                                                <MemberCard
-                                                    key={member.id || member.memberId || member.userId}
-                                                    member={member}
-                                                    currentUser={currentUser}
-                                                    isGM={isGM}
-                                                    isExpanded={expandedMemberId === (member.id || member.memberId || member.userId)}
-                                                    speakingMap={speakingMap}
-                                                    isMicEnabled={isMicEnabled}
-                                                    hostTitle={hostTitle}
-                                                    playerTitle={playerTitle}
-                                                    customInputVal={customInputMap[member.id || member.memberId || member.userId] || ""}
-                                                    onToggleExpand={(id) => setExpandedMemberId(expandedMemberId === id ? null : id)}
-                                                    onSetRoleTitle={handleSetRoleTitle}
-                                                    onCustomInputChange={handleCustomInputChange}
-                                                    onToggleMute={handleToggleMute}
-                                                    onRoleChange={handleRoleChange}
-                                                    onKick={handleKick}
-                                                    onBan={handleBan}
-                                                    onPermissionToggle={handlePermissionToggle}
-                                                />
-                                            ))}
+                                            {hostMembers.map((member) => {
+                                                const mId = member.id || member.memberId || member.userId;
+                                                const isSelf = member.userId === currentUser?.id || member.username?.toLowerCase() === currentUser?.username?.toLowerCase();
+                                                const isSpeaking = Boolean(speakingMap[String(member.userId || member.id || "")] || (isSelf && isMicEnabled));
+                                                return (
+                                                    <MemberCard
+                                                        key={mId}
+                                                        member={member}
+                                                        currentUser={currentUser}
+                                                        isGM={isGM}
+                                                        isExpanded={expandedMemberId === mId}
+                                                        isSpeaking={isSpeaking}
+                                                        hostTitle={hostTitle}
+                                                        playerTitle={playerTitle}
+                                                        customInputVal={customInputMap[mId] || ""}
+                                                        onToggleExpand={handleToggleExpand}
+                                                        onSetRoleTitle={handleSetRoleTitle}
+                                                        onCustomInputChange={handleCustomInputChange}
+                                                        onToggleMute={handleToggleMute}
+                                                        onRoleChange={handleRoleChange}
+                                                        onKick={handleKick}
+                                                        onBan={handleBan}
+                                                        onPermissionToggle={handlePermissionToggle}
+                                                    />
+                                                );
+                                            })}
                                         </div>
                                     )}
 
@@ -714,28 +723,32 @@ export const PlayerMenu = memo(
                           <span>— {playerTitle} ({playerMembers.length}) —</span>
                         </span>
                                             </div>
-                                            {playerMembers.map((member) => (
-                                                <MemberCard
-                                                    key={member.id || member.memberId || member.userId}
-                                                    member={member}
-                                                    currentUser={currentUser}
-                                                    isGM={isGM}
-                                                    isExpanded={expandedMemberId === (member.id || member.memberId || member.userId)}
-                                                    speakingMap={speakingMap}
-                                                    isMicEnabled={isMicEnabled}
-                                                    hostTitle={hostTitle}
-                                                    playerTitle={playerTitle}
-                                                    customInputVal={customInputMap[member.id || member.memberId || member.userId] || ""}
-                                                    onToggleExpand={(id) => setExpandedMemberId(expandedMemberId === id ? null : id)}
-                                                    onSetRoleTitle={handleSetRoleTitle}
-                                                    onCustomInputChange={handleCustomInputChange}
-                                                    onToggleMute={handleToggleMute}
-                                                    onRoleChange={handleRoleChange}
-                                                    onKick={handleKick}
-                                                    onBan={handleBan}
-                                                    onPermissionToggle={handlePermissionToggle}
-                                                />
-                                            ))}
+                                            {playerMembers.map((member) => {
+                                                const mId = member.id || member.memberId || member.userId;
+                                                const isSelf = member.userId === currentUser?.id || member.username?.toLowerCase() === currentUser?.username?.toLowerCase();
+                                                const isSpeaking = Boolean(speakingMap[String(member.userId || member.id || "")] || (isSelf && isMicEnabled));
+                                                return (
+                                                    <MemberCard
+                                                        key={mId}
+                                                        member={member}
+                                                        currentUser={currentUser}
+                                                        isGM={isGM}
+                                                        isExpanded={expandedMemberId === mId}
+                                                        isSpeaking={isSpeaking}
+                                                        hostTitle={hostTitle}
+                                                        playerTitle={playerTitle}
+                                                        customInputVal={customInputMap[mId] || ""}
+                                                        onToggleExpand={handleToggleExpand}
+                                                        onSetRoleTitle={handleSetRoleTitle}
+                                                        onCustomInputChange={handleCustomInputChange}
+                                                        onToggleMute={handleToggleMute}
+                                                        onRoleChange={handleRoleChange}
+                                                        onKick={handleKick}
+                                                        onBan={handleBan}
+                                                        onPermissionToggle={handlePermissionToggle}
+                                                    />
+                                                );
+                                            })}
                                         </div>
                                     )}
                                 </>
@@ -811,28 +824,32 @@ export const PlayerMenu = memo(
                             <span>— {hostTitle} ({hostMembers.length}) —</span>
                           </span>
                                                 </div>
-                                                {hostMembers.map((member) => (
-                                                    <MemberCard
-                                                        key={member.id || member.memberId || member.userId}
-                                                        member={member}
-                                                        currentUser={currentUser}
-                                                        isGM={isGM}
-                                                        isExpanded={expandedMemberId === (member.id || member.memberId || member.userId)}
-                                                        speakingMap={speakingMap}
-                                                        isMicEnabled={isMicEnabled}
-                                                        hostTitle={hostTitle}
-                                                        playerTitle={playerTitle}
-                                                        customInputVal={customInputMap[member.id || member.memberId || member.userId] || ""}
-                                                        onToggleExpand={(id) => setExpandedMemberId(expandedMemberId === id ? null : id)}
-                                                        onSetRoleTitle={handleSetRoleTitle}
-                                                        onCustomInputChange={handleCustomInputChange}
-                                                        onToggleMute={handleToggleMute}
-                                                        onRoleChange={handleRoleChange}
-                                                        onKick={handleKick}
-                                                        onBan={handleBan}
-                                                        onPermissionToggle={handlePermissionToggle}
-                                                    />
-                                                ))}
+                                                {hostMembers.map((member) => {
+                                                    const mId = member.id || member.memberId || member.userId;
+                                                    const isSelf = member.userId === currentUser?.id || member.username?.toLowerCase() === currentUser?.username?.toLowerCase();
+                                                    const isSpeaking = Boolean(speakingMap[String(member.userId || member.id || "")] || (isSelf && isMicEnabled));
+                                                    return (
+                                                        <MemberCard
+                                                            key={mId}
+                                                            member={member}
+                                                            currentUser={currentUser}
+                                                            isGM={isGM}
+                                                            isExpanded={expandedMemberId === mId}
+                                                            isSpeaking={isSpeaking}
+                                                            hostTitle={hostTitle}
+                                                            playerTitle={playerTitle}
+                                                            customInputVal={customInputMap[mId] || ""}
+                                                            onToggleExpand={handleToggleExpand}
+                                                            onSetRoleTitle={handleSetRoleTitle}
+                                                            onCustomInputChange={handleCustomInputChange}
+                                                            onToggleMute={handleToggleMute}
+                                                            onRoleChange={handleRoleChange}
+                                                            onKick={handleKick}
+                                                            onBan={handleBan}
+                                                            onPermissionToggle={handlePermissionToggle}
+                                                        />
+                                                    );
+                                                })}
                                             </div>
                                         )}
 
@@ -844,28 +861,32 @@ export const PlayerMenu = memo(
                             <span>— {playerTitle} ({playerMembers.length}) —</span>
                           </span>
                                                 </div>
-                                                {playerMembers.map((member) => (
-                                                    <MemberCard
-                                                        key={member.id || member.memberId || member.userId}
-                                                        member={member}
-                                                        currentUser={currentUser}
-                                                        isGM={isGM}
-                                                        isExpanded={expandedMemberId === (member.id || member.memberId || member.userId)}
-                                                        speakingMap={speakingMap}
-                                                        isMicEnabled={isMicEnabled}
-                                                        hostTitle={hostTitle}
-                                                        playerTitle={playerTitle}
-                                                        customInputVal={customInputMap[member.id || member.memberId || member.userId] || ""}
-                                                        onToggleExpand={(id) => setExpandedMemberId(expandedMemberId === id ? null : id)}
-                                                        onSetRoleTitle={handleSetRoleTitle}
-                                                        onCustomInputChange={handleCustomInputChange}
-                                                        onToggleMute={handleToggleMute}
-                                                        onRoleChange={handleRoleChange}
-                                                        onKick={handleKick}
-                                                        onBan={handleBan}
-                                                        onPermissionToggle={handlePermissionToggle}
-                                                    />
-                                                ))}
+                                                {playerMembers.map((member) => {
+                                                    const mId = member.id || member.memberId || member.userId;
+                                                    const isSelf = member.userId === currentUser?.id || member.username?.toLowerCase() === currentUser?.username?.toLowerCase();
+                                                    const isSpeaking = Boolean(speakingMap[String(member.userId || member.id || "")] || (isSelf && isMicEnabled));
+                                                    return (
+                                                        <MemberCard
+                                                            key={mId}
+                                                            member={member}
+                                                            currentUser={currentUser}
+                                                            isGM={isGM}
+                                                            isExpanded={expandedMemberId === mId}
+                                                            isSpeaking={isSpeaking}
+                                                            hostTitle={hostTitle}
+                                                            playerTitle={playerTitle}
+                                                            customInputVal={customInputMap[mId] || ""}
+                                                            onToggleExpand={handleToggleExpand}
+                                                            onSetRoleTitle={handleSetRoleTitle}
+                                                            onCustomInputChange={handleCustomInputChange}
+                                                            onToggleMute={handleToggleMute}
+                                                            onRoleChange={handleRoleChange}
+                                                            onKick={handleKick}
+                                                            onBan={handleBan}
+                                                            onPermissionToggle={handlePermissionToggle}
+                                                        />
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </>

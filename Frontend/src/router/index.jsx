@@ -1,13 +1,21 @@
 import React, { Suspense, lazy } from "react";
 import { createBrowserRouter } from "react-router-dom";
-import { LoginPage } from "../pages/auth/LoginPage.jsx";
-import { RegisterPage } from "../pages/auth/RegisterPage.jsx";
-import { DashboardPage } from "../pages/dashboard/DashboardPage.jsx";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { RouteErrorBoundary } from "../components/ui/RouteErrorBoundary.jsx";
 
 // لود تنبل صفحه لندینگ اصلی
 const LandingPage = lazy(() => import("../pages/LandingPage/LandingPage.jsx"));
+
+// لود تنبل احراز هویت و داشبورد جهت کاهش حجم بسته نخستین (First Load < 1.5s)
+const LoginPage = lazy(() =>
+    import("../pages/auth/LoginPage.jsx").then((m) => ({ default: m.LoginPage || m.default }))
+);
+const RegisterPage = lazy(() =>
+    import("../pages/auth/RegisterPage.jsx").then((m) => ({ default: m.RegisterPage || m.default }))
+);
+const DashboardPage = lazy(() =>
+    import("../pages/dashboard/DashboardPage.jsx").then((m) => ({ default: m.DashboardPage || m.default }))
+);
 
 // لود تنبل صفحات حقوقی الزامی
 const PrivacyPolicyPage = lazy(() => import("../pages/legal/PrivacyPolicyPage.jsx"));
@@ -22,7 +30,7 @@ const ProfilePage = lazy(() =>
     }))
 );
 
-// لود تنبل صفحه اتاق بازی
+// لود تنبل صفحه اتاق بازی (حاوی کانواس و لایوکیت)
 const RoomPage = lazy(() =>
     import("../pages/room/RoomPage.jsx").then((m) => ({
         default: m.RoomPage || m.default,
@@ -51,13 +59,21 @@ export const router = createBrowserRouter([
     },
     {
         path: "/login",
-        element: <LoginPage />,
         errorElement: <RouteErrorBoundary />,
+        element: (
+            <Suspense fallback={<LoadingFallback />}>
+                <LoginPage />
+            </Suspense>
+        ),
     },
     {
         path: "/register",
-        element: <RegisterPage />,
         errorElement: <RouteErrorBoundary />,
+        element: (
+            <Suspense fallback={<LoadingFallback />}>
+                <RegisterPage />
+            </Suspense>
+        ),
     },
 
     // مسیرهای عمومی الزامات قانونی
@@ -105,8 +121,12 @@ export const router = createBrowserRouter([
         children: [
             {
                 path: "/dashboard",
-                element: <DashboardPage />,
                 errorElement: <RouteErrorBoundary />,
+                element: (
+                    <Suspense fallback={<LoadingFallback />}>
+                        <DashboardPage />
+                    </Suspense>
+                ),
             },
             {
                 path: "/welcome",

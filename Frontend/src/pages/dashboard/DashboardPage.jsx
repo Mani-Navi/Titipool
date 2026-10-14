@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useRooms } from "../../hooks/useRooms";
 import { useAuth } from "../../hooks/useAuth";
@@ -86,15 +86,15 @@ export const DashboardPage = () => {
     return () => window.removeEventListener("focus", handleFocus);
   }, [fetchRooms]);
 
-  const handleCreateRoom = async (data) => {
+  const handleCreateRoom = useCallback(async (data) => {
     await createRoom(data);
-  };
+  }, [createRoom]);
 
-  const handleUpdateRoom = async (id, data) => {
+  const handleUpdateRoom = useCallback(async (id, data) => {
     await updateRoom(id, data);
-  };
+  }, [updateRoom]);
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     if (!roomToDelete) return;
     setIsActionLoading(true);
     try {
@@ -106,9 +106,9 @@ export const DashboardPage = () => {
     } finally {
       setIsActionLoading(false);
     }
-  };
+  }, [roomToDelete, deleteRoom]);
 
-  const handleConfirmLeave = async () => {
+  const handleConfirmLeave = useCallback(async () => {
     if (!roomToLeave) return;
     setIsActionLoading(true);
     try {
@@ -120,7 +120,7 @@ export const DashboardPage = () => {
     } finally {
       setIsActionLoading(false);
     }
-  };
+  }, [roomToLeave, leaveRoom]);
 
   const filteredRooms = useMemo(() => {
     if (!searchQuery.trim()) return rooms;

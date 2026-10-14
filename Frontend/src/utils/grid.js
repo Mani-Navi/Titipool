@@ -1,5 +1,20 @@
 import { GRID_TYPES } from "../constants/tools.js";
 
+// پیش‌محاسبه ضرایب مثلثاتی شش‌ضلعی افقی و عمودی روی دایره واحد جهت رندر فوق سریع
+const UNIT_HEX_H = Object.freeze(
+    Array.from({ length: 6 }).map((_, i) => {
+      const angle = (Math.PI / 3) * i;
+      return [Math.cos(angle), Math.sin(angle)];
+    })
+);
+
+const UNIT_HEX_V = Object.freeze(
+    Array.from({ length: 6 }).map((_, i) => {
+      const angle = (Math.PI / 3) * i + Math.PI / 6;
+      return [Math.cos(angle), Math.sin(angle)];
+    })
+);
+
 export function snapToGrid(
     x,
     y,
@@ -113,12 +128,11 @@ export function snapToGrid(
 
 export function getHexPoints(radius, isHorizontal = true) {
   const points = [];
-  const angleOffset = isHorizontal ? 0 : Math.PI / 6;
+  const unitPoints = isHorizontal ? UNIT_HEX_H : UNIT_HEX_V;
 
   for (let i = 0; i < 6; i++) {
-    const angle = (Math.PI / 3) * i + angleOffset;
-    points.push(radius * Math.cos(angle));
-    points.push(radius * Math.sin(angle));
+    points.push(radius * unitPoints[i][0]);
+    points.push(radius * unitPoints[i][1]);
   }
 
   return points;
