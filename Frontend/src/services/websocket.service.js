@@ -1,6 +1,6 @@
 // src/services/websocket.service.js
 import { Client } from "@stomp/stompjs";
-import { useWebSocketStore } from "../stores/websocket.store.js";
+import { useWebSocketStore } from "../store/websocket.store.js";
 import { WS_EVENTS } from "../constants/wsEvents.js";
 import { ENV } from "../config/validateEnv";
 
@@ -55,7 +55,7 @@ class WebSocketService {
 
             this.client = new Client({
                 brokerURL: brokerURL,
-                reconnectDelay: 2000,
+                reconnectDelay: 2500,
                 heartbeatIncoming: 20000,
                 heartbeatOutgoing: 20000,
                 beforeConnect: () => {
@@ -130,11 +130,11 @@ class WebSocketService {
     }
 
     clearSubscriptions() {
-        this.subscriptions.forEach((sub) => {
+        for (let i = 0; i < this.subscriptions.length; i++) {
             try {
-                sub.unsubscribe();
+                this.subscriptions[i].unsubscribe();
             } catch (ignored) {}
-        });
+        }
         this.subscriptions = [];
     }
 

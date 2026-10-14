@@ -150,11 +150,26 @@ export function useVoice(roomId, isMutedByGM = false) {
 
             room.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
                 if (!isMountedRef.current) return;
-                const map = {};
-                speakers.forEach((s) => {
-                    map[s.identity] = true;
+                const nextMap = {};
+                for (let i = 0; i < speakers.length; i++) {
+                    nextMap[speakers[i].identity] = true;
+                }
+
+                setSpeakingMap((prev) => {
+                    const prevKeys = Object.keys(prev);
+                    const nextKeys = Object.keys(nextMap);
+                    if (prevKeys.length === nextKeys.length) {
+                        let identical = true;
+                        for (let i = 0; i < nextKeys.length; i++) {
+                            if (!prev[nextKeys[i]]) {
+                                identical = false;
+                                break;
+                            }
+                        }
+                        if (identical) return prev;
+                    }
+                    return nextMap;
                 });
-                setSpeakingMap(map);
             });
 
             room.on(RoomEvent.Disconnected, () => {

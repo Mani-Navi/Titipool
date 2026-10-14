@@ -1,12 +1,14 @@
 import { useMemo, useCallback } from "react";
-import { useAuthStore } from "../stores/auth.store";
-import { useRoomStore } from "../stores/room.store";
+import { useAuthStore } from "../store/auth.store";
+import { useRoomStore } from "../store/room.store";
 import { ROLES } from "../constants/roles.js";
+
+const EMPTY_ROOMS = Object.freeze([]);
 
 export function usePermissions(roomData) {
   const user = useAuthStore((state) => state.user);
   const storeRoom = useRoomStore((state) => state.currentRoom || state.room || state.activeRoom);
-  const roomsList = useRoomStore((state) => state.rooms || []);
+  const roomsList = useRoomStore((state) => state.rooms) || EMPTY_ROOMS;
 
   const currentRoom = useMemo(() => {
     return (

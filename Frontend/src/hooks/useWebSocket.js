@@ -1,9 +1,9 @@
 // src/hooks/useWebSocket.js
 import { useEffect, useRef, useCallback } from "react";
 import { wsService } from "../services/websocket.service";
-import { useSceneStore } from "../stores/scene.store";
-import { useCanvasStore } from "../stores/canvas.store";
-import { useWebSocketStore } from "../stores/websocket.store";
+import { useSceneStore } from "../store/scene.store";
+import { useCanvasStore } from "../store/canvas.store";
+import { useWebSocketStore } from "../store/websocket.store";
 import { useDiceStore } from "../features/dice/state/dice.store";
 import { WS_EVENTS } from "../constants/wsEvents.js";
 
@@ -286,7 +286,6 @@ export function useWebSocket(roomId, onMessage = null) {
       if (onMessageRef.current) onMessageRef.current(data);
     });
 
-    // دریافت نتایج معتبر به همراه موقعیت و دوران سه‌بعدی تاس‌ها
     const unsubDiceSettled = wsService.on("DICE_SETTLED", (payload) => {
       if (!payload) return;
       const data = payload.data !== undefined ? payload.data : payload;
@@ -358,10 +357,14 @@ export function useWebSocket(roomId, onMessage = null) {
         const nextMapUrl = data.mapUrl || data.assetUrl || "";
         useSceneStore.setState((state) => {
           const isCurrent = String(state.currentScene?.id || "").toLowerCase() === targetId;
+          const idx = state.scenes.findIndex((s) => String(s.id).toLowerCase() === targetId);
+          let nextScenes = state.scenes;
+          if (idx !== -1) {
+            nextScenes = [...state.scenes];
+            nextScenes[idx] = { ...nextScenes[idx], mapUrl: nextMapUrl, assetUrl: nextMapUrl };
+          }
           return {
-            scenes: state.scenes.map((s) =>
-                String(s.id).toLowerCase() === targetId ? { ...s, mapUrl: nextMapUrl, assetUrl: nextMapUrl } : s
-            ),
+            scenes: nextScenes,
             currentScene: isCurrent
                 ? { ...state.currentScene, mapUrl: nextMapUrl, assetUrl: nextMapUrl }
                 : state.currentScene,
@@ -374,13 +377,21 @@ export function useWebSocket(roomId, onMessage = null) {
     const unsubRename = wsService.on("SCENE_RENAME", (data) => {
       if (data && data.sceneId && data.name) {
         const targetId = String(data.sceneId).toLowerCase();
-        useSceneStore.setState((state) => ({
-          scenes: state.scenes.map((s) => (String(s.id).toLowerCase() === targetId ? { ...s, name: data.name } : s)),
-          currentScene:
-              String(state.currentScene?.id || "").toLowerCase() === targetId
-                  ? { ...state.currentScene, name: data.name }
-                  : state.currentScene,
-        }));
+        useSceneStore.setState((state) => {
+          const idx = state.scenes.findIndex((s) => String(s.id).toLowerCase() === targetId);
+          let nextScenes = state.scenes;
+          if (idx !== -1) {
+            nextScenes = [...state.scenes];
+            nextScenes[idx] = { ...nextScenes[idx], name: data.name };
+          }
+          return {
+            scenes: nextScenes,
+            currentScene:
+                String(state.currentScene?.id || "").toLowerCase() === targetId
+                    ? { ...state.currentScene, name: data.name }
+                    : state.currentScene,
+          };
+        });
       }
       if (onMessageRef.current) onMessageRef.current(data);
     });

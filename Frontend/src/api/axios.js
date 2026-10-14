@@ -11,14 +11,23 @@ const api = axios.create({
     },
 });
 
+// کش کردن origin سرور داخلی برای اجتناب از بازتولید مکرر آبجکت‌های new URL
+let cachedApiOrigin = "";
+try {
+    if (typeof window !== "undefined") {
+        cachedApiOrigin = new URL(API_BASE_URL, window.location.origin).origin;
+    }
+} catch {
+    cachedApiOrigin = "";
+}
+
 // بررسی اینکه آیا آدرس مقصد مربوط به API خودمان است یا سرور خارجی (جلوگیری از نشت توکن)
 const isInternalApiUrl = (url) => {
     if (!url) return false;
     if (url.startsWith("/")) return true;
     try {
         const targetOrigin = new URL(url, window.location.origin).origin;
-        const apiOrigin = new URL(API_BASE_URL, window.location.origin).origin;
-        return targetOrigin === apiOrigin;
+        return targetOrigin === cachedApiOrigin;
     } catch {
         return false;
     }

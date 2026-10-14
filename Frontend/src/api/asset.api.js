@@ -2,6 +2,9 @@ import api from "./axios";
 import { MAP_PRESETS } from "../constants/mapPresets";
 import { TOKEN_PRESETS } from "../constants/tokenPresets";
 
+const RAW_BASE = api.defaults.baseURL || "http://localhost:8080/api";
+const BACKEND_HOST = RAW_BASE.replace(/\/api\/?$/, "");
+
 export const getAssetUrl = (url) => {
   if (!url || typeof url !== "string") return "";
   const trimmed = url.trim();
@@ -16,16 +19,13 @@ export const getAssetUrl = (url) => {
     return trimmed;
   }
 
-  const rawBase = api.defaults.baseURL || "http://localhost:8080/api";
-  const backendHost = rawBase.replace(/\/api\/?$/, "");
-
   // اگر فقط نام فایل بدون اسلش بود، مسیر uploads را به آن اضافه کن
   if (!trimmed.includes("/")) {
-    return `${backendHost}/uploads/${trimmed}`;
+    return `${BACKEND_HOST}/uploads/${trimmed}`;
   }
 
   const cleanPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-  return `${backendHost}${cleanPath}`;
+  return `${BACKEND_HOST}${cleanPath}`;
 };
 
 export const assetApi = {
