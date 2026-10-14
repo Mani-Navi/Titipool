@@ -6,7 +6,7 @@ import { RpgAvatar } from '../profile/RpgAvatar';
 const NAV_LINKS = Object.freeze([
     { id: 'reveal', label: 'محصول' },
     { id: 'dice', label: 'تاس‌ها' },
-    { id: 'scenarios', label: 'سناریوها' },
+    { id: 'testimonials', label: 'نظرات' },
     { id: 'features', label: 'امکانات' },
     { id: 'how-it-works', label: 'نحوه کار' },
 ]);
@@ -16,7 +16,7 @@ const SECTIONS_TO_CHECK = Object.freeze([
     'reveal',
     'statement',
     'dice',
-    'scenarios',
+    'testimonials',
     'gm',
     'features',
     'how-it-works',
@@ -90,7 +90,6 @@ export const Navbar = memo(({
                         : 'bg-white/70 backdrop-blur-sm border border-neutral-200/50'
                 }`}
             >
-                {/* لوگو و نام پلتفرم با برچسب استاندارد دسترسی‌پذیری */}
                 <a
                     href="#hero"
                     onClick={() => sound.playTokenClick()}
@@ -110,7 +109,6 @@ export const Navbar = memo(({
                     </div>
                 </a>
 
-                {/* منوی ناوبری دسکتاپ */}
                 <nav className="hidden md:flex items-center gap-7 text-xs font-semibold text-neutral-700" aria-label="ناوبری اصلی">
                     {NAV_LINKS.map((link) => {
                         const isActive = activeSection === link.id;
@@ -132,7 +130,6 @@ export const Navbar = memo(({
                     })}
                 </nav>
 
-                {/* دکمه‌های اکشن */}
                 <div className="flex items-center gap-1.5 sm:gap-3">
                     <button
                         type="button"

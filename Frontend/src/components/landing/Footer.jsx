@@ -24,20 +24,20 @@ export const Footer = memo(() => {
                     <div className="flex flex-wrap gap-12 sm:gap-16 text-xs">
                         <div>
                             <h4 className="font-bold text-neutral-900 mb-3">پلتفرم</h4>
-                            <ul className="space-y-2 text-neutral-500 font-medium">
+                            <ul className="space-y-2 text-neutral-600 font-medium">
                                 <li>
-                                    <a href="#hero" className="hover:text-neutral-900 transition-colors">
+                                    <a href="#hero" className="hover:text-neutral-950 transition-colors">
                                         خانه
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="#dice" className="hover:text-neutral-900 transition-colors">
+                                    <a href="#dice" className="hover:text-neutral-950 transition-colors">
                                         تاس‌ها
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="#scenarios" className="hover:text-neutral-900 transition-colors">
-                                        سناریوها
+                                    <a href="#testimonials" className="hover:text-neutral-950 transition-colors">
+                                        نظرات بازیکنان
                                     </a>
                                 </li>
                             </ul>
@@ -45,24 +45,24 @@ export const Footer = memo(() => {
 
                         <div>
                             <h4 className="font-bold text-neutral-900 mb-3">قوانین و امنیت</h4>
-                            <ul className="space-y-2 text-neutral-500 font-medium">
+                            <ul className="space-y-2 text-neutral-600 font-medium">
                                 <li>
-                                    <Link to="/privacy-policy" className="hover:text-neutral-900 transition-colors">
+                                    <Link to="/privacy-policy" className="hover:text-neutral-950 transition-colors">
                                         حریم خصوصی
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link to="/terms-of-service" className="hover:text-neutral-900 transition-colors">
+                                    <Link to="/terms-of-service" className="hover:text-neutral-950 transition-colors">
                                         شرایط استفاده
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link to="/cookie-policy" className="hover:text-neutral-900 transition-colors">
+                                    <Link to="/cookie-policy" className="hover:text-neutral-950 transition-colors">
                                         خط‌مشی کوکی‌ها
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link to="/refund-policy" className="hover:text-neutral-900 transition-colors">
+                                    <Link to="/refund-policy" className="hover:text-neutral-950 transition-colors">
                                         قوانین بازگشت وجه
                                     </Link>
                                 </li>
@@ -71,11 +71,11 @@ export const Footer = memo(() => {
 
                         <div>
                             <h4 className="font-bold text-neutral-900 mb-3">ارتباط و پشتیبانی</h4>
-                            <ul className="space-y-2 text-neutral-500 font-medium">
+                            <ul className="space-y-2 text-neutral-600 font-medium">
                                 <li>
                                     <a
                                         href="mailto:support@titipool.ir"
-                                        className="hover:text-neutral-900 transition-colors inline-flex items-center gap-1.5 font-mono text-[11px]"
+                                        className="hover:text-neutral-950 transition-colors inline-flex items-center gap-1.5 font-mono text-[11px]"
                                         dir="ltr"
                                     >
                                         <Mail className="w-3.5 h-3.5 text-[#f59e0b]" />

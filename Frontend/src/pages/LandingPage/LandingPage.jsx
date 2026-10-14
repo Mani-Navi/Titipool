@@ -10,7 +10,7 @@ import { usePageTitle } from '../../hooks/usePageTitle';
 import { Navbar } from '../../components/landing/Navbar';
 import { Hero } from '../../components/landing/Hero';
 import { BigStatement } from '../../components/landing/BigStatement';
-import { ScenariosSection } from '../../components/landing/ScenariosSection';
+import { TestimonialsSection } from '../../components/landing/TestimonialsSection';
 import { GameMasterSection } from '../../components/landing/GameMasterSection';
 import { PlayerSection } from '../../components/landing/PlayerSection';
 import { FeaturesSequence } from '../../components/landing/FeaturesSequence';
@@ -20,7 +20,7 @@ import { FinalCta } from '../../components/landing/FinalCta';
 import { Footer } from '../../components/landing/Footer';
 import { StickyMobileCTA } from '../../components/landing/StickyMobileCTA';
 
-// لود تنبل استیج سه‌بعدی تاس از مسیر صحیح لندینگ جهت به صفر رساندن TBT
+// لود تنبل استیج سه‌بعدی تاس از مسیر لندینگ
 const DiceSection = lazy(() =>
     import('../../components/landing/DiceSection').then((m) => ({
         default: m.DiceSection || m.default,
@@ -62,7 +62,7 @@ export default function LandingPage() {
         };
     }, []);
 
-    // مشاهده‌گر تقاطع: استیج سه‌بعدی سنگین فقط در صورت نزدیک شدن اسکرول لود می‌شود
+    // مشاهده‌گر تقاطع برای استیج ۳بعدی
     useEffect(() => {
         if (!diceTriggerRef.current || shouldLoadDice) return;
 
@@ -104,14 +104,6 @@ export default function LandingPage() {
         }
     };
 
-    const handleSelectScenario = () => {
-        if (isSessionValid) {
-            navigate('/dashboard');
-        } else {
-            navigate('/login');
-        }
-    };
-
     const handleDiceExplore = () => {
         setShouldLoadDice(true);
         const el = document.getElementById('dice');
@@ -129,7 +121,6 @@ export default function LandingPage() {
                     user={isSessionValid ? user : null}
                 />
 
-                {/* لندمارک اصلی استاندارد برای Accessibility */}
                 <main id="main-content" role="main" className="w-full flex flex-col items-center">
                     <Hero
                         user={isSessionValid ? user : null}
@@ -140,7 +131,6 @@ export default function LandingPage() {
 
                     <BigStatement />
 
-                    {/* قلاب اسکرول جهت اجرای تنبل موتور ۳بعدی */}
                     <div ref={diceTriggerRef} className="w-full">
                         {shouldLoadDice ? (
                             <Suspense
@@ -157,7 +147,8 @@ export default function LandingPage() {
                         )}
                     </div>
 
-                    <ScenariosSection onSelectScenario={handleSelectScenario} />
+                    {/* سکشن جدید و جذاب نظرات ماجراجویان */}
+                    <TestimonialsSection />
 
                     <GameMasterSection />
 
