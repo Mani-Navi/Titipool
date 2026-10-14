@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react';
 import { RotateCcw, Sparkles, Trash2, Dices, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 
 import { GsapHeadingReveal } from './GsapHeadingReveal';
@@ -7,7 +7,7 @@ import { useDiceStore } from '../../features/dice/state/dice.store';
 import { DICE_THEMES } from '../../features/dice/engine/textureGenerator';
 import { diceAudio } from '../../features/dice/engine/diceAudio';
 
-const DICE_TYPES = [
+const DICE_TYPES = Object.freeze([
     { type: 'd100', label: 'D100', maxVal: 100 },
     { type: 'd20', label: 'D20', maxVal: 20 },
     { type: 'd12', label: 'D12', maxVal: 12 },
@@ -15,19 +15,17 @@ const DICE_TYPES = [
     { type: 'd8', label: 'D8', maxVal: 8 },
     { type: 'd6', label: 'D6', maxVal: 6 },
     { type: 'd4', label: 'D4', maxVal: 4 },
-];
+]);
 
-export const DiceSection = () => {
-    const {
-        isRolling,
-        results,
-        totalSum,
-        triggerRoll,
-        clearDice,
-        setOpen,
-        selectedTheme,
-        setSelectedTheme,
-    } = useDiceStore();
+export const DiceSection = memo(() => {
+    const isRolling = useDiceStore((s) => s.isRolling);
+    const results = useDiceStore((s) => s.results);
+    const totalSum = useDiceStore((s) => s.totalSum);
+    const triggerRoll = useDiceStore((s) => s.triggerRoll);
+    const clearDice = useDiceStore((s) => s.clearDice);
+    const setOpen = useDiceStore((s) => s.setOpen);
+    const selectedTheme = useDiceStore((s) => s.selectedTheme);
+    const setSelectedTheme = useDiceStore((s) => s.setSelectedTheme);
 
     const [mode, setMode] = useState('quick');
     const [poolCounts, setPoolCounts] = useState({});
@@ -69,20 +67,20 @@ export const DiceSection = () => {
         };
     }, [triggerRoll, clearDice, setOpen]);
 
-    const handleQuickRoll = (type) => {
+    const handleQuickRoll = useCallback((type) => {
         const diceToRoll = type === 'd100' ? ['d100', 'd10'] : [type];
         setLastRollTypes(diceToRoll);
         triggerRoll(diceToRoll);
-    };
+    }, [triggerRoll]);
 
-    const handleAddToPool = (type) => {
+    const handleAddToPool = useCallback((type) => {
         setPoolCounts((prev) => ({
             ...prev,
             [type]: (prev[type] || 0) + 1,
         }));
-    };
+    }, []);
 
-    const handleRemoveFromPool = (type, e) => {
+    const handleRemoveFromPool = useCallback((type, e) => {
         e.stopPropagation();
         setPoolCounts((prev) => {
             const current = prev[type] || 0;
@@ -93,9 +91,9 @@ export const DiceSection = () => {
             }
             return { ...prev, [type]: current - 1 };
         });
-    };
+    }, []);
 
-    const handleRollPool = () => {
+    const handleRollPool = useCallback(() => {
         const diceToRoll = [];
         Object.entries(poolCounts).forEach(([type, count]) => {
             for (let i = 0; i < count; i++) {
@@ -110,26 +108,25 @@ export const DiceSection = () => {
         if (diceToRoll.length === 0) return;
         setLastRollTypes(diceToRoll);
         triggerRoll(diceToRoll);
-    };
+    }, [poolCounts, triggerRoll]);
 
-    const handleReRoll = () => {
+    const handleReRoll = useCallback(() => {
         if (lastRollTypes.length > 0) {
             triggerRoll(lastRollTypes);
         } else {
             triggerRoll(['d12']);
         }
-    };
+    }, [lastRollTypes, triggerRoll]);
 
-    // مهار عبور تاس از کادر: اگر ماوس در حین درگ از کادر خارج شود، تاس فوراً رها می‌شود
-    const handleContainerPointerLeave = () => {
+    const handleContainerPointerLeave = useCallback(() => {
         try {
             window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }));
-        } catch {
-            // fallback safe
-        }
-    };
+        } catch {}
+    }, []);
 
-    const totalPoolCount = Object.values(poolCounts).reduce((a, b) => a + b, 0);
+    const totalPoolCount = useMemo(() => {
+        return Object.values(poolCounts).reduce((a, b) => a + b, 0);
+    }, [poolCounts]);
 
     return (
         <section id="dice" className="py-14 sm:py-28 px-3 sm:px-8 overflow-hidden w-full" dir="rtl">
@@ -210,7 +207,6 @@ export const DiceSection = () => {
                     {/* داک کنترل کنسولی مجهز به دکمه جمع و باز شدن */}
                     <div className="absolute bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-1.5 z-20 w-full px-2.5 sm:px-4 max-w-xl transition-all duration-300">
 
-                        {/* دکمه کوچک شیشه‌ای برای جمع / باز کردن منو */}
                         <button
                             type="button"
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -220,10 +216,8 @@ export const DiceSection = () => {
                             {isMenuOpen ? <ChevronDown className="w-3 h-3 text-amber-400" /> : <ChevronUp className="w-3 h-3 text-amber-400" />}
                         </button>
 
-                        {/* بخش جمع‌شونده منو */}
                         {isMenuOpen && (
                             <div className="w-full flex flex-col gap-1.5 animate-fade-in-up">
-                                {/* تولبار حالت استخر */}
                                 {mode === 'pool' && totalPoolCount > 0 && (
                                     <div className="bg-zinc-950/95 border border-amber-500/30 p-2 rounded-2xl shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-2 w-full">
                                         <div className="flex items-center gap-1 flex-wrap overflow-x-auto max-w-[70%]">
@@ -260,10 +254,7 @@ export const DiceSection = () => {
                                     </div>
                                 )}
 
-                                {/* پنل اصلی دوخطی مرتب و دقیق */}
                                 <div className="w-full bg-zinc-950/95 border border-zinc-800/90 p-2 rounded-2xl shadow-[0_15px_45px_rgba(0,0,0,0.8)] backdrop-blur-2xl flex flex-col gap-2">
-
-                                    {/* سطر اول: کلیدهای ۷گانه تاس */}
                                     <div className="grid grid-cols-7 gap-1 w-full">
                                         {DICE_TYPES.map((d) => {
                                             const inPool = poolCounts[d.type] || 0;
@@ -291,7 +282,6 @@ export const DiceSection = () => {
                                         })}
                                     </div>
 
-                                    {/* سطر دوم: دکمه پاکسازی، تغییر مود و تم‌ها */}
                                     <div className="flex items-center justify-between pt-1 border-t border-zinc-850 px-0.5">
                                         <div className="flex items-center gap-1">
                                             <button
@@ -334,7 +324,6 @@ export const DiceSection = () => {
                                             </div>
                                         </div>
 
-                                        {/* تم‌های رنگی سنگ مرمر */}
                                         <div className="flex items-center gap-1 bg-zinc-900/90 p-1 rounded-xl border border-zinc-800">
                                             {Object.values(DICE_THEMES).map((t) => (
                                                 <button
@@ -362,4 +351,7 @@ export const DiceSection = () => {
             </div>
         </section>
     );
-};
+});
+
+DiceSection.displayName = "DiceSection";
+export default DiceSection;

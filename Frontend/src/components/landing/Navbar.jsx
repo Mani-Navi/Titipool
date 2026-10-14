@@ -1,25 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { Dices, Key, ArrowUpRight, Menu, X } from 'lucide-react';
 import { sound } from '../../utils/tableAudio';
 import { RpgAvatar } from '../profile/RpgAvatar';
 
-export const Navbar = ({
-                           onOpenAuth,
-                           onOpenProfile,
-                           onOpenRoomCode,
-                           onStartGame,
-                           user,
-                       }) => {
+const NAV_LINKS = Object.freeze([
+    { id: 'reveal', label: 'محصول' },
+    { id: 'dice', label: 'تاس‌ها' },
+    { id: 'scenarios', label: 'سناریوها' },
+    { id: 'features', label: 'امکانات' },
+    { id: 'how-it-works', label: 'نحوه کار' },
+]);
+
+const SECTIONS_TO_CHECK = Object.freeze([
+    'hero',
+    'reveal',
+    'statement',
+    'dice',
+    'scenarios',
+    'gm',
+    'features',
+    'how-it-works',
+]);
+
+export const Navbar = memo(({
+                                onOpenAuth,
+                                onOpenProfile,
+                                onOpenRoomCode,
+                                onStartGame,
+                                user,
+                            }) => {
     const [scrolled, setScrolled] = useState(false);
     const [activeSection, setActiveSection] = useState('hero');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     useEffect(() => {
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 40);
+        let ticking = false;
 
-            const sections = ['hero', 'reveal', 'statement', 'dice', 'scenarios', 'gm', 'features', 'how-it-works'];
-            for (const sectionId of sections) {
+        const updateScrollState = () => {
+            const isScrolled = window.scrollY > 40;
+            setScrolled(isScrolled);
+
+            for (let i = 0; i < SECTIONS_TO_CHECK.length; i++) {
+                const sectionId = SECTIONS_TO_CHECK[i];
                 const el = document.getElementById(sectionId);
                 if (el) {
                     const rect = el.getBoundingClientRect();
@@ -29,19 +51,19 @@ export const Navbar = ({
                     }
                 }
             }
+            ticking = false;
+        };
+
+        const handleScroll = () => {
+            if (!ticking) {
+                window.requestAnimationFrame(updateScrollState);
+                ticking = true;
+            }
         };
 
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
-
-    const navLinks = [
-        { id: 'reveal', label: 'محصول' },
-        { id: 'dice', label: 'تاس‌ها' },
-        { id: 'scenarios', label: 'سناریوها' },
-        { id: 'features', label: 'امکانات' },
-        { id: 'how-it-works', label: 'نحوه کار' },
-    ];
 
     const displayName = user
         ? (user.displayName || user.username || user.name || (user.email ? user.email.split('@')[0] : 'کاربر'))
@@ -89,7 +111,7 @@ export const Navbar = ({
 
                 {/* منوی ناوبری دسکتاپ */}
                 <nav className="hidden md:flex items-center gap-7 text-xs font-semibold text-neutral-600">
-                    {navLinks.map((link) => {
+                    {NAV_LINKS.map((link) => {
                         const isActive = activeSection === link.id;
                         return (
                             <a
@@ -111,7 +133,6 @@ export const Navbar = ({
 
                 {/* دکمه‌های اکشن */}
                 <div className="flex items-center gap-1.5 sm:gap-3">
-                    {/* دکمه ورود با کد فقط در صفحات بزرگ‌تر */}
                     <button
                         onClick={() => {
                             sound.playTokenClick();
@@ -124,7 +145,6 @@ export const Navbar = ({
                         <span>ورود با کد</span>
                     </button>
 
-                    {/* دکمه ورود یا پروفایل کاربر با بهینه‌سازی لمسی موبایل */}
                     {user ? (
                         <button
                             onClick={() => {
@@ -153,7 +173,6 @@ export const Navbar = ({
                         </button>
                     )}
 
-                    {/* دکمه شروع بازی */}
                     <button
                         onClick={() => {
                             sound.playDiceRoll();
@@ -165,7 +184,6 @@ export const Navbar = ({
                         <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                     </button>
 
-                    {/* دکمه منوی همبرگری موبایل */}
                     <button
                         type="button"
                         onClick={() => {
@@ -180,11 +198,10 @@ export const Navbar = ({
                 </div>
             </div>
 
-            {/* دراور منوی بازشونده موبایل */}
             {isMobileMenuOpen && (
                 <div className="md:hidden mt-2 p-4 rounded-2xl bg-white/95 backdrop-blur-2xl border border-neutral-200/80 shadow-2xl animate-fade-in-up text-right">
                     <nav className="flex flex-col space-y-1 pb-3 border-b border-neutral-100">
-                        {navLinks.map((link) => (
+                        {NAV_LINKS.map((link) => (
                             <button
                                 key={link.id}
                                 onClick={() => handleMobileNavClick(link.id)}
@@ -215,4 +232,7 @@ export const Navbar = ({
             )}
         </header>
     );
-};
+});
+
+Navbar.displayName = "Navbar";
+export default Navbar;

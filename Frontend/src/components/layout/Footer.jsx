@@ -1,8 +1,8 @@
-import React from "react";
+import React, { memo } from "react";
 import { Link } from "react-router-dom";
 import { Shield, FileText, Cookie, RotateCcw, Mail } from "lucide-react";
 
-export const Footer = () => {
+export const Footer = memo(() => {
     const currentYear = new Date().getFullYear();
 
     return (
@@ -11,11 +11,9 @@ export const Footer = () => {
             dir="rtl"
             role="contentinfo"
         >
-            {/* خط باریک و لوکس گرادیانی محوشونده به جای خط سالید سفید */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-px bg-gradient-to-r from-transparent via-zinc-800/80 to-transparent pointer-events-none" aria-hidden="true" />
 
             <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3.5 sm:gap-4 text-[11px] sm:text-xs">
-                {/* هویت برند و کپی‌رایت */}
                 <div className="flex items-center gap-2 text-zinc-400">
                     <span className="font-bold tracking-wide text-zinc-300">
                         Titipool <span className="text-amber-400/90 font-mono text-[10px] font-normal">VTT</span>
@@ -26,7 +24,6 @@ export const Footer = () => {
                     </span>
                 </div>
 
-                {/* لینک‌های چهارگانه حقوقی */}
                 <nav className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 text-zinc-400" aria-label="پیوندهای حقوقی">
                     <Link
                         to="/terms-of-service"
@@ -61,7 +58,6 @@ export const Footer = () => {
                     </Link>
                 </nav>
 
-                {/* ایمیل پشتیبانی به سبک کپسولی کمینه */}
                 <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] sm:text-[11px] font-mono bg-zinc-900/40 border border-zinc-800/60 px-2.5 py-1 rounded-full">
                     <Mail className="w-3 h-3 text-amber-500/70" aria-hidden="true" />
                     <span>پشتیبانی:</span>
@@ -75,6 +71,7 @@ export const Footer = () => {
             </div>
         </footer>
     );
-};
+});
 
+Footer.displayName = "Footer";
 export default Footer;

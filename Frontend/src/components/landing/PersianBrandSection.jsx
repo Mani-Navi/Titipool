@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'motion/react';
 import { BRAND_PILLARS } from '../../data/landingData';
 import { GsapHeadingReveal } from './GsapHeadingReveal';
 
-export const PersianBrandSection = () => {
+export const PersianBrandSection = memo(() => {
     return (
         <section className="py-24 sm:py-36 px-4 sm:px-8 overflow-hidden bg-neutral-950 text-white rounded-3xl mx-3 sm:mx-6 my-12" dir="rtl">
             <div className="max-w-5xl mx-auto text-right">
@@ -45,4 +45,7 @@ export const PersianBrandSection = () => {
             </div>
         </section>
     );
-};
+});
+
+PersianBrandSection.displayName = "PersianBrandSection";
+export default PersianBrandSection;

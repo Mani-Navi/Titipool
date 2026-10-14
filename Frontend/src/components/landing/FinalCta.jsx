@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'motion/react';
-import { ArrowUpRight, ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowUpRight, ArrowLeft } from 'lucide-react';
 import { sound } from '../../utils/tableAudio';
 import { GsapHeadingReveal } from './GsapHeadingReveal';
 
-export const FinalCta = ({ onStartGame, onOpenAuth }) => {
+export const FinalCta = memo(({ onStartGame, onOpenAuth }) => {
     return (
         <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 text-center w-full relative overflow-hidden" dir="rtl">
             <div className="max-w-4xl mx-auto rounded-3xl bg-neutral-50/80 border border-neutral-200/80 p-8 sm:p-14 shadow-sm relative overflow-hidden">
@@ -50,4 +50,7 @@ export const FinalCta = ({ onStartGame, onOpenAuth }) => {
             </div>
         </section>
     );
-};
+});
+
+FinalCta.displayName = "FinalCta";
+export default FinalCta;

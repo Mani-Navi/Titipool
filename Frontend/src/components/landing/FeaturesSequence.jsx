@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     Compass,
@@ -17,32 +17,24 @@ import {
     Ruler,
     Dices,
     Settings,
-    Crown,
-    User,
-    Volume2,
     Scissors,
     Circle,
     Square,
-    Triangle,
-    Hexagon,
     PenTool,
     MapPin,
     Sparkles,
     Upload,
-    Search,
-    Maximize2,
-    Copy,
-    Check,
 } from 'lucide-react';
 import { sound } from '../../utils/tableAudio';
 import { FEATURES } from '../../data/landingData';
 import { GsapHeadingReveal } from './GsapHeadingReveal';
 
-export const FeaturesSequence = () => {
+const FEATURE_ICONS = Object.freeze([Compass, Eye, Mic, Grid, ImageIcon, Zap]);
+
+export const FeaturesSequence = memo(() => {
     const [selectedFeatureIndex, setSelectedFeatureIndex] = useState(0);
     const current = FEATURES[selectedFeatureIndex];
 
-    // استیت‌های تعاملی برای شبیه‌سازی زنده UI واقعی اتاق
     const [isFogCovered, setIsFogCovered] = useState(true);
     const [fogAction, setFogAction] = useState('reveal');
     const [fogBrush, setFogBrush] = useState('circle');
@@ -53,12 +45,10 @@ export const FeaturesSequence = () => {
     const [assetTab, setAssetTab] = useState('maps');
     const [tokenPos, setTokenPos] = useState({ x: 140, y: 55 });
 
-    const handleSelect = (idx) => {
+    const handleSelect = useCallback((idx) => {
         sound.playTokenClick();
         setSelectedFeatureIndex(idx);
-    };
-
-    const icons = [Compass, Eye, Mic, Grid, ImageIcon, Zap];
+    }, []);
 
     return (
         <section id="features" className="py-16 sm:py-28 px-3 sm:px-8 overflow-hidden w-full" dir="rtl">
@@ -70,14 +60,13 @@ export const FeaturesSequence = () => {
                     containerClassName="max-w-2xl mx-auto mb-8 sm:mb-14 pt-2 sm:pt-4"
                 />
 
-                {/* تب‌های بالای سکشن با اسکرول ارگونومیک لمسی در موبایل */}
                 <div
                     className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-3 sm:pb-4 mb-6 sm:mb-12 border-b border-neutral-200 scrollbar-none"
                     style={{ WebkitOverflowScrolling: 'touch' }}
                 >
                     {FEATURES.map((item, idx) => {
                         const isSelected = selectedFeatureIndex === idx;
-                        const Icon = icons[idx];
+                        const Icon = FEATURE_ICONS[idx];
                         return (
                             <button
                                 key={item.id}
@@ -96,7 +85,6 @@ export const FeaturesSequence = () => {
                     })}
                 </div>
 
-                {/* استیج اصلی حاوی UI واقعی اتاق */}
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={current.id}
@@ -109,8 +97,6 @@ export const FeaturesSequence = () => {
                         <div className="absolute top-0 right-0 w-72 sm:w-96 h-72 sm:h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none transform-gpu" />
 
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center relative z-10">
-
-                            {/* توضیحات سمت راست */}
                             <div className="lg:col-span-5">
                                 <div className="flex items-center gap-2.5 sm:gap-3">
                                     <span className="font-mono text-2xl sm:text-3xl font-black text-[#f59e0b]">
@@ -139,15 +125,11 @@ export const FeaturesSequence = () => {
                                 </div>
                             </div>
 
-                            {/* ویترین زنده UI واقعی اتاق */}
                             <div className="lg:col-span-7">
                                 <div className="rounded-2xl bg-[#0d0f17] border border-[#232637] p-2.5 sm:p-4 shadow-2xl relative overflow-hidden min-h-[350px] sm:min-h-[380px] flex flex-col justify-center">
-
-                                    {/* ۱. نقشه و توکن با touch-none روی توکن جهت درگ لمسی بی‌نقص */}
                                     {current.mockUiType === 'map' && (
                                         <div className="space-y-3">
                                             <div className="relative h-56 sm:h-60 rounded-xl bg-[#07080d] border border-zinc-800 overflow-hidden select-none touch-none">
-                                                {/* گرید تاکتیکال */}
                                                 <div
                                                     className="absolute inset-0 opacity-20 pointer-events-none"
                                                     style={{
@@ -156,7 +138,6 @@ export const FeaturesSequence = () => {
                                                     }}
                                                 />
 
-                                                {/* توکن تعاملی درگ‌پذیر لمسی */}
                                                 <motion.div
                                                     drag
                                                     dragMomentum={false}
@@ -181,7 +162,6 @@ export const FeaturesSequence = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Toolbar واقعی اتاق با استایل فشرده موبایل */}
                                             <div className="flex items-center justify-center overflow-x-auto py-1">
                                                 <div className="flex items-center gap-1 p-1 sm:p-1.5 bg-zinc-950/90 border border-zinc-800/90 rounded-2xl shadow-xl backdrop-blur-2xl">
                                                     <button className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-500 text-zinc-950 font-bold flex items-center justify-center shadow-md">
@@ -217,7 +197,6 @@ export const FeaturesSequence = () => {
                                         </div>
                                     )}
 
-                                    {/* ۲. مه جنگ: FogSubToolbar واقعی اتاق */}
                                     {current.mockUiType === 'fog' && (
                                         <div className="space-y-3 sm:space-y-4">
                                             <div className="relative h-40 sm:h-44 rounded-xl bg-[#090a10] border border-zinc-800 overflow-hidden flex items-center justify-center">
@@ -298,7 +277,6 @@ export const FeaturesSequence = () => {
 
                                                     <div className="h-4 sm:h-5 w-px bg-zinc-800 mx-0.5" />
 
-                                                    {/* اشکال براش */}
                                                     <div className="flex items-center gap-0.5 p-0.5 bg-zinc-900/50 rounded-xl border border-zinc-800">
                                                         {[
                                                             { id: 'circle', icon: Circle },
@@ -343,7 +321,6 @@ export const FeaturesSequence = () => {
                                         </div>
                                     )}
 
-                                    {/* ۳. صدای بلادرنگ */}
                                     {current.mockUiType === 'voice' && (
                                         <div className="space-y-2.5 sm:space-y-3">
                                             <div className="bg-zinc-950/95 border border-zinc-800 rounded-2xl p-2.5 sm:p-3 shadow-xl space-y-2">
@@ -417,7 +394,6 @@ export const FeaturesSequence = () => {
                                         </div>
                                     )}
 
-                                    {/* ۴. گرید و اندازه‌گیری */}
                                     {current.mockUiType === 'grid' && (
                                         <div className="space-y-2.5 sm:space-y-3">
                                             <div className="bg-zinc-950/95 border border-zinc-800/90 rounded-2xl p-2.5 sm:p-3 shadow-xl space-y-2 sm:space-y-2.5">
@@ -500,7 +476,6 @@ export const FeaturesSequence = () => {
                                         </div>
                                     )}
 
-                                    {/* ۵. کتابخانه دارایی */}
                                     {current.mockUiType === 'assets' && (
                                         <div className="space-y-2.5 sm:space-y-3">
                                             <div className="bg-zinc-950/95 border border-zinc-800 rounded-2xl p-2.5 sm:p-3 shadow-xl space-y-2 sm:space-y-2.5">
@@ -590,7 +565,6 @@ export const FeaturesSequence = () => {
                                         </div>
                                     )}
 
-                                    {/* ۶. همگام‌سازی بلادرنگ */}
                                     {current.mockUiType === 'sync' && (
                                         <div className="space-y-2.5 sm:space-y-3">
                                             <div className="bg-zinc-950/95 border border-zinc-800 rounded-2xl p-2.5 sm:p-3 shadow-xl space-y-2 sm:space-y-3">
@@ -623,7 +597,6 @@ export const FeaturesSequence = () => {
                                             </div>
                                         </div>
                                     )}
-
                                 </div>
                             </div>
                         </div>
@@ -632,4 +605,7 @@ export const FeaturesSequence = () => {
             </div>
         </section>
     );
-};
+});
+
+FeaturesSequence.displayName = "FeaturesSequence";
+export default FeaturesSequence;

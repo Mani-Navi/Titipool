@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { GsapHeadingReveal } from './GsapHeadingReveal';
 
-export const BigStatement = () => {
+export const BigStatement = memo(() => {
     return (
         <section
             id="statement"
@@ -20,4 +20,7 @@ export const BigStatement = () => {
             </div>
         </section>
     );
-};
+});
+
+BigStatement.displayName = "BigStatement";
+export default BigStatement;

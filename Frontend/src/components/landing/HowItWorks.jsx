@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, UserPlus, Castle, Play } from 'lucide-react';
 import { sound } from '../../utils/tableAudio';
 import { HOW_IT_WORKS_STEPS } from '../../data/landingData';
 import { GsapHeadingReveal } from './GsapHeadingReveal';
 
-export const HowItWorks = ({ onStartGame }) => {
+const STEP_ICONS = Object.freeze([UserPlus, Castle, Play]);
+
+export const HowItWorks = memo(({ onStartGame }) => {
     const [activeStep, setActiveStep] = useState(0);
-    const stepIcons = [UserPlus, Castle, Play];
 
     return (
         <section id="how-it-works" className="py-20 sm:py-32 px-4 sm:px-8 overflow-hidden" dir="rtl">
@@ -21,7 +22,7 @@ export const HowItWorks = ({ onStartGame }) => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
                     {HOW_IT_WORKS_STEPS.map((step, idx) => {
-                        const Icon = stepIcons[idx];
+                        const Icon = STEP_ICONS[idx];
                         const isSelected = activeStep === idx;
 
                         return (
@@ -122,4 +123,7 @@ export const HowItWorks = ({ onStartGame }) => {
             </div>
         </section>
     );
-};
+});
+
+HowItWorks.displayName = "HowItWorks";
+export default HowItWorks;

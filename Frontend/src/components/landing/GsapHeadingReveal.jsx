@@ -1,20 +1,20 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { useHeadingReveal } from '../../hooks/useHeadingReveal';
 
-export const GsapHeadingReveal = ({
-                                      lines = [],
-                                      eyebrow,
-                                      subtitle,
-                                      eyebrowColor = 'text-[#ea580c]',
-                                      align = 'center',
-                                      headingTag: HeadingTag = 'h2',
-                                      headingClassName = 'text-3xl sm:text-5xl md:text-6xl font-black text-neutral-950 mt-2 tracking-tight leading-tight',
-                                      containerClassName = '',
-                                      subtitleClassName = 'text-base sm:text-lg text-neutral-600 mt-4 leading-relaxed',
-                                      gradientLineIndex,
-                                      gradientClassName = 'bg-gradient-to-l from-neutral-950 via-neutral-800 to-neutral-700 bg-clip-text text-transparent',
-                                      delay = 0,
-                                  }) => {
+export const GsapHeadingReveal = memo(({
+                                           lines = [],
+                                           eyebrow,
+                                           subtitle,
+                                           eyebrowColor = 'text-[#ea580c]',
+                                           align = 'center',
+                                           headingTag: HeadingTag = 'h2',
+                                           headingClassName = 'text-3xl sm:text-5xl md:text-6xl font-black text-neutral-950 mt-2 tracking-tight leading-tight',
+                                           containerClassName = '',
+                                           subtitleClassName = 'text-base sm:text-lg text-neutral-600 mt-4 leading-relaxed',
+                                           gradientLineIndex,
+                                           gradientClassName = 'bg-gradient-to-l from-neutral-950 via-neutral-800 to-neutral-700 bg-clip-text text-transparent',
+                                           delay = 0,
+                                       }) => {
     const containerRef = useHeadingReveal({
         lineSelector: '.reveal-line',
         eyebrowSelector: '.reveal-eyebrow',
@@ -77,4 +77,7 @@ export const GsapHeadingReveal = ({
             )}
         </div>
     );
-};
+});
+
+GsapHeadingReveal.displayName = "GsapHeadingReveal";
+export default GsapHeadingReveal;

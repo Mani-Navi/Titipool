@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { motion } from 'motion/react';
 import { Crown, Layers, Eye } from 'lucide-react';
 import { sound } from '../../utils/tableAudio';
 import { GsapHeadingReveal } from './GsapHeadingReveal';
 
-export const GameMasterSection = () => {
+export const GameMasterSection = memo(() => {
     const [activeLayer, setActiveLayer] = useState('tokens');
 
     return (
@@ -167,4 +167,7 @@ export const GameMasterSection = () => {
             </div>
         </section>
     );
-};
+});
+
+GameMasterSection.displayName = "GameMasterSection";
+export default GameMasterSection;

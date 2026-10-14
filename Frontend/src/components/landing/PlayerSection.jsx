@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { motion } from 'motion/react';
-import { Heart, Sparkles, Shield, Swords } from 'lucide-react';
+import { Heart, Sparkles } from 'lucide-react';
 import { sound } from '../../utils/tableAudio';
 import { GsapHeadingReveal } from './GsapHeadingReveal';
 
-export const PlayerSection = () => {
+export const PlayerSection = memo(() => {
     const [currentHp, setCurrentHp] = useState(42);
     const maxHp = 48;
     const [lastAction, setLastAction] = useState(null);
@@ -14,7 +14,7 @@ export const PlayerSection = () => {
         setCurrentHp((prev) => Math.min(maxHp, Math.max(0, prev + delta)));
     };
 
-    const handleAction = (name, formula, desc) => {
+    const handleAction = (name, formula) => {
         sound.playDiceRoll();
         setLastAction(`${name} (${formula})`);
         setTimeout(() => setLastAction(null), 2500);
@@ -24,12 +24,8 @@ export const PlayerSection = () => {
         <section id="player" className="py-14 sm:py-28 px-3 sm:px-8 overflow-hidden w-full" dir="rtl">
             <div className="max-w-6xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
-
-                    {/* ستون کارت تعاملی کاراکتر بازیکن */}
                     <div className="lg:col-span-6 order-2 lg:order-2">
                         <div className="relative rounded-3xl bg-[#0b0c12] border border-[#232636] p-4 sm:p-8 shadow-[0_25px_70px_rgba(0,0,0,0.25)] text-right">
-
-                            {/* هدر کاراکتر (کامپکت و بدون شکستگی متن در موبایل) */}
                             <div className="flex items-center justify-between pb-4 border-b border-[#1c1f2d] mb-4 sm:mb-6">
                                 <div className="flex items-center gap-3">
                                     <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-[#0f4040] via-[#1b5e3a] to-[#3dba7a] border border-emerald-400/50 p-1 flex items-center justify-center text-2xl sm:text-3xl shadow-lg shrink-0">
@@ -52,7 +48,6 @@ export const PlayerSection = () => {
                                 </div>
                             </div>
 
-                            {/* مدیریت سلامتی (HP) با دکمه‌های متقارن و خوانا */}
                             <div className="p-3.5 sm:p-4 rounded-2xl bg-[#12141f] border border-[#222535] mb-4 sm:mb-5">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-xs font-bold text-neutral-300 flex items-center gap-1.5">
@@ -71,7 +66,6 @@ export const PlayerSection = () => {
                                     />
                                 </div>
 
-                                {/* دکمه‌های ۴گانه HP با سایز استاندارد لمس شست */}
                                 <div className="grid grid-cols-4 gap-1.5 font-mono text-xs">
                                     <button
                                         onClick={() => adjustHp(-5)}
@@ -100,15 +94,13 @@ export const PlayerSection = () => {
                                 </div>
                             </div>
 
-                            {/* اقدامات نبرد: تک‌ستونه و شکیل در موبایل بدون شکستن خطوط */}
                             <div className="space-y-2">
                                 <div className="text-xs font-bold text-neutral-400">اقدامات نبرد (Combat Actions)</div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {/* کارت ۱: شمشیر خورشید */}
                                     <button
                                         type="button"
-                                        onClick={() => handleAction('شمشیر خورشید', '1d20+6', 'آسیب 1d8+3')}
+                                        onClick={() => handleAction('شمشیر خورشید', '1d20+6')}
                                         className="p-3 rounded-xl bg-[#141624] hover:bg-[#1c2032] border border-[#262a3d] text-right transition-colors cursor-pointer group active:scale-98 flex items-center justify-between"
                                     >
                                         <div>
@@ -124,10 +116,9 @@ export const PlayerSection = () => {
                                         </div>
                                     </button>
 
-                                    {/* کارت ۲: لمس شفا بدون باگ پرانتز LTR */}
                                     <button
                                         type="button"
-                                        onClick={() => handleAction('لمس شفا', '+15 HP', 'شفا')}
+                                        onClick={() => handleAction('لمس شفا', '+15 HP')}
                                         className="p-3 rounded-xl bg-[#141624] hover:bg-[#1c2032] border border-[#262a3d] text-right transition-colors cursor-pointer group active:scale-98 flex items-center justify-between"
                                     >
                                         <div>
@@ -145,7 +136,6 @@ export const PlayerSection = () => {
                                 </div>
                             </div>
 
-                            {/* اعلان اکشن انجام‌شده */}
                             {lastAction && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 6 }}
@@ -159,7 +149,6 @@ export const PlayerSection = () => {
                         </div>
                     </div>
 
-                    {/* ستون متنی توضیحات */}
                     <div className="lg:col-span-6 order-1 lg:order-1 text-right">
                         <GsapHeadingReveal
                             align="right"
@@ -210,4 +199,7 @@ export const PlayerSection = () => {
             </div>
         </section>
     );
-};
+});
+
+PlayerSection.displayName = "PlayerSection";
+export default PlayerSection;

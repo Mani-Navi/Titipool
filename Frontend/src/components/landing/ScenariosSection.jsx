@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Compass, ChevronLeft, ChevronRight, X, ArrowUpRight } from 'lucide-react';
 import { sound } from '../../utils/tableAudio';
 import { SCENARIOS } from '../../data/landingData';
 import { GsapHeadingReveal } from './GsapHeadingReveal';
 
-export const ScenariosSection = ({ onSelectScenario }) => {
+export const ScenariosSection = memo(({ onSelectScenario }) => {
     const [activeIndex, setActiveIndex] = useState(0);
     const [inspectedScenario, setInspectedScenario] = useState(null);
 
@@ -205,4 +205,7 @@ export const ScenariosSection = ({ onSelectScenario }) => {
             </AnimatePresence>
         </section>
     );
-};
+});
+
+ScenariosSection.displayName = "ScenariosSection";
+export default ScenariosSection;

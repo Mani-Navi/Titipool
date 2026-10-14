@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Dices, Mail } from 'lucide-react';
 
-export const Footer = () => {
+export const Footer = memo(() => {
     return (
         <footer className="border-t border-neutral-200/80 bg-white py-14 sm:py-20 px-6 sm:px-12 text-right" dir="rtl">
             <div className="max-w-6xl mx-auto">
@@ -105,6 +105,7 @@ export const Footer = () => {
             </div>
         </footer>
     );
-};
+});
 
+Footer.displayName = "Footer";
 export default Footer;

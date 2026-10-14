@@ -1,22 +1,27 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, memo } from "react";
 import { ArrowUpRight, LogIn } from "lucide-react";
 import { sound } from "../../utils/tableAudio";
 
-export const StickyMobileCTA = ({ isSessionValid, onStartGame, onLogin }) => {
+export const StickyMobileCTA = memo(({ isSessionValid, onStartGame, onLogin }) => {
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
+        let ticking = false;
+
         const handleScroll = () => {
-            // نوار بعد از عبور از بخش اولیه هیرو (حدود ۳۰۰ پیکسل اسکرول) ظاهر می‌شود
-            setIsVisible(window.scrollY > 300);
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    setIsVisible(window.scrollY > 300);
+                    ticking = false;
+                });
+                ticking = true;
+            }
         };
 
         window.addEventListener("scroll", handleScroll, { passive: true });
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    // در صورتی که کاربر قبلاً لاگین کرده باشد، نوار نمایش داده نمی‌شود
     if (isSessionValid || !isVisible) return null;
 
     return (
@@ -49,6 +54,7 @@ export const StickyMobileCTA = ({ isSessionValid, onStartGame, onLogin }) => {
             </button>
         </div>
     );
-};
+});
 
+StickyMobileCTA.displayName = "StickyMobileCTA";
 export default StickyMobileCTA;
