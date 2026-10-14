@@ -1,16 +1,24 @@
-import React, { useEffect, useRef, useId } from "react";
+import React, { useEffect, useRef, useId, memo } from "react";
 import { X } from "lucide-react";
 import { cn } from "../../utils/cn";
 
-export const Modal = ({
-                          isOpen,
-                          onClose,
-                          title,
-                          titleFa,
-                          children,
-                          maxWidth = "md",
-                          className,
-                      }) => {
+const MODAL_MAX_WIDTH_CLASSES = Object.freeze({
+    sm: "max-w-sm",
+    md: "max-w-md",
+    lg: "max-w-lg",
+    xl: "max-w-xl",
+    "2xl": "max-w-2xl",
+});
+
+export const Modal = memo(({
+                               isOpen,
+                               onClose,
+                               title,
+                               titleFa,
+                               children,
+                               maxWidth = "md",
+                               className,
+                           }) => {
     const modalRef = useRef(null);
     const titleId = useId();
 
@@ -20,7 +28,6 @@ export const Modal = ({
 
         const previousActiveElement = document.activeElement;
 
-        // انتقال فوکوس به اولین المان قابل تعامل بعد از رندر
         const timer = setTimeout(() => {
             const focusableElements = modalRef.current?.querySelectorAll(
                 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -75,14 +82,6 @@ export const Modal = ({
 
     if (!isOpen) return null;
 
-    const maxWidthClasses = {
-        sm: "max-w-sm",
-        md: "max-w-md",
-        lg: "max-w-lg",
-        xl: "max-w-xl",
-        "2xl": "max-w-2xl",
-    };
-
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4">
             <div
@@ -99,7 +98,7 @@ export const Modal = ({
                 onKeyDown={handleKeyDown}
                 className={cn(
                     "relative w-full bg-zinc-900 border border-zinc-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150 text-zinc-100 flex flex-col max-h-[88dvh]",
-                    maxWidthClasses[maxWidth],
+                    MODAL_MAX_WIDTH_CLASSES[maxWidth] || MODAL_MAX_WIDTH_CLASSES.md,
                     className
                 )}
             >
@@ -127,6 +126,7 @@ export const Modal = ({
             </div>
         </div>
     );
-};
+});
 
+Modal.displayName = "Modal";
 export default Modal;

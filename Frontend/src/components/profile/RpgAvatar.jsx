@@ -13,8 +13,11 @@ export const AVATAR_LIST = Object.freeze([
     { id: "artificer", name: "مهندس موآبی", col: 1, row: 4 },
 ]);
 
+const AVATAR_MAP = Object.freeze(new Map(AVATAR_LIST.map((a) => [a.id, a])));
+const DEFAULT_AVATAR = AVATAR_LIST[0];
+
 export const RpgAvatar = memo(({ avatarId = "cowboy", className = "w-16 h-16" }) => {
-    const avatar = AVATAR_LIST.find((a) => a.id === avatarId) || AVATAR_LIST[0];
+    const avatar = AVATAR_MAP.get(avatarId) || DEFAULT_AVATAR;
 
     const posX = avatar.col === 0 ? "3%" : "97%";
     const posY = `${avatar.row * 24.8 + 1}%`;
@@ -33,3 +36,4 @@ export const RpgAvatar = memo(({ avatarId = "cowboy", className = "w-16 h-16" })
 });
 
 RpgAvatar.displayName = "RpgAvatar";
+export default RpgAvatar;
