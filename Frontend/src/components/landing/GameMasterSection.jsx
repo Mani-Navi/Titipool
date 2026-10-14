@@ -8,7 +8,7 @@ export const GameMasterSection = memo(() => {
     const [activeLayer, setActiveLayer] = useState('tokens');
 
     return (
-        <section id="gm" className="py-20 sm:py-32 px-4 sm:px-8 overflow-hidden" dir="rtl">
+        <section id="gm" className="py-20 sm:py-32 px-4 sm:px-8 overflow-hidden w-full" dir="rtl">
             <div className="max-w-6xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
                     <div className="lg:col-span-6 text-right">
@@ -47,11 +47,11 @@ export const GameMasterSection = memo(() => {
                                         className="p-4 rounded-2xl bg-white border border-neutral-200/80 shadow-sm flex items-start gap-3.5 text-right transition-all hover:border-neutral-400"
                                     >
                                         <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-[#d97706] shrink-0 mt-0.5">
-                                            <Icon className="w-5 h-5" />
+                                            <Icon className="w-5 h-5" aria-hidden="true" />
                                         </div>
                                         <div>
-                                            <h4 className="text-sm font-bold text-neutral-900">{item.title}</h4>
-                                            <p className="text-xs text-neutral-600 mt-1 leading-relaxed">{item.desc}</p>
+                                            <h3 className="text-sm font-bold text-neutral-900">{item.title}</h3>
+                                            <p className="text-xs text-neutral-700 mt-1 leading-relaxed">{item.desc}</p>
                                         </div>
                                     </div>
                                 );
@@ -96,10 +96,12 @@ export const GameMasterSection = memo(() => {
                                 ].map((layer) => (
                                     <button
                                         key={layer.id}
+                                        type="button"
                                         onClick={() => {
                                             sound.playTokenClick();
                                             setActiveLayer(layer.id);
                                         }}
+                                        aria-label={`تغییر نمای لایه به ${layer.label}`}
                                         className={`flex-1 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
                                             activeLayer === layer.id
                                                 ? 'bg-[#1e2233] text-[#f59e0b] shadow-sm'
@@ -113,7 +115,7 @@ export const GameMasterSection = memo(() => {
 
                             <div className="relative h-64 sm:h-72 rounded-2xl bg-[#0e1017] border border-[#1e2130] overflow-hidden flex items-center justify-center">
                                 <div className="absolute inset-4 rounded-xl border border-dashed border-amber-500/20 bg-gradient-to-br from-[#12141f] to-[#0a0c12] p-4 flex flex-col justify-between">
-                                    <div className="flex items-center justify-between text-[11px] text-neutral-500">
+                                    <div className="flex items-center justify-between text-[11px] text-neutral-400">
                                         <span>اتاق فرماندهی قلعه</span>
                                         <span className="font-mono">Grid: 5ft</span>
                                     </div>
@@ -154,7 +156,7 @@ export const GameMasterSection = memo(() => {
                                         <div className="p-4 rounded-xl bg-[#161824] border border-[#2e3146]">
                                             <Eye className="w-5 h-5 text-[#f59e0b] mx-auto mb-1" />
                                             <div className="text-xs font-bold text-white">ویرایش مه جنگ فعال است</div>
-                                            <div className="text-[10px] text-neutral-400 mt-1">
+                                            <div className="text-[10px] text-neutral-300 mt-1">
                                                 با براش دستی بخش‌های دلخواه نقشه را برای بازیکنان پنهان یا آشکار کنید.
                                             </div>
                                         </div>

@@ -1,4 +1,4 @@
-export const SCENARIOS = [
+export const SCENARIOS = Object.freeze([
     {
         id: 'epic-fantasy',
         title: 'ویرانه‌های کهن الف‌ها',
@@ -6,7 +6,7 @@ export const SCENARIOS = [
         description: 'معبدی گمشده در اعماق دره مه‌آلود که راز تخم اژدهای آسمانی را در خود نگه داشته است.',
         dmNotes: 'مناسب برای ۴ تا ۵ بازیکن، دارای ۲ غول مرحله و تله‌های باستانی جادویی.',
         suggestedLevel: 'سطح ۳ الی ۵',
-        image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=75&w=600&auto=format&fit=crop',
         tag: 'D&D 5E',
         accent: '#f59e0b',
     },
@@ -17,7 +17,7 @@ export const SCENARIOS = [
         description: 'راه‌روهای تاریک سنگی با مشعل‌های کم‌فروغ، جایی که صدای زنجیرها هرگز قطع نمی‌شود.',
         dmNotes: 'نقشه چند سطحی با مه غلیظ جنگ و سیستم مدیریت روشنایی پویا.',
         suggestedLevel: 'سطح ۱ الی ۳',
-        image: 'https://images.unsplash.com/photo-1514533450685-4493e01d1fdc?q=80&w=1000&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1514533450685-4493e01d1fdc?q=75&w=600&auto=format&fit=crop',
         tag: 'Dark Fantasy',
         accent: '#ea580c',
     },
@@ -28,7 +28,7 @@ export const SCENARIOS = [
         description: 'شبی طوفانی در بندری متروک، در حالی که شفق‌های ناشناخته بر فراز دریا می‌چرخند.',
         dmNotes: 'تمرکز بر حل معما، بازجویی و نجات قبل از بالا آمدن جذر جادویی.',
         suggestedLevel: 'سطح ۴ الی ۶',
-        image: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=1000&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=75&w=600&auto=format&fit=crop',
         tag: 'Eldritch Mystery',
         accent: '#8b5cf6',
     },
@@ -39,13 +39,13 @@ export const SCENARIOS = [
         description: 'میدان رویارویی تن‌به‌تن با موقعیت‌های تیراندازی مرتفع و سنگرهای قابل تخریب.',
         dmNotes: 'گرید ایزومتریک با قوانین دقیق پرتابه و اندازه‌گیری فاصله به متر و فوت.',
         suggestedLevel: 'سطح ۵ الی ۸',
-        image: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=1000&auto=format&fit=crop',
+        image: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=75&w=600&auto=format&fit=crop',
         tag: 'Tactical Battle',
         accent: '#10b981',
     },
-];
+]);
 
-export const FEATURES = [
+export const FEATURES = Object.freeze([
     {
         id: 'canvas',
         number: '۰۱',
@@ -130,9 +130,9 @@ export const FEATURES = [
         ],
         mockUiType: 'sync',
     },
-];
+]);
 
-export const HOW_IT_WORKS_STEPS = [
+export const HOW_IT_WORKS_STEPS = Object.freeze([
     {
         number: '۰۱',
         title: 'ثبت‌نام کن',
@@ -154,9 +154,9 @@ export const HOW_IT_WORKS_STEPS = [
         description: 'لینک یا کد اختصاصی را برای دوستانت بفرست، همه دور میز بنشینید، تاس بیندازید و ماجراجویی را زندگی کنید.',
         tag: 'شروع ماجراجویی',
     },
-];
+]);
 
-export const BRAND_PILLARS = [
+export const BRAND_PILLARS = Object.freeze([
     {
         id: 'rtl',
         title: 'RTL Native',
@@ -181,13 +181,13 @@ export const BRAND_PILLARS = [
         subtitle: 'سرعت و بدون پیچیدگی بیهوده',
         description: 'نیازی به ساعت‌ها آموزش نیست؛ همه‌چیز در ساده‌ترین و کاربردی‌ترین حالت برای اجرای سریع بازی چیده شده است.',
     },
-];
+]);
 
-export const DICE_SET = [
+export const DICE_SET = Object.freeze([
     { type: 'D20', name: 'بیست‌وجهی', sides: 20, isHero: true, color: '#f59e0b' },
     { type: 'D12', name: 'دوازده‌وجهی', sides: 12, isHero: false, color: '#ea580c' },
     { type: 'D10', name: 'ده‌وجهی', sides: 10, isHero: false, color: '#d97706' },
     { type: 'D8', name: 'هشت‌وجهی', sides: 8, isHero: false, color: '#ca8a04' },
     { type: 'D6', name: 'شش‌وجهی', sides: 6, isHero: false, color: '#eab308' },
     { type: 'D4', name: 'چهاروجهی', sides: 4, isHero: false, color: '#facc15' },
-];
+]);

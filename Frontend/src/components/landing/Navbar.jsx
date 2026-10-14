@@ -90,13 +90,14 @@ export const Navbar = memo(({
                         : 'bg-white/70 backdrop-blur-sm border border-neutral-200/50'
                 }`}
             >
-                {/* لوگو و نام پلتفرم */}
+                {/* لوگو و نام پلتفرم با برچسب استاندارد دسترسی‌پذیری */}
                 <a
                     href="#hero"
                     onClick={() => sound.playTokenClick()}
-                    className="flex items-center gap-2 group shrink-0"
+                    aria-label="صفحه اصلی Titipool VTT"
+                    className="flex items-center gap-2 group shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded-lg"
                 >
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#0e1017] border border-[#262835] flex items-center justify-center text-[#f59e0b] shadow-sm transition-transform duration-200 group-hover:scale-105">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#0e1017] border border-[#262835] flex items-center justify-center text-[#f59e0b] shadow-sm transition-transform duration-200 group-hover:scale-105" aria-hidden="true">
                         <Dices className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </div>
                     <div className="flex items-baseline gap-1">
@@ -110,7 +111,7 @@ export const Navbar = memo(({
                 </a>
 
                 {/* منوی ناوبری دسکتاپ */}
-                <nav className="hidden md:flex items-center gap-7 text-xs font-semibold text-neutral-600">
+                <nav className="hidden md:flex items-center gap-7 text-xs font-semibold text-neutral-700" aria-label="ناوبری اصلی">
                     {NAV_LINKS.map((link) => {
                         const isActive = activeSection === link.id;
                         return (
@@ -134,24 +135,28 @@ export const Navbar = memo(({
                 {/* دکمه‌های اکشن */}
                 <div className="flex items-center gap-1.5 sm:gap-3">
                     <button
+                        type="button"
                         onClick={() => {
                             sound.playTokenClick();
                             onOpenRoomCode();
                         }}
-                        className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-neutral-600 hover:text-neutral-950 hover:bg-neutral-100/80 transition-colors cursor-pointer"
+                        aria-label="ورود به اتاق با کد دعوت"
+                        className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-neutral-700 hover:text-neutral-950 hover:bg-neutral-100/80 transition-colors cursor-pointer"
                         title="ورود مستقیم به اتاق با کد"
                     >
-                        <Key className="w-3.5 h-3.5 text-[#f59e0b]" />
+                        <Key className="w-3.5 h-3.5 text-[#f59e0b]" aria-hidden="true" />
                         <span>ورود با کد</span>
                     </button>
 
                     {user ? (
                         <button
+                            type="button"
                             onClick={() => {
                                 sound.playTokenClick();
                                 onOpenProfile();
                             }}
                             className="flex items-center gap-1.5 sm:gap-2 pl-2 sm:pl-3 pr-1 sm:pr-1.5 py-1 rounded-full bg-neutral-100 hover:bg-neutral-200/80 text-xs font-bold text-neutral-800 transition-colors cursor-pointer border border-neutral-200/70 shadow-sm active:scale-95"
+                            aria-label={`پروفایل ${displayName}`}
                             title={`پروفایل ${displayName}`}
                         >
                             <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full overflow-hidden bg-zinc-900 border border-amber-500/40 shrink-0 flex items-center justify-center">
@@ -163,25 +168,29 @@ export const Navbar = memo(({
                         </button>
                     ) : (
                         <button
+                            type="button"
                             onClick={() => {
                                 sound.playTokenClick();
                                 onOpenAuth();
                             }}
-                            className="text-xs font-bold text-neutral-700 hover:text-neutral-950 px-2 py-1.5 transition-colors cursor-pointer"
+                            aria-label="ورود به حساب کاربری"
+                            className="text-xs font-bold text-neutral-800 hover:text-neutral-950 px-2 py-1.5 transition-colors cursor-pointer"
                         >
                             ورود
                         </button>
                     )}
 
                     <button
+                        type="button"
                         onClick={() => {
                             sound.playDiceRoll();
                             onStartGame();
                         }}
+                        aria-label="شروع بازی در میز مجازی"
                         className="inline-flex items-center gap-1 sm:gap-1.5 px-3 sm:px-5 py-1.5 sm:py-2 rounded-full bg-neutral-950 hover:bg-neutral-800 text-white font-bold text-xs sm:text-[13px] shadow-[0_2px_12px_rgba(0,0,0,0.12)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.18)] transition-all cursor-pointer group active:scale-[0.96]"
                     >
                         <span>شروع بازی</span>
-                        <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                        <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
                     </button>
 
                     <button
@@ -191,7 +200,7 @@ export const Navbar = memo(({
                             setIsMobileMenuOpen(!isMobileMenuOpen);
                         }}
                         className="md:hidden w-8 h-8 rounded-xl bg-neutral-100 hover:bg-neutral-200/80 border border-neutral-200 flex items-center justify-center text-neutral-800 transition-colors active:scale-95"
-                        aria-label="منوی سایت"
+                        aria-label={isMobileMenuOpen ? "بستن منوی سایت" : "باز کردن منوی سایت"}
                     >
                         {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
                     </button>
@@ -200,12 +209,13 @@ export const Navbar = memo(({
 
             {isMobileMenuOpen && (
                 <div className="md:hidden mt-2 p-4 rounded-2xl bg-white/95 backdrop-blur-2xl border border-neutral-200/80 shadow-2xl animate-fade-in-up text-right">
-                    <nav className="flex flex-col space-y-1 pb-3 border-b border-neutral-100">
+                    <nav className="flex flex-col space-y-1 pb-3 border-b border-neutral-100" aria-label="منوی ناوبری موبایل">
                         {NAV_LINKS.map((link) => (
                             <button
                                 key={link.id}
+                                type="button"
                                 onClick={() => handleMobileNavClick(link.id)}
-                                className="w-full py-2.5 px-3 rounded-xl text-right text-xs font-bold text-neutral-700 hover:text-neutral-950 hover:bg-neutral-100 transition-colors cursor-pointer"
+                                className="w-full py-2.5 px-3 rounded-xl text-right text-xs font-bold text-neutral-800 hover:text-neutral-950 hover:bg-neutral-100 transition-colors cursor-pointer"
                             >
                                 {link.label}
                             </button>
@@ -214,6 +224,7 @@ export const Navbar = memo(({
 
                     <div className="pt-3">
                         <button
+                            type="button"
                             onClick={() => {
                                 sound.playTokenClick();
                                 setIsMobileMenuOpen(false);

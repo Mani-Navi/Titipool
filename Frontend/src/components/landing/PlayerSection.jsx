@@ -68,26 +68,34 @@ export const PlayerSection = memo(() => {
 
                                 <div className="grid grid-cols-4 gap-1.5 font-mono text-xs">
                                     <button
+                                        type="button"
                                         onClick={() => adjustHp(-5)}
-                                        className="py-1.5 rounded-lg bg-[#1a1c29] hover:bg-rose-950/60 hover:text-rose-400 border border-[#2b2e40] text-rose-300 transition-colors font-bold active:scale-95"
+                                        aria-label="کاهش ۵ واحد سلامتی"
+                                        className="py-1.5 rounded-lg bg-[#1a1c29] hover:bg-rose-950/60 hover:text-rose-400 border border-[#2b2e40] text-rose-300 transition-colors font-bold active:scale-95 cursor-pointer"
                                     >
                                         -5
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={() => adjustHp(-1)}
-                                        className="py-1.5 rounded-lg bg-[#1a1c29] hover:bg-rose-950/60 hover:text-rose-400 border border-[#2b2e40] text-rose-300 transition-colors font-bold active:scale-95"
+                                        aria-label="کاهش ۱ واحد سلامتی"
+                                        className="py-1.5 rounded-lg bg-[#1a1c29] hover:bg-rose-950/60 hover:text-rose-400 border border-[#2b2e40] text-rose-300 transition-colors font-bold active:scale-95 cursor-pointer"
                                     >
                                         -1
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={() => adjustHp(1)}
-                                        className="py-1.5 rounded-lg bg-[#1a1c29] hover:bg-emerald-950/60 hover:text-emerald-400 border border-[#2b2e40] text-emerald-300 transition-colors font-bold active:scale-95"
+                                        aria-label="افزایش ۱ واحد سلامتی"
+                                        className="py-1.5 rounded-lg bg-[#1a1c29] hover:bg-emerald-950/60 hover:text-emerald-400 border border-[#2b2e40] text-emerald-300 transition-colors font-bold active:scale-95 cursor-pointer"
                                     >
                                         +1
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={() => adjustHp(5)}
-                                        className="py-1.5 rounded-lg bg-[#1a1c29] hover:bg-emerald-950/60 hover:text-emerald-400 border border-[#2b2e40] text-emerald-300 transition-colors font-bold active:scale-95"
+                                        aria-label="افزایش ۵ واحد سلامتی"
+                                        className="py-1.5 rounded-lg bg-[#1a1c29] hover:bg-emerald-950/60 hover:text-emerald-400 border border-[#2b2e40] text-emerald-300 transition-colors font-bold active:scale-95 cursor-pointer"
                                     >
                                         +5
                                     </button>
@@ -101,6 +109,7 @@ export const PlayerSection = memo(() => {
                                     <button
                                         type="button"
                                         onClick={() => handleAction('شمشیر خورشید', '1d20+6')}
+                                        aria-label="اجرای حمله شمشیر خورشید"
                                         className="p-3 rounded-xl bg-[#141624] hover:bg-[#1c2032] border border-[#262a3d] text-right transition-colors cursor-pointer group active:scale-98 flex items-center justify-between"
                                     >
                                         <div>
@@ -119,6 +128,7 @@ export const PlayerSection = memo(() => {
                                     <button
                                         type="button"
                                         onClick={() => handleAction('لمس شفا', '+15 HP')}
+                                        aria-label="اجرای طلسم لمس شفا"
                                         className="p-3 rounded-xl bg-[#141624] hover:bg-[#1c2032] border border-[#262a3d] text-right transition-colors cursor-pointer group active:scale-98 flex items-center justify-between"
                                     >
                                         <div>
@@ -163,8 +173,8 @@ export const PlayerSection = memo(() => {
                                     ✓
                                 </div>
                                 <div>
-                                    <h4 className="text-xs sm:text-sm font-bold text-neutral-900">اتصال با یک کلیک</h4>
-                                    <p className="text-[11px] sm:text-xs text-neutral-600 mt-0.5 leading-relaxed">
+                                    <h3 className="text-xs sm:text-sm font-bold text-neutral-900">اتصال با یک کلیک</h3>
+                                    <p className="text-[11px] sm:text-xs text-neutral-700 mt-0.5 leading-relaxed">
                                         با وارد کردن کد ۶ رقمی اتاق مستقیماً به نقشه منتقل می‌شوید و توکن‌تان روی بوم ظاهر می‌شود.
                                     </p>
                                 </div>
@@ -175,8 +185,8 @@ export const PlayerSection = memo(() => {
                                     ✓
                                 </div>
                                 <div>
-                                    <h4 className="text-xs sm:text-sm font-bold text-neutral-900">کنترل کامل HP و تجهیزات</h4>
-                                    <p className="text-[11px] sm:text-xs text-neutral-600 mt-0.5 leading-relaxed">
+                                    <h3 className="text-xs sm:text-sm font-bold text-neutral-900">کنترل کامل HP و تجهیزات</h3>
+                                    <p className="text-[11px] sm:text-xs text-neutral-700 mt-0.5 leading-relaxed">
                                         سلامتی، طلسم‌ها و آیتم‌های خود را در هر لحظه بدون درگیر کردن DM تغییر دهید.
                                     </p>
                                 </div>
@@ -187,8 +197,8 @@ export const PlayerSection = memo(() => {
                                     ✓
                                 </div>
                                 <div>
-                                    <h4 className="text-xs sm:text-sm font-bold text-neutral-900">پرتاب تاس‌های فرموله‌دار</h4>
-                                    <p className="text-[11px] sm:text-xs text-neutral-600 mt-0.5 leading-relaxed">
+                                    <h3 className="text-xs sm:text-sm font-bold text-neutral-900">پرتاب تاس‌های فرموله‌دار</h3>
+                                    <p className="text-[11px] sm:text-xs text-neutral-700 mt-0.5 leading-relaxed">
                                         تاس حمله، میزان آسیب و چک‌های مهارتی با یک اشاره محاسبه و در چت عمومی نمایش داده می‌شوند.
                                     </p>
                                 </div>

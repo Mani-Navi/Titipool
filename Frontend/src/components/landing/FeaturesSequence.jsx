@@ -70,14 +70,16 @@ export const FeaturesSequence = memo(() => {
                         return (
                             <button
                                 key={item.id}
+                                type="button"
                                 onClick={() => handleSelect(idx)}
-                                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                                aria-label={`مشاهده قابلیت: ${item.title}`}
+                                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
                                     isSelected
                                         ? 'bg-neutral-950 text-white shadow-md'
-                                        : 'bg-white hover:bg-neutral-100 text-neutral-600 border border-neutral-200'
+                                        : 'bg-white hover:bg-neutral-100 text-neutral-700 border border-neutral-200'
                                 }`}
                             >
-                                <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-[#f59e0b]' : ''}`} />
+                                <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-[#f59e0b]' : ''}`} aria-hidden="true" />
                                 <span className="font-mono text-[10px] sm:text-[11px] opacity-70">{item.number}</span>
                                 <span className="text-[11px] sm:text-xs">{item.title}</span>
                             </button>
@@ -111,14 +113,14 @@ export const FeaturesSequence = memo(() => {
                                     {current.headline}
                                 </h3>
 
-                                <p className="text-xs sm:text-sm text-neutral-400 mt-2.5 sm:mt-4 leading-relaxed">
+                                <p className="text-xs sm:text-sm text-neutral-300 mt-2.5 sm:mt-4 leading-relaxed">
                                     {current.description}
                                 </p>
 
                                 <div className="mt-4 sm:mt-6 space-y-2 sm:space-y-2.5">
                                     {current.details.map((detail, dIdx) => (
-                                        <div key={dIdx} className="flex items-start gap-2 sm:gap-2.5 text-xs text-neutral-300">
-                                            <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#f59e0b] shrink-0 mt-0.5" />
+                                        <div key={dIdx} className="flex items-start gap-2 sm:gap-2.5 text-xs text-neutral-200">
+                                            <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#f59e0b] shrink-0 mt-0.5" aria-hidden="true" />
                                             <span>{detail}</span>
                                         </div>
                                     ))}
@@ -164,33 +166,33 @@ export const FeaturesSequence = memo(() => {
 
                                             <div className="flex items-center justify-center overflow-x-auto py-1">
                                                 <div className="flex items-center gap-1 p-1 sm:p-1.5 bg-zinc-950/90 border border-zinc-800/90 rounded-2xl shadow-xl backdrop-blur-2xl">
-                                                    <button className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-500 text-zinc-950 font-bold flex items-center justify-center shadow-md">
-                                                        <MousePointer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                    <button type="button" aria-label="ابزار انتخاب" className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-500 text-zinc-950 font-bold flex items-center justify-center shadow-md">
+                                                        <MousePointer className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
                                                     </button>
-                                                    <button className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-zinc-400 hover:text-white flex items-center justify-center">
-                                                        <Hand className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                    <button type="button" aria-label="ابزار حرکت در نقشه" className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-zinc-400 hover:text-white flex items-center justify-center">
+                                                        <Hand className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
                                                     </button>
-                                                    <button className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-zinc-400 hover:text-white flex items-center justify-center">
-                                                        <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                    <button type="button" aria-label="ابزار مداد و ترسیم" className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-zinc-400 hover:text-white flex items-center justify-center">
+                                                        <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
                                                     </button>
-                                                    <button className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-zinc-400 hover:text-white flex items-center justify-center">
-                                                        <Type className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                    <button type="button" aria-label="ابزار نوشتار" className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-zinc-400 hover:text-white flex items-center justify-center">
+                                                        <Type className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
                                                     </button>
-                                                    <button className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-zinc-400 hover:text-white flex items-center justify-center">
-                                                        <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                    <button type="button" aria-label="ابزار مه جنگ" className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-zinc-400 hover:text-white flex items-center justify-center">
+                                                        <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
                                                     </button>
-                                                    <button className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-zinc-400 hover:text-white flex items-center justify-center">
-                                                        <Ruler className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                    <button type="button" aria-label="ابزار خط‌کش" className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-zinc-400 hover:text-white flex items-center justify-center">
+                                                        <Ruler className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
                                                     </button>
                                                     <div className="h-4 sm:h-5 w-px bg-zinc-800 mx-0.5" />
-                                                    <button className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-amber-400 flex items-center justify-center">
-                                                        <Dices className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                    <button type="button" aria-label="پرتاب تاس" className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-amber-400 flex items-center justify-center">
+                                                        <Dices className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
                                                     </button>
-                                                    <button className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-zinc-400 hover:text-white flex items-center justify-center">
-                                                        <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                    <button type="button" aria-label="کتابخانه منابع" className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-zinc-400 hover:text-white flex items-center justify-center">
+                                                        <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
                                                     </button>
-                                                    <button className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-zinc-400 hover:text-white flex items-center justify-center">
-                                                        <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                    <button type="button" aria-label="تنظیمات" className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-zinc-400 hover:text-white flex items-center justify-center">
+                                                        <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
                                                     </button>
                                                 </div>
                                             </div>
@@ -231,13 +233,14 @@ export const FeaturesSequence = memo(() => {
                                                                 setFogAction('reveal');
                                                                 setIsFogCovered(false);
                                                             }}
+                                                            aria-label="آشکارسازی مه جنگ"
                                                             className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all ${
                                                                 fogAction === 'reveal'
                                                                     ? 'bg-amber-500 text-zinc-950 shadow-md font-black'
                                                                     : 'text-zinc-400 hover:text-white'
                                                             }`}
                                                         >
-                                                            <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                                            <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5" aria-hidden="true" />
                                                             <span>آشکارساز</span>
                                                         </button>
 
@@ -248,13 +251,14 @@ export const FeaturesSequence = memo(() => {
                                                                 setFogAction('hide');
                                                                 setIsFogCovered(true);
                                                             }}
+                                                            aria-label="پوشاندن با مه جنگ"
                                                             className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all ${
                                                                 fogAction === 'hide'
                                                                     ? 'bg-rose-600 text-white shadow-md'
                                                                     : 'text-zinc-400 hover:text-white'
                                                             }`}
                                                         >
-                                                            <EyeOff className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                                            <EyeOff className="w-3 h-3 sm:w-3.5 sm:h-3.5" aria-hidden="true" />
                                                             <span>پوشاندن</span>
                                                         </button>
 
@@ -264,24 +268,26 @@ export const FeaturesSequence = memo(() => {
                                                                 sound.playTokenClick();
                                                                 setFogAction('slice');
                                                             }}
+                                                            aria-label="برش خطی مه"
                                                             className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all ${
                                                                 fogAction === 'slice'
                                                                     ? 'bg-purple-600 text-white shadow-md'
                                                                     : 'text-zinc-400 hover:text-white'
                                                             }`}
                                                         >
-                                                            <Scissors className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                                            <Scissors className="w-3 h-3 sm:w-3.5 sm:h-3.5" aria-hidden="true" />
                                                             <span>برش</span>
                                                         </button>
                                                     </div>
 
                                                     <div className="h-4 sm:h-5 w-px bg-zinc-800 mx-0.5" />
 
+                                                    {/* اشکال براش */}
                                                     <div className="flex items-center gap-0.5 p-0.5 bg-zinc-900/50 rounded-xl border border-zinc-800">
                                                         {[
-                                                            { id: 'circle', icon: Circle },
-                                                            { id: 'rect', icon: Square },
-                                                            { id: 'poly', icon: PenTool },
+                                                            { id: 'circle', label: 'براش دایره‌ای', icon: Circle },
+                                                            { id: 'rect', label: 'براش مستطیلی', icon: Square },
+                                                            { id: 'poly', label: 'براش چندضلعی', icon: PenTool },
                                                         ].map((sh) => {
                                                             const Icon = sh.icon;
                                                             return (
@@ -292,13 +298,14 @@ export const FeaturesSequence = memo(() => {
                                                                         sound.playTokenClick();
                                                                         setFogBrush(sh.id);
                                                                     }}
+                                                                    aria-label={sh.label}
                                                                     className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center transition-all ${
                                                                         fogBrush === sh.id
                                                                             ? 'bg-zinc-800 text-amber-400 border border-amber-500/50 font-bold'
                                                                             : 'text-zinc-400 hover:text-white'
                                                                     }`}
                                                                 >
-                                                                    <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                                                    <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" aria-hidden="true" />
                                                                 </button>
                                                             );
                                                         })}
@@ -312,6 +319,7 @@ export const FeaturesSequence = memo(() => {
                                                             sound.playTokenClick();
                                                             setIsFogCovered(!isFogCovered);
                                                         }}
+                                                        aria-label={isFogCovered ? 'خالی کردن مه' : 'پر کردن کامل مه'}
                                                         className="px-2 sm:px-2.5 py-1 rounded-xl bg-zinc-900 border border-zinc-700 text-[11px] sm:text-xs font-bold text-zinc-300 hover:text-white cursor-pointer active:scale-95"
                                                     >
                                                         {isFogCovered ? 'خالی کردن مه' : 'Fill Fog'}
@@ -382,6 +390,7 @@ export const FeaturesSequence = memo(() => {
                                                     setIsMicOn(nextState);
                                                     sound.playPttBeep(nextState);
                                                 }}
+                                                aria-label={isMicOn ? 'قطع میکروفون' : 'اتصال میکروفون'}
                                                 className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md select-none active:scale-[0.98] ${
                                                     isMicOn
                                                         ? 'bg-emerald-500 text-zinc-950 font-black shadow-[0_0_15px_rgba(16,185,129,0.4)]'
@@ -419,6 +428,7 @@ export const FeaturesSequence = memo(() => {
                                                                 sound.playTokenClick();
                                                                 setGridType(gt.id);
                                                             }}
+                                                            aria-label={`تغییر نوع گرید به ${gt.label}`}
                                                             className={`p-1.5 sm:p-2 rounded-xl border text-right transition-all cursor-pointer flex flex-col gap-0.5 ${
                                                                 gridType === gt.id
                                                                     ? 'bg-amber-500/15 border-amber-500/80 text-amber-300 font-bold'
@@ -426,13 +436,13 @@ export const FeaturesSequence = memo(() => {
                                                             }`}
                                                         >
                                                             <span className="text-[10px] sm:text-[11px] font-bold">{gt.label}</span>
-                                                            <span className="text-[8px] sm:text-[9px] text-zinc-500">{gt.desc}</span>
+                                                            <span className="text-[8px] sm:text-[9px] text-zinc-400">{gt.desc}</span>
                                                         </button>
                                                     ))}
                                                 </div>
 
                                                 <div className="p-1.5 sm:p-2 bg-zinc-900/60 rounded-xl border border-zinc-800 flex items-center justify-between text-xs">
-                                                    <span className="text-zinc-400 flex items-center gap-1 text-[11px]">
+                                                    <span className="text-zinc-300 flex items-center gap-1 text-[11px]">
                                                         <Ruler className="w-3 h-3 text-amber-400" />
                                                         <span>محاسبه فاصله:</span>
                                                     </span>
@@ -443,7 +453,7 @@ export const FeaturesSequence = memo(() => {
 
                                                 <div className="space-y-1">
                                                     <div className="flex justify-between items-center text-xs">
-                                                        <span className="text-zinc-400 text-[11px]">اندازه سلول:</span>
+                                                        <span className="text-zinc-300 text-[11px]">اندازه سلول:</span>
                                                         <span className="font-mono text-amber-400 font-bold text-xs">{gridSize} px</span>
                                                     </div>
                                                     <input
@@ -452,15 +462,17 @@ export const FeaturesSequence = memo(() => {
                                                         max={100}
                                                         value={gridSize}
                                                         onChange={(e) => setGridSize(Number(e.target.value))}
+                                                        aria-label="تنظیم اندازه سلول گرید"
                                                         className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
                                                     />
                                                 </div>
 
                                                 <div className="flex items-center justify-between pt-1">
-                                                    <span className="text-[11px] sm:text-xs text-zinc-300 font-bold">چسبیدن به سلول‌ها (Snapping)</span>
+                                                    <span className="text-[11px] sm:text-xs text-zinc-200 font-bold">چسبیدن به سلول‌ها (Snapping)</span>
                                                     <button
                                                         type="button"
                                                         onClick={() => setIsSnapping(!isSnapping)}
+                                                        aria-label={isSnapping ? "غیرفعال کردن اسنپ گرید" : "فعال کردن اسنپ گرید"}
                                                         className={`w-9 h-4.5 sm:w-10 sm:h-5 rounded-full transition-colors relative cursor-pointer ${
                                                             isSnapping ? 'bg-amber-500' : 'bg-zinc-800'
                                                         }`}
@@ -493,6 +505,7 @@ export const FeaturesSequence = memo(() => {
                                                     <button
                                                         type="button"
                                                         onClick={() => setAssetTab('maps')}
+                                                        aria-label="تب نقشه‌ها"
                                                         className={`flex items-center justify-center gap-1 py-1 text-xs font-bold rounded-lg transition-all ${
                                                             assetTab === 'maps'
                                                                 ? 'bg-amber-500 text-zinc-950 font-black'
@@ -506,6 +519,7 @@ export const FeaturesSequence = memo(() => {
                                                     <button
                                                         type="button"
                                                         onClick={() => setAssetTab('tokens')}
+                                                        aria-label="تب توکن‌ها"
                                                         className={`flex items-center justify-center gap-1 py-1 text-xs font-bold rounded-lg transition-all ${
                                                             assetTab === 'tokens'
                                                                 ? 'bg-amber-500 text-zinc-950 font-black'
@@ -557,8 +571,8 @@ export const FeaturesSequence = memo(() => {
                                                     </div>
                                                 )}
 
-                                                <button className="w-full py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md">
-                                                    <Upload className="w-3.5 h-3.5" />
+                                                <button type="button" aria-label="آپلود فایل به کتابخانه" className="w-full py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md">
+                                                    <Upload className="w-3.5 h-3.5" aria-hidden="true" />
                                                     <span>آپلود فایل جدید</span>
                                                 </button>
                                             </div>
