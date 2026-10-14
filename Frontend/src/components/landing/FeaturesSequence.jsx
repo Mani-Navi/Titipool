@@ -582,7 +582,7 @@ export const FeaturesSequence = memo(() => {
                                                         <span className="text-emerald-400 text-[9px] sm:text-[10px] shrink-0 mr-1">ACK 12ms</span>
                                                     </div>
                                                     <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-between text-zinc-300">
-                                                        <span className="text-indigo-400 truncate">Player 1: Roll D20 -> Nat 20!</span>
+                                                        <span className="text-indigo-400 truncate">Player 1: Roll D20 -&gt; Nat 20!</span>
                                                         <span className="text-emerald-400 text-[9px] sm:text-[10px] shrink-0 mr-1">SYNCED</span>
                                                     </div>
                                                     <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-between text-zinc-300">

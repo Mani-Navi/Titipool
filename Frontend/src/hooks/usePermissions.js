@@ -1,6 +1,6 @@
 import { useMemo, useCallback } from "react";
-import { useAuthStore } from "../store/auth.store";
-import { useRoomStore } from "../store/room.store";
+import { useAuthStore } from "../stores/auth.store";
+import { useRoomStore } from "../stores/room.store";
 import { ROLES } from "../constants/roles.js";
 
 const EMPTY_ROOMS = Object.freeze([]);
@@ -35,7 +35,6 @@ export function usePermissions(roomData) {
     return email ? String(email).trim().toLowerCase() : "";
   }, [user]);
 
-  // رفع آسیب‌پذیری: جلوگیری از برابر شدن رشته‌های خالی ("" === "") در زمان لود نشدن اطلاعات کاربر
   const isOwnerByRoom = useMemo(() => {
     if (!currentRoom) return false;
 

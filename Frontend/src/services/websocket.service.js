@@ -1,6 +1,6 @@
 // src/services/websocket.service.js
 import { Client } from "@stomp/stompjs";
-import { useWebSocketStore } from "../store/websocket.store.js";
+import { useWebSocketStore } from "../stores/websocket.store.js";
 import { WS_EVENTS } from "../constants/wsEvents.js";
 import { ENV } from "../config/validateEnv";
 
@@ -19,13 +19,11 @@ class WebSocketService {
         }
     }
 
-    // تولید آدرس امن وب‌سوکت با لحاظ کردن اجباری بودن wss در بستر HTTPS
     resolveBrokerUrl() {
         const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
         const rawUrl = ENV.WS_URL || `${isHttps ? "wss:" : "ws:"}//${window.location.hostname}:8080/ws`;
 
         if (isHttps) {
-            // در صورتی که صفحه با HTTPS باز شده باشد، اتصال ناامن ws قطعاً مسدود می‌شود
             return rawUrl.replace(/^ws:\/\//i, "wss://").replace(/^http:\/\//i, "wss://").replace(/^https:\/\//i, "wss://");
         }
         return rawUrl.startsWith("ws") ? rawUrl : `ws://${rawUrl.replace(/^https?:\/\//, "")}`;
