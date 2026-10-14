@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -10,7 +10,6 @@ import { usePageTitle } from '../../hooks/usePageTitle';
 import { Navbar } from '../../components/landing/Navbar';
 import { Hero } from '../../components/landing/Hero';
 import { BigStatement } from '../../components/landing/BigStatement';
-import { DiceSection } from '../../components/landing/DiceSection';
 import { ScenariosSection } from '../../components/landing/ScenariosSection';
 import { GameMasterSection } from '../../components/landing/GameMasterSection';
 import { PlayerSection } from '../../components/landing/PlayerSection';
@@ -21,6 +20,13 @@ import { FinalCta } from '../../components/landing/FinalCta';
 import { Footer } from '../../components/landing/Footer';
 import { StickyMobileCTA } from '../../components/landing/StickyMobileCTA';
 
+// لود تنبل ماژول سنگین سه‌بعدی فقط در زمان نیاز کاربر برای کاهش ۱۰ ثانیه‌ای TBT
+const DiceSection = lazy(() =>
+    import('../../features/dice/components/DiceSection').then((m) => ({
+        default: m.DiceSection || m.default,
+    }))
+);
+
 gsap.registerPlugin(ScrollTrigger);
 
 export default function LandingPage() {
@@ -29,6 +35,9 @@ export default function LandingPage() {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const token = useAuthStore((state) => state.token);
     const user = useAuthStore((state) => state.user);
+
+    const [shouldLoadDice, setShouldLoadDice] = useState(false);
+    const diceTriggerRef = useRef(null);
 
     const isSessionValid = Boolean(isAuthenticated && token && !isTokenExpired(token));
 
@@ -53,6 +62,24 @@ export default function LandingPage() {
         };
     }, []);
 
+    // گارد مشاهده‌گر تقاطع: استیج سه‌بعدی تنها زمانی لود می‌شود که کاربر به نزدیکی آن اسکرول کند
+    useEffect(() => {
+        if (!diceTriggerRef.current || shouldLoadDice) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) {
+                    setShouldLoadDice(true);
+                    observer.disconnect();
+                }
+            },
+            { rootMargin: '400px' }
+        );
+
+        observer.observe(diceTriggerRef.current);
+        return () => observer.disconnect();
+    }, [shouldLoadDice]);
+
     const handleStartGame = () => {
         if (isSessionValid) {
             navigate('/dashboard');
@@ -65,7 +92,6 @@ export default function LandingPage() {
         navigate('/login');
     };
 
-    // هدایت مستقیم به صفحه پروفایل کاربر با کلیک روی نام/آواتار در نوبار
     const handleOpenProfile = () => {
         navigate('/profile');
     };
@@ -86,10 +112,15 @@ export default function LandingPage() {
         }
     };
 
+    const handleDiceExplore = () => {
+        setShouldLoadDice(true);
+        const el = document.getElementById('dice');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+    };
+
     return (
         <div className="w-full min-h-screen bg-white text-[#121316] flex flex-col items-center justify-start overflow-x-hidden selection:bg-[#f59e0b] selection:text-black pb-14 md:pb-0">
             <div className="w-full flex flex-col relative">
-                {/* نوبار مجهز به نام نمایشی و آواتار RPG متصل به روت پروفایل */}
                 <Navbar
                     onOpenAuth={handleOpenAuth}
                     onOpenProfile={handleOpenProfile}
@@ -98,54 +129,54 @@ export default function LandingPage() {
                     user={isSessionValid ? user : null}
                 />
 
-                {/* بخش هیرو متصل به اطلاعات کاربر جهت شخصی‌سازی خودکار المان‌ها */}
-                <Hero
-                    user={isSessionValid ? user : null}
-                    onStartGame={handleStartGame}
-                    onExploreMore={() => {
-                        const el = document.getElementById('dice');
-                        if (el) el.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    onDiceClick={() => {
-                        const el = document.getElementById('dice');
-                        if (el) el.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                />
+                {/* لندمارک اصلی صفحه وب طبق استاندارد WCAG */}
+                <main id="main-content" role="main" className="w-full flex flex-col items-center">
+                    <Hero
+                        user={isSessionValid ? user : null}
+                        onStartGame={handleStartGame}
+                        onExploreMore={handleDiceExplore}
+                        onDiceClick={handleDiceExplore}
+                    />
 
-                {/* بیانیه فشرده */}
-                <BigStatement />
+                    <BigStatement />
 
-                {/* استیج سه‌بعدی تاس */}
-                <DiceSection />
+                    {/* نقطه قلاب اسکرول برای بارگذاری بهینه بخش سه‌بعدی */}
+                    <div ref={diceTriggerRef} className="w-full">
+                        {shouldLoadDice ? (
+                            <Suspense
+                                fallback={
+                                    <div className="w-full h-96 flex items-center justify-center bg-[#090a10] text-amber-400 font-bold text-xs" dir="rtl">
+                                        در حال آماده‌سازی استیج ۳بعدی تاس...
+                                    </div>
+                                }
+                            >
+                                <DiceSection />
+                            </Suspense>
+                        ) : (
+                            <div className="w-full h-32 bg-transparent pointer-events-none" />
+                        )}
+                    </div>
 
-                {/* سناریوها */}
-                <ScenariosSection onSelectScenario={handleSelectScenario} />
+                    <ScenariosSection onSelectScenario={handleSelectScenario} />
 
-                {/* پنل دانجن‌مستر */}
-                <GameMasterSection />
+                    <GameMasterSection />
 
-                {/* کارت تعاملی بازیکن */}
-                <PlayerSection />
+                    <PlayerSection />
 
-                {/* توالی قابلیت‌های ۶گانه */}
-                <FeaturesSequence />
+                    <FeaturesSequence />
 
-                {/* مراحل شروع سریع */}
-                <HowItWorks onStartGame={handleStartGame} />
+                    <HowItWorks onStartGame={handleStartGame} />
 
-                {/* هویت فارسی */}
-                <PersianBrandSection />
+                    <PersianBrandSection />
 
-                {/* دعوت به اقدام پایانی */}
-                <FinalCta
-                    onStartGame={handleStartGame}
-                    onOpenAuth={handleOpenAuth}
-                />
+                    <FinalCta
+                        onStartGame={handleStartGame}
+                        onOpenAuth={handleOpenAuth}
+                    />
+                </main>
 
-                {/* فوتر */}
                 <Footer />
 
-                {/* نوار ثابت چسبان پایین صفحه موبایل برای مهمانان */}
                 <StickyMobileCTA
                     isSessionValid={isSessionValid}
                     onStartGame={handleStartGame}

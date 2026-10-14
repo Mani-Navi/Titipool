@@ -1,15 +1,9 @@
 User-agent: *
-Disallow: /dashboard
-Disallow: /room/
-Disallow: /profile
-Disallow: /api/
-
 Allow: /
-Allow: /login
-Allow: /register
-Allow: /privacy-policy
-Allow: /terms-of-service
-Allow: /cookie-policy
-Allow: /refund-policy
 
-Sitemap: /sitemap.xml
+# مسدودسازی صفحات خصوصی برای موتورهای جستجو
+Disallow: /api/
+Disallow: /room/
+Disallow: /dashboard
+
+Sitemap: https://titipool.ir/sitemap.xml

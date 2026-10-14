@@ -20,7 +20,7 @@ export const ScenariosSection = memo(({ onSelectScenario }) => {
     };
 
     return (
-        <section id="scenarios" className="py-20 sm:py-32 px-4 sm:px-8 overflow-hidden" dir="rtl">
+        <section id="scenarios" className="py-20 sm:py-32 px-4 sm:px-8 overflow-hidden w-full" dir="rtl">
             <div className="max-w-6xl mx-auto">
                 <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 sm:mb-16 gap-6">
                     <GsapHeadingReveal
@@ -32,18 +32,22 @@ export const ScenariosSection = memo(({ onSelectScenario }) => {
 
                     <div className="flex items-center gap-3">
                         <button
+                            type="button"
                             onClick={handlePrev}
-                            className="w-12 h-12 rounded-full border border-neutral-300 hover:border-neutral-900 bg-white flex items-center justify-center text-neutral-800 transition-colors cursor-pointer"
-                            aria-label="قبلی"
+                            className="w-12 h-12 rounded-full border border-neutral-300 hover:border-neutral-900 bg-white flex items-center justify-center text-neutral-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                            aria-label="مشاهده سناریوی قبلی"
+                            title="سناریوی قبلی"
                         >
-                            <ChevronRight className="w-5 h-5" />
+                            <ChevronRight className="w-5 h-5" aria-hidden="true" />
                         </button>
                         <button
+                            type="button"
                             onClick={handleNext}
-                            className="w-12 h-12 rounded-full border border-neutral-300 hover:border-neutral-900 bg-white flex items-center justify-center text-neutral-800 transition-colors cursor-pointer"
-                            aria-label="بعدی"
+                            className="w-12 h-12 rounded-full border border-neutral-300 hover:border-neutral-900 bg-white flex items-center justify-center text-neutral-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                            aria-label="مشاهده سناریوی بعدی"
+                            title="سناریوی بعدی"
                         >
-                            <ChevronLeft className="w-5 h-5" />
+                            <ChevronLeft className="w-5 h-5" aria-hidden="true" />
                         </button>
                     </div>
                 </div>
@@ -71,7 +75,10 @@ export const ScenariosSection = memo(({ onSelectScenario }) => {
                                             setActiveIndex(index);
                                         }
                                     }}
-                                    className={`relative rounded-3xl overflow-hidden cursor-pointer shadow-xl transition-shadow select-none shrink-0 ${
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={`انتخاب سناریوی ${scenario.title}`}
+                                    className={`relative rounded-3xl overflow-hidden cursor-pointer shadow-xl transition-shadow select-none shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
                                         isCenter
                                             ? 'w-[300px] sm:w-[420px] md:w-[480px] h-[440px] sm:h-[480px] ring-2 ring-[#f59e0b]/80 shadow-[0_30px_70px_rgba(0,0,0,0.2)] z-20'
                                             : 'w-[240px] sm:w-[320px] h-[360px] sm:h-[400px] z-10'
@@ -89,7 +96,7 @@ export const ScenariosSection = memo(({ onSelectScenario }) => {
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
                                     <div className="absolute inset-0 p-5 sm:p-7 flex flex-col justify-between text-right">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[11px] font-mono font-bold text-white/90 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                                            <span className="text-[11px] font-mono font-bold text-white bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
                                                 {scenario.tag}
                                             </span>
                                             <span className="text-xs font-semibold text-[#f59e0b]">
@@ -111,8 +118,8 @@ export const ScenariosSection = memo(({ onSelectScenario }) => {
                                             )}
 
                                             <div className="mt-4 pt-3 border-t border-white/20 flex items-center justify-between">
-                                                <span className="text-xs text-neutral-300">مشاهده مشخصات سناریو</span>
-                                                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white">
+                                                <span className="text-xs text-neutral-200">مشاهده مشخصات سناریو</span>
+                                                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white" aria-hidden="true">
                                                     <ArrowUpRight className="w-4 h-4" />
                                                 </div>
                                             </div>
@@ -127,13 +134,14 @@ export const ScenariosSection = memo(({ onSelectScenario }) => {
 
             <AnimatePresence>
                 {inspectedScenario && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" dir="rtl">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" dir="rtl" role="dialog" aria-modal="true">
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setInspectedScenario(null)}
                             className="fixed inset-0 bg-black/75 backdrop-blur-sm"
+                            aria-hidden="true"
                         />
 
                         <motion.div
@@ -143,10 +151,12 @@ export const ScenariosSection = memo(({ onSelectScenario }) => {
                             className="relative w-full max-w-2xl rounded-3xl bg-[#0d0e14] border border-[#232635] shadow-2xl overflow-hidden z-10 text-right"
                         >
                             <button
+                                type="button"
                                 onClick={() => setInspectedScenario(null)}
-                                className="absolute top-4 left-4 z-20 w-8 h-8 rounded-full bg-black/60 border border-white/20 flex items-center justify-center text-white hover:bg-black"
+                                className="absolute top-4 left-4 z-20 w-8 h-8 rounded-full bg-black/60 border border-white/20 flex items-center justify-center text-white hover:bg-black cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                                aria-label="بستن جزئیات سناریو"
                             >
-                                <X className="w-4 h-4" />
+                                <X className="w-4 h-4" aria-hidden="true" />
                             </button>
 
                             <div className="relative h-64 sm:h-72">
@@ -187,14 +197,15 @@ export const ScenariosSection = memo(({ onSelectScenario }) => {
 
                                 <div className="flex gap-3 pt-2">
                                     <button
+                                        type="button"
                                         onClick={() => {
                                             sound.playDiceRoll();
                                             onSelectScenario(inspectedScenario);
                                             setInspectedScenario(null);
                                         }}
-                                        className="flex-1 h-11 rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#ea580c] hover:from-[#fbbf24] hover:to-[#f59e0b] text-neutral-950 font-bold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                                        className="flex-1 h-11 rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#ea580c] hover:from-[#fbbf24] hover:to-[#f59e0b] text-neutral-950 font-bold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-95 transition-transform"
                                     >
-                                        <Compass className="w-4 h-4" />
+                                        <Compass className="w-4 h-4" aria-hidden="true" />
                                         <span>بارگذاری این سناریو در اتاق</span>
                                     </button>
                                 </div>
