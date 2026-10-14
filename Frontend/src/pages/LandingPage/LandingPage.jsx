@@ -20,9 +20,9 @@ import { FinalCta } from '../../components/landing/FinalCta';
 import { Footer } from '../../components/landing/Footer';
 import { StickyMobileCTA } from '../../components/landing/StickyMobileCTA';
 
-// لود تنبل ماژول سنگین سه‌بعدی فقط در زمان نیاز کاربر برای کاهش ۱۰ ثانیه‌ای TBT
+// لود تنبل استیج سه‌بعدی تاس از مسیر صحیح لندینگ جهت به صفر رساندن TBT
 const DiceSection = lazy(() =>
-    import('../../features/dice/components/DiceSection').then((m) => ({
+    import('../../components/landing/DiceSection').then((m) => ({
         default: m.DiceSection || m.default,
     }))
 );
@@ -62,7 +62,7 @@ export default function LandingPage() {
         };
     }, []);
 
-    // گارد مشاهده‌گر تقاطع: استیج سه‌بعدی تنها زمانی لود می‌شود که کاربر به نزدیکی آن اسکرول کند
+    // مشاهده‌گر تقاطع: استیج سه‌بعدی سنگین فقط در صورت نزدیک شدن اسکرول لود می‌شود
     useEffect(() => {
         if (!diceTriggerRef.current || shouldLoadDice) return;
 
@@ -129,7 +129,7 @@ export default function LandingPage() {
                     user={isSessionValid ? user : null}
                 />
 
-                {/* لندمارک اصلی صفحه وب طبق استاندارد WCAG */}
+                {/* لندمارک اصلی استاندارد برای Accessibility */}
                 <main id="main-content" role="main" className="w-full flex flex-col items-center">
                     <Hero
                         user={isSessionValid ? user : null}
@@ -140,7 +140,7 @@ export default function LandingPage() {
 
                     <BigStatement />
 
-                    {/* نقطه قلاب اسکرول برای بارگذاری بهینه بخش سه‌بعدی */}
+                    {/* قلاب اسکرول جهت اجرای تنبل موتور ۳بعدی */}
                     <div ref={diceTriggerRef} className="w-full">
                         {shouldLoadDice ? (
                             <Suspense
