@@ -16,7 +16,6 @@ import {
     Key,
 } from 'lucide-react';
 import { sound } from '../../utils/tableAudio';
-import { GsapHeadingReveal } from './GsapHeadingReveal';
 
 export const Hero = memo(({ onStartGame, onExploreMore, onDiceClick, user }) => {
     const currentUserName = user
@@ -29,7 +28,6 @@ export const Hero = memo(({ onStartGame, onExploreMore, onDiceClick, user }) => 
 
     return (
         <section id="hero" className="relative pt-3 sm:pt-6 pb-8 sm:pb-16 px-3 sm:px-8 text-center w-full" dir="rtl">
-            {/* فعال‌سازی انیمیشن شناور فقط روی دسکتاپ جهت آزادسازی ۳۶ ثانیه توان پردازنده موبایل */}
             <style>{`
                 @media (min-width: 768px) {
                     .levitate-a {
@@ -53,21 +51,30 @@ export const Hero = memo(({ onStartGame, onExploreMore, onDiceClick, user }) => 
 
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 sm:w-[700px] h-72 sm:h-[450px] bg-amber-100/50 rounded-full blur-3xl pointer-events-none -z-10 transform-gpu" />
 
-            <GsapHeadingReveal
-                eyebrow="Persian Virtual Tabletop"
-                eyebrowColor="text-neutral-700 font-bold"
-                lines={['میز مجازی', 'برای ماجراجویی‌های بزرگ.']}
-                gradientLineIndex={1}
-                subtitle="یک میز بازی مجازی فارسی برای ساختن، بازی کردن و تجربه کردن ماجراجویی‌ها."
-                headingTag="h1"
-                headingClassName="text-[34px] sm:text-[54px] md:text-[76px] lg:text-[88px] font-black leading-[1.08] tracking-[-0.035em] text-neutral-950 max-w-4xl mx-auto mt-2"
-                subtitleClassName="mt-3 sm:mt-5 text-sm sm:text-base md:text-lg text-neutral-700 max-w-2xl mx-auto font-medium leading-relaxed px-2"
-            />
+            {/* رندر مستقیم و بلادرنگ H1 بدون هیچ تأخیر انیمیشنی جهت رساندن LCP به زیر ۰.۵ ثانیه */}
+            <div className="relative select-none text-center mx-auto max-w-4xl pt-2">
+                <div className="inline-flex mb-1.5 py-0.5">
+                    <span className="inline-block text-xs font-mono font-bold tracking-widest uppercase text-neutral-700">
+                        Persian Virtual Tabletop
+                    </span>
+                </div>
+
+                <h1 className="text-[34px] sm:text-[54px] md:text-[76px] lg:text-[88px] font-black leading-[1.08] tracking-[-0.035em] text-neutral-950 mt-2">
+                    <span className="block">میز مجازی</span>
+                    <span className="block bg-gradient-to-l from-neutral-950 via-neutral-800 to-neutral-700 bg-clip-text text-transparent">
+                        برای ماجراجویی‌های بزرگ.
+                    </span>
+                </h1>
+
+                <p className="mt-3 sm:mt-5 text-sm sm:text-base md:text-lg text-neutral-700 max-w-2xl mx-auto font-medium leading-relaxed px-2">
+                    یک میز بازی مجازی فارسی برای ساختن، بازی کردن و تجربه کردن ماجراجویی‌ها.
+                </p>
+            </div>
 
             <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
                 className="mt-5 sm:mt-8 flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 px-2"
             >
                 <button

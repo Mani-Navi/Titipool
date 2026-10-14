@@ -53,18 +53,22 @@ export default function LandingPage() {
         document.body.style.height = 'auto';
     }, []);
 
-    // کاهش مارجین لود استیج ۳بعدی به ۵۰ پیکسل برای محافظت از CPU موبایل
+    // اجرای بارگذاری سه‌بعدی صرفاً در زمان بیکاری پردازنده با requestIdleCallback
     useEffect(() => {
         if (!diceTriggerRef.current || shouldLoadDice) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries[0].isIntersecting) {
-                    setShouldLoadDice(true);
+                    if ('requestIdleCallback' in window) {
+                        window.requestIdleCallback(() => setShouldLoadDice(true));
+                    } else {
+                        setTimeout(() => setShouldLoadDice(true), 250);
+                    }
                     observer.disconnect();
                 }
             },
-            { rootMargin: '50px' }
+            { rootMargin: '0px' }
         );
 
         observer.observe(diceTriggerRef.current);
