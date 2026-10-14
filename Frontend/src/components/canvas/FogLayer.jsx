@@ -9,6 +9,7 @@ import { WS_EVENTS } from "../../constants/wsEvents.js";
 
 const FOG_DASH_PATTERN = Object.freeze([8, 5]);
 const TRANSFORMER_DASH_PATTERN = Object.freeze([5, 4]);
+const EMPTY_FOG_ARRAY = Object.freeze([]);
 const TRANSFORMER_ANCHORS = Object.freeze([
     "top-left",
     "top-right",
@@ -50,7 +51,13 @@ const getRegularPolygonPoints = (radius, sides) => {
 
 export const FogLayer = memo(
     ({ width = 2400, height = 1800, liveFog = null, polygonVertices = [] }) => {
-        const currentScene = useSceneStore((state) => state.currentScene);
+        const fogShapes = useSceneStore((state) => state.currentScene?.fogShapes || state.currentScene?.fogRegions) || EMPTY_FOG_ARRAY;
+        const isFilledByDefault = useSceneStore((state) => state.currentScene?.fogFilled === true);
+        const fogColor = useSceneStore((state) => state.currentScene?.fogColor) || "#090a0f";
+        const mapW = useSceneStore((state) => state.currentScene?.mapWidth) || width;
+        const mapH = useSceneStore((state) => state.currentScene?.mapHeight) || height;
+        const currentSceneId = useSceneStore((state) => state.currentScene?.id);
+
         const remoteLiveFog = useSceneStore((state) => state.remoteLiveFog);
         const updateFogShape = useSceneStore((state) => state.updateFogShape);
 
@@ -68,7 +75,6 @@ export const FogLayer = memo(
         const draggingFogId = useRef(null);
 
         const isSelectMode = (activeTool === TOOLS.SELECT || activeTool === TOOLS.FOG) && isGM;
-        const currentSceneId = currentScene?.id;
 
         const handleShapeDragStart = useCallback((fog) => {
             draggingFogId.current = String(fog.id);
@@ -210,12 +216,10 @@ export const FogLayer = memo(
             }
         }, [selectedFogId, isSelectMode, isFogRevealedGlobally]);
 
-        if (!currentScene || isFogRevealedGlobally) {
+        if (isFogRevealedGlobally) {
             return null;
         }
 
-        const fogShapes = currentScene.fogShapes || currentScene.fogRegions || [];
-        const isFilledByDefault = currentScene.fogFilled === true;
         const activeLiveFog = liveFog || remoteLiveFog;
 
         if (!isFilledByDefault && fogShapes.length === 0 && !activeLiveFog) {
@@ -223,9 +227,6 @@ export const FogLayer = memo(
         }
 
         const fogOpacity = isGM ? Math.max(0.05, Math.min(1.0, gmFogBlend)) : 1.0;
-        const fogColor = currentScene.fogColor || "#090a0f";
-        const mapW = currentScene.mapWidth || width;
-        const mapH = currentScene.mapHeight || height;
 
         const renderSingleShape = (context, fog) => {
             if (!fog) return;
@@ -268,8 +269,9 @@ export const FogLayer = memo(
                             context.fill();
                         }
 
-                        fogShapes.forEach((fog) => {
-                            if (!fog) return;
+                        for (let i = 0; i < fogShapes.length; i++) {
+                            const fog = fogShapes[i];
+                            if (!fog) continue;
                             const isCut =
                                 fog.isCover === false ||
                                 String(fog.type).toUpperCase() === "REVEAL" ||
@@ -293,7 +295,7 @@ export const FogLayer = memo(
                             }
 
                             context.fill();
-                        });
+                        }
 
                         if (activeLiveFog && !draggingFogId.current) {
                             const isCutLive =

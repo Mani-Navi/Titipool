@@ -5,7 +5,9 @@ import { useCanvasStore } from "../../stores/canvas.store";
 import { useAuthStore } from "../../stores/auth.store";
 import { TOOLS } from "../../constants/tools";
 
-const LASER_DASH_PATTERN = [4, 4];
+const LASER_DASH_PATTERN = Object.freeze([4, 4]);
+const EMPTY_PINGS = Object.freeze([]);
+const EMPTY_OBJECT = Object.freeze({});
 
 function renderLaserDot(x, y, name = "", color = "#ef4444", isLocal = false) {
     const key = isLocal ? "local-laser" : `laser-${name}-${x}-${y}`;
@@ -63,10 +65,10 @@ function renderLaserDot(x, y, name = "", color = "#ef4444", isLocal = false) {
 }
 
 export const PingLayer = memo(() => {
-    const pings = useSceneStore((state) => state.pings) || [];
+    const pings = useSceneStore((state) => state.pings) || EMPTY_PINGS;
     const activeTool = useCanvasStore((state) => state.activeTool);
     const laserPosition = useCanvasStore((state) => state.laserPosition);
-    const remoteLasers = useCanvasStore((state) => state.remoteLasers) || {};
+    const remoteLasers = useCanvasStore((state) => state.remoteLasers) || EMPTY_OBJECT;
     const clearRemoteLaser = useCanvasStore((state) => state.clearRemoteLaser);
 
     const currentUser = useAuthStore((state) => state.user);

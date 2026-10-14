@@ -14,6 +14,7 @@ import { WS_EVENTS } from "../../constants/wsEvents.js";
 const tokenImageCache = new Map();
 const TOKEN_SELECTION_DASH = Object.freeze([6, 4]);
 const DEFAULT_CLUSTER_OFFSET = Object.freeze({ x: 0, y: 0 });
+const EMPTY_TOKENS = Object.freeze([]);
 
 const DND_CONDITION_EMOJIS = Object.freeze({
     blinded: "🙈",
@@ -99,10 +100,10 @@ const SingleToken = memo(
                     e.cancelBubble = true;
                 }
                 if (canEdit || canControl || isGM) {
-                    onOpenEditor();
+                    onOpenEditor(token.id);
                 }
             },
-            [canEdit, canControl, isGM, onOpenEditor]
+            [canEdit, canControl, isGM, onOpenEditor, token.id]
         );
 
         const handleDragStart = useCallback((e) => {
@@ -152,6 +153,14 @@ const SingleToken = memo(
             [gridSize, gridType, token.size, token.id, token.controlledBy, snapEnabled, moveToken, displayName, rawUrl]
         );
 
+        const handleSelectClick = useCallback(
+            (e) => {
+                e.cancelBubble = true;
+                onSelect(token.id, e.evt?.shiftKey || e.evt?.ctrlKey);
+            },
+            [onSelect, token.id]
+        );
+
         if (token.isHidden && !isGM) return null;
 
         const isProp = Boolean(token.isProp);
@@ -199,14 +208,8 @@ const SingleToken = memo(
                 scaleY={currentScale}
                 draggable={isDraggable}
                 opacity={token.isHidden ? 0.55 : 1}
-                onClick={(e) => {
-                    e.cancelBubble = true;
-                    onSelect(e);
-                }}
-                onTap={(e) => {
-                    e.cancelBubble = true;
-                    onSelect(e);
-                }}
+                onClick={handleSelectClick}
+                onTap={handleSelectClick}
                 onContextMenu={handleOpenEdit}
                 onDblClick={handleOpenEdit}
                 onDblTap={handleOpenEdit}
@@ -497,7 +500,10 @@ const SingleToken = memo(
 SingleToken.displayName = "SingleToken";
 
 export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
-    const currentScene = useSceneStore((state) => state.currentScene);
+    const userTokens = useSceneStore((state) => state.currentScene?.tokens) || EMPTY_TOKENS;
+    const gridType = useSceneStore((state) => state.currentScene?.grid?.type) || "square";
+    const snapEnabled = useSceneStore((state) => state.currentScene?.grid?.snapToGrid !== false);
+
     const selectedTokenIds = useCanvasStore((state) => state.selectedTokenIds);
     const toggleTokenSelection = useCanvasStore((state) => state.toggleTokenSelection);
     const openTokenEditor = useCanvasStore((state) => state.openTokenEditor);
@@ -516,19 +522,16 @@ export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
         propIsGM || hookIsGM || isRoomHost || currentUser?.role === "GM" || currentUser?.role === "ADMIN"
     );
 
-    const userTokens = currentScene?.tokens || [];
-    const gridType = currentScene?.grid?.type || "square";
-    const snapEnabled = currentScene?.grid?.snapToGrid !== false;
-
     const cellGroups = useMemo(() => {
         const groups = {};
-        userTokens.forEach((t) => {
+        for (let i = 0; i < userTokens.length; i++) {
+            const t = userTokens[i];
             const cellKey = `${Math.round(t.x || 0)}_${Math.round(t.y || 0)}`;
             if (!groups[cellKey]) {
                 groups[cellKey] = [];
             }
             groups[cellKey].push(t);
-        });
+        }
         return groups;
     }, [userTokens]);
 
@@ -582,7 +585,21 @@ export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
         [cellGroups, gridSize]
     );
 
-    if (!currentScene || !currentScene.tokens) return null;
+    const handleSelectToken = useCallback(
+        (tokenId, isMulti) => {
+            toggleTokenSelection(tokenId, isMulti);
+        },
+        [toggleTokenSelection]
+    );
+
+    const handleOpenEditor = useCallback(
+        (tokenId) => {
+            openTokenEditor(tokenId);
+        },
+        [openTokenEditor]
+    );
+
+    if (userTokens.length === 0) return null;
 
     const isSelectMode = activeTool === "select" || activeTool === "SELECT";
 
@@ -596,7 +613,6 @@ export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
                 const userEmail = currentUser?.email ? String(currentUser.email).toLowerCase().trim() : "";
                 const tokenLabel = String(token.label || token.name || "").toLowerCase().trim();
 
-                // رفع آسیب‌پذیری: حذف شرط ناامن index === 0 و الزام به تطابق معتبر شناسه
                 const isOwner = Boolean(
                     !isGM
                         ? Boolean(
@@ -629,12 +645,8 @@ export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
                         fallbackUsername={currentUser?.username || "بازیکن"}
                         clusterOffset={offset}
                         clusterScale={scale}
-                        onSelect={(e) => {
-                            toggleTokenSelection(token.id, e.evt?.shiftKey || e.evt?.ctrlKey);
-                        }}
-                        onOpenEditor={() => {
-                            openTokenEditor(token.id);
-                        }}
+                        onSelect={handleSelectToken}
+                        onOpenEditor={handleOpenEditor}
                     />
                 );
             })}

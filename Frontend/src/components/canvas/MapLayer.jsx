@@ -1,4 +1,4 @@
-import React, { useEffect, useState, memo } from "react";
+import React, { useEffect, useState, useRef, memo } from "react";
 import { Image as KonvaImage, Rect, Group } from "react-konva";
 import { getFullAssetUrl } from "../../utils/assetUrl.js";
 import { useCanvasStore } from "../../stores/canvas.store";
@@ -11,12 +11,18 @@ export const MapLayer = memo(({ mapUrl, width = 2000, height = 1500, onDimension
     const [image, setImage] = useState(null);
     const [dimensions, setDimensions] = useState({ width, height });
     const fitToMap = useCanvasStore((state) => state.fitToMap);
+    const lastLoadedUrlRef = useRef("");
 
     const resolvedUrl = getFullAssetUrl(mapUrl);
 
     useEffect(() => {
         if (!resolvedUrl) {
             setImage(null);
+            lastLoadedUrlRef.current = "";
+            return;
+        }
+
+        if (lastLoadedUrlRef.current === resolvedUrl && image) {
             return;
         }
 
@@ -54,6 +60,7 @@ export const MapLayer = memo(({ mapUrl, width = 2000, height = 1500, onDimension
 
         img.onload = () => {
             if (isMounted) {
+                lastLoadedUrlRef.current = resolvedUrl;
                 setImage(img);
                 const naturalW = img.naturalWidth || width;
                 const naturalH = img.naturalHeight || height;
@@ -66,6 +73,7 @@ export const MapLayer = memo(({ mapUrl, width = 2000, height = 1500, onDimension
             fallbackImg.src = resolvedUrl;
             fallbackImg.onload = () => {
                 if (isMounted) {
+                    lastLoadedUrlRef.current = resolvedUrl;
                     setImage(fallbackImg);
                     const naturalW = fallbackImg.naturalWidth || width;
                     const naturalH = fallbackImg.naturalHeight || height;
@@ -82,7 +90,7 @@ export const MapLayer = memo(({ mapUrl, width = 2000, height = 1500, onDimension
         return () => {
             isMounted = false;
         };
-    }, [resolvedUrl, width, height, fitToMap, onDimensionsChange]);
+    }, [resolvedUrl, width, height, fitToMap, onDimensionsChange, image]);
 
     if (!resolvedUrl) return null;
 

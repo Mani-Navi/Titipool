@@ -6,19 +6,19 @@ import { useAuthStore } from "../../stores/auth.store";
 import { calculateTotalDistance } from "../../utils/distance.js";
 
 const RULER_DASH_PATTERN = Object.freeze([8, 5]);
+const EMPTY_OBJECT = Object.freeze({});
 
 export const RulerLayer = memo(() => {
     const measurement = useCanvasStore((state) => state.measurement);
-    const remoteMeasurements = useCanvasStore((state) => state.remoteMeasurements) || {};
+    const remoteMeasurements = useCanvasStore((state) => state.remoteMeasurements) || EMPTY_OBJECT;
     const clearRemoteMeasurement = useCanvasStore((state) => state.clearRemoteMeasurement);
     const rulerType = useCanvasStore((state) => state.rulerType) || "dnd5e_5105";
     const rulerUnit = useCanvasStore((state) => state.rulerUnit) || "ft";
 
-    const currentScene = useSceneStore((state) => state.currentScene);
+    const gridSize = useSceneStore((state) => state.currentScene?.grid?.size) || 60;
     const currentUser = useAuthStore((state) => state.user);
     const currentUserId = String(currentUser?.id || currentUser?.userId || currentUser?.username || "");
 
-    const gridSize = currentScene?.grid?.size || 60;
     const scaleValue = 5;
 
     const remoteMeasurementsRef = useRef(remoteMeasurements);
@@ -57,9 +57,9 @@ export const RulerLayer = memo(() => {
         );
 
         const allPoints = [start.x, start.y];
-        waypoints.forEach((wp) => {
-            allPoints.push(wp.x, wp.y);
-        });
+        for (let i = 0; i < waypoints.length; i++) {
+            allPoints.push(waypoints[i].x, waypoints[i].y);
+        }
         allPoints.push(current.x, current.y);
 
         const bubbleX = current.x + 16;

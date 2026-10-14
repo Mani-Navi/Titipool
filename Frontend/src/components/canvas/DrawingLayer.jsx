@@ -7,6 +7,7 @@ import { DRAW_MODES } from "../../constants/tools";
 import { WS_EVENTS } from "../../constants/wsEvents.js";
 
 const TRANSFORMER_BORDER_DASH = Object.freeze([4, 4]);
+const EMPTY_DRAWINGS = Object.freeze([]);
 
 const transformerBoundBox = (oldBox, newBox) => {
     if (Math.abs(newBox.width) < 10 || Math.abs(newBox.height) < 10) {
@@ -378,7 +379,8 @@ export const DrawingLayer = memo(
          onErase = null,
          onDblClickText = null,
      }) => {
-        const currentScene = useSceneStore((state) => state.currentScene);
+        const drawings = useSceneStore((state) => state.currentScene?.drawings) || EMPTY_DRAWINGS;
+        const currentSceneId = useSceneStore((state) => state.currentScene?.id);
         const remoteLiveDrawing = useSceneStore((state) => state.remoteLiveDrawing);
         const updateDrawing = useSceneStore((state) => state.updateDrawing);
 
@@ -388,8 +390,6 @@ export const DrawingLayer = memo(
         const canModifyDrawings = Boolean(
             isGM || permissions?.canDrawing === true || permissions?.canText === true
         );
-
-        const drawings = currentScene?.drawings || [];
 
         const handleUpdateDrawing = useCallback(
             (drawId, updates) => {
@@ -405,12 +405,21 @@ export const DrawingLayer = memo(
                         ...updates,
                         id: drawId,
                         clientDrawingId: drawId,
-                        sceneId: currentScene?.id,
+                        sceneId: currentSceneId,
                     };
                     wsService.send(WS_EVENTS.DRAWING_ADDED || "DRAWING_ADD", fullUpdated);
                 }
             },
-            [canModifyDrawings, updateDrawing, drawings, currentScene?.id]
+            [canModifyDrawings, updateDrawing, drawings, currentSceneId]
+        );
+
+        const handleShapeDblClick = useCallback(
+            (shape) => {
+                if (String(shape.type).toLowerCase() === "text" && onDblClickText) {
+                    onDblClickText(shape);
+                }
+            },
+            [onDblClickText]
         );
 
         return (
@@ -429,11 +438,7 @@ export const DrawingLayer = memo(
                             onSelect={setSelectedDrawingId}
                             onErase={onErase}
                             onUpdate={handleUpdateDrawing}
-                            onDblClick={(shape) => {
-                                if (String(shape.type).toLowerCase() === "text") {
-                                    if (onDblClickText) onDblClickText(shape);
-                                }
-                            }}
+                            onDblClick={handleShapeDblClick}
                             isGM={isGM}
                         />
                     );

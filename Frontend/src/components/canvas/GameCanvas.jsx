@@ -15,7 +15,7 @@ import { wsService } from "../../services/websocket.service";
 import { drawingApi } from "../../api/drawing.api";
 import { tokenApi } from "../../api/token.api";
 import { WS_EVENTS } from "../../constants/wsEvents.js";
-import { MIN_ZOOM, MAX_ZOOM } from "../../constants/canvas.js";
+import { MIN_ZOOM, MAX_ZOOM, WS_THROTTLE_MS } from "../../constants/canvas.js";
 import { fogApi } from "../../api/fog.api";
 import {
   ImagePlus,
@@ -139,6 +139,15 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
   const isSelectMode = activeTool === TOOLS.SELECT;
   const canUseFog = isGM || Boolean(permissions?.canFog);
 
+  const isFeaturesListening =
+      activeTool === TOOLS.DRAW ||
+      activeTool === TOOLS.FOG ||
+      activeTool === TOOLS.RULER ||
+      activeTool === TOOLS.ERASER ||
+      activeTool === TOOLS.TEXT ||
+      selectedDrawingId !== null ||
+      selectedFogId !== null;
+
   const myIdentifier = String(user?.id || user?.userId || user?.username || "player-1");
 
   useEffect(() => {
@@ -241,7 +250,6 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
             (t) => String(t.id).toLowerCase() === strId.toLowerCase()
         );
 
-        // اعتبارسنجی پرمیشن حذف: کاربر فقط توکن خودش را می‌تواند حذف کند مگر اینکه GM باشد
         if (targetToken && !isGM) {
           const owner = String(targetToken.controlledBy || "").toLowerCase().trim();
           const isTokenOwner = Boolean(
@@ -937,7 +945,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       setLaserPosition(pos);
 
       const now = Date.now();
-      if (now - lastLaserBroadcastTime.current > 30) {
+      if (now - lastLaserBroadcastTime.current > WS_THROTTLE_MS) {
         lastLaserBroadcastTime.current = now;
         wsService.send("LASER_MOVE", {
           x: Math.round(pos.x),
@@ -953,7 +961,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       updateMeasurement(pos.x, pos.y);
 
       const now = Date.now();
-      if (now - lastRulerBroadcastTime.current > 30) {
+      if (now - lastRulerBroadcastTime.current > WS_THROTTLE_MS) {
         lastRulerBroadcastTime.current = now;
         const currentMeas = useCanvasStore.getState().measurement;
         if (currentMeas) {
@@ -1060,7 +1068,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
         setLiveDrawing(updatedDraw);
 
         const now = Date.now();
-        if (now - lastBroadcastTime.current > 30) {
+        if (now - lastBroadcastTime.current > WS_THROTTLE_MS) {
           lastBroadcastTime.current = now;
           wsService.send("DRAWING_LIVE", { ...updatedDraw, sceneId: currentScene?.id });
         }
@@ -1103,7 +1111,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
         setLiveFog(updatedFog);
 
         const now = Date.now();
-        if (now - lastFogBroadcastTime.current > 30) {
+        if (now - lastFogBroadcastTime.current > WS_THROTTLE_MS) {
           lastFogBroadcastTime.current = now;
           wsService.send("FOG_LIVE", { ...updatedFog, sceneId: currentScene?.id });
         }
@@ -1317,6 +1325,15 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
         isGM,
         addPing,
       ]
+  );
+
+  const handleStageDragEnd = useCallback(
+      (e) => {
+        if (e.target === stageRef.current && isStageDraggable) {
+          setStagePos(e.target.x(), e.target.y());
+        }
+      },
+      [isStageDraggable, setStagePos]
   );
 
   return (
@@ -1568,11 +1585,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
             onMouseLeave={handleMouseLeave}
             onDblClick={handleDblClick}
             onContextMenu={(e) => e.evt.preventDefault()}
-            onDragEnd={(e) => {
-              if (e.target === stageRef.current && isStageDraggable) {
-                setStagePos(e.target.x(), e.target.y());
-              }
-            }}
+            onDragEnd={handleStageDragEnd}
         >
           {/* لایه ۱: نقشه و گرید */}
           <Layer id="layer-background" listening={false}>
@@ -1593,7 +1606,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
                 <Layer
                     id="layer-canvas-features"
                     clip={{ x: 0, y: 0, width: mapWidth, height: mapHeight }}
-                    listening={true}
+                    listening={isFeaturesListening}
                 >
                   <DrawingLayer
                       liveDrawing={liveDrawing}
