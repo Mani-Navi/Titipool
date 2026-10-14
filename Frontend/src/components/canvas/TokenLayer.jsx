@@ -107,9 +107,13 @@ const SingleToken = memo(
         );
 
         const handleDragStart = useCallback((e) => {
-            e.cancelBubble = true;
+            if (e) {
+                e.cancelBubble = true;
+                if (e.evt) e.evt.cancelBubble = true;
+            }
             setIsDragging(true);
-        }, []);
+            onSelect(token.id, false);
+        }, [onSelect, token.id]);
 
         let rawName = token.label || token.name;
         if (!rawName || rawName === "کاراکتر" || rawName === "توکن" || rawName === "توکن جدید") {
@@ -119,7 +123,10 @@ const SingleToken = memo(
 
         const handleDragEnd = useCallback(
             (e) => {
-                e.cancelBubble = true;
+                if (e) {
+                    e.cancelBubble = true;
+                    if (e.evt) e.evt.cancelBubble = true;
+                }
                 setIsDragging(false);
                 const rawX = e.target.x();
                 const rawY = e.target.y();
@@ -155,8 +162,11 @@ const SingleToken = memo(
 
         const handleSelectClick = useCallback(
             (e) => {
-                e.cancelBubble = true;
-                onSelect(token.id, e.evt?.shiftKey || e.evt?.ctrlKey);
+                if (e) {
+                    e.cancelBubble = true;
+                    if (e.evt) e.evt.cancelBubble = true;
+                }
+                onSelect(token.id, Boolean(e?.evt?.shiftKey || e?.evt?.ctrlKey));
             },
             [onSelect, token.id]
         );
@@ -210,6 +220,12 @@ const SingleToken = memo(
                 opacity={token.isHidden ? 0.55 : 1}
                 onClick={handleSelectClick}
                 onTap={handleSelectClick}
+                onMouseDown={(e) => {
+                    if (e) {
+                        e.cancelBubble = true;
+                        if (e.evt) e.evt.cancelBubble = true;
+                    }
+                }}
                 onContextMenu={handleOpenEdit}
                 onDblClick={handleOpenEdit}
                 onDblTap={handleOpenEdit}
@@ -601,7 +617,7 @@ export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
 
     if (userTokens.length === 0) return null;
 
-    const isSelectMode = activeTool === "select" || activeTool === "SELECT";
+    const isSelectMode = String(activeTool || "").toLowerCase() === "select";
 
     return (
         <Group id="tokens-layer-group" listening={isSelectMode}>
@@ -631,6 +647,10 @@ export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
 
                 const { offset, scale } = getClusterParams(token);
 
+                const isSelected = selectedTokenIds.some(
+                    (id) => String(id).toLowerCase() === String(token.id).toLowerCase()
+                );
+
                 return (
                     <SingleToken
                         key={token.id}
@@ -638,7 +658,7 @@ export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
                         gridSize={gridSize}
                         gridType={gridType}
                         snapEnabled={snapEnabled}
-                        isSelected={selectedTokenIds.includes(token.id)}
+                        isSelected={isSelected}
                         canControl={canControl}
                         canEdit={canEdit}
                         isGM={isGM}

@@ -130,21 +130,24 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
   const activeMapUrl = currentScene?.mapUrl || currentScene?.assetUrl || "";
   const hasActiveMap = Boolean(activeMapUrl && activeMapUrl.trim() !== "");
 
-  const isStageDraggable = hasActiveMap && activeTool === TOOLS.PAN;
+  const normalizedTool = String(activeTool || "").toLowerCase();
+  const isSelectMode = normalizedTool === "select";
+  const isStageDraggable = hasActiveMap && normalizedTool === "pan";
 
   const isEraserActive =
-      activeTool === TOOLS.ERASER ||
-      (activeTool === TOOLS.DRAW && activeDrawShape === DRAW_MODES.ERASER);
+      normalizedTool === "eraser" ||
+      (normalizedTool === "draw" && activeDrawShape === DRAW_MODES.ERASER);
 
-  const isSelectMode = activeTool === TOOLS.SELECT;
   const canUseFog = isGM || Boolean(permissions?.canFog);
 
+  // در حالت سلکت، لایه ترسیمات و مه حتماً باید فعال باشد تا کلیک و انتخاب المان‌ها کار کند
   const isFeaturesListening =
-      activeTool === TOOLS.DRAW ||
-      activeTool === TOOLS.FOG ||
-      activeTool === TOOLS.RULER ||
-      activeTool === TOOLS.ERASER ||
-      activeTool === TOOLS.TEXT ||
+      isSelectMode ||
+      normalizedTool === "draw" ||
+      normalizedTool === "fog" ||
+      normalizedTool === "ruler" ||
+      normalizedTool === "eraser" ||
+      normalizedTool === "text" ||
       selectedDrawingId !== null ||
       selectedFogId !== null;
 
@@ -329,7 +332,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
   ]);
 
   const selectionInfo = useMemo(() => {
-    if (activeTool !== TOOLS.SELECT && activeTool !== TOOLS.FOG) return null;
+    if (!isSelectMode && normalizedTool !== "fog") return null;
 
     if (selectedDrawingId) {
       const dummy = String(selectedDrawingId).toLowerCase();
@@ -381,7 +384,8 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
 
     return null;
   }, [
-    activeTool,
+    isSelectMode,
+    normalizedTool,
     selectedDrawingId,
     selectedTokenIds,
     selectedFogId,
@@ -515,7 +519,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       }
 
       if (e.key === "Delete" || e.key === "Backspace") {
-        if (activeTool === TOOLS.SELECT || activeTool === TOOLS.FOG) {
+        if (isSelectMode || normalizedTool === "fog") {
           if (selectedDrawingId || (selectedTokenIds && selectedTokenIds.length > 0) || selectedFogId) {
             e.preventDefault();
             handleDeleteSelected();
@@ -527,6 +531,8 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     activeTool,
+    isSelectMode,
+    normalizedTool,
     measurement,
     endMeasurement,
     myIdentifier,
@@ -601,7 +607,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
           }
         }
 
-        if (isSelectMode || activeTool === TOOLS.PAN) {
+        if (isSelectMode || normalizedTool === "pan") {
           return;
         }
 
@@ -831,11 +837,12 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
               activeDrawShape === DRAW_MODES.TRIANGLE ||
               activeDrawShape === DRAW_MODES.HEXAGON
           ) {
+            const radius = 0;
             initialDraw = {
               type: activeDrawShape,
               x: pos.x,
               y: pos.y,
-              radius: 0,
+              radius: radius,
               stroke: drawStrokeColor,
               strokeWidth: drawStrokeWidth,
               fill: drawFillColor,
@@ -905,6 +912,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
         finishInlineText,
         clearSelection,
         isSelectMode,
+        normalizedTool,
         activeTool,
         getPointerCanvasPos,
         mapWidth,
@@ -1289,7 +1297,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
           return;
         }
 
-        if (activeTool !== TOOLS.SELECT && activeTool !== TOOLS.PAN) return;
+        if (!isSelectMode && normalizedTool !== "pan") return;
         if (e.target.findAncestor?.("#tokens-layer-group")) return;
 
         const pos = getPointerCanvasPos();
@@ -1306,6 +1314,8 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       [
         hasActiveMap,
         activeTool,
+        isSelectMode,
+        normalizedTool,
         activeDrawShape,
         polygonVertices,
         drawStrokeColor,
@@ -1358,7 +1368,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
             }}
         />
 
-        {selectionInfo && (activeTool === TOOLS.SELECT || activeTool === TOOLS.FOG) && (
+        {selectionInfo && (isSelectMode || normalizedTool === "fog") && (
             <div
                 className="absolute z-40 pointer-events-auto flex items-center gap-2 px-3 py-1.5 bg-zinc-950/95 border border-zinc-700/80 rounded-2xl shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150"
                 style={{
