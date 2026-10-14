@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { motion } from 'motion/react';
-import { Star, Quote, CheckCircle2, Sparkles, Shield } from 'lucide-react';
+import { Star, Quote, Sparkles, Shield } from 'lucide-react';
 import { TESTIMONIALS } from '../../data/landingData';
 import { RpgAvatar } from '../profile/RpgAvatar';
 import { GsapHeadingReveal } from './GsapHeadingReveal';
@@ -8,7 +8,6 @@ import { GsapHeadingReveal } from './GsapHeadingReveal';
 export const TestimonialsSection = memo(() => {
     return (
         <section id="testimonials" className="py-20 sm:py-32 px-4 sm:px-8 overflow-hidden w-full relative" dir="rtl">
-            {/* هاله نور طلایی محیطی */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 sm:w-[650px] h-96 sm:h-[450px] bg-amber-500/5 rounded-full blur-[140px] pointer-events-none transform-gpu" />
 
             <div className="max-w-6xl mx-auto relative z-10">
@@ -19,7 +18,6 @@ export const TestimonialsSection = memo(() => {
                     containerClassName="max-w-3xl mx-auto mb-12 sm:mb-18 text-center"
                 />
 
-                {/* شبکه ۴ ستونه کارت‌های شیشه‌ای */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
                     {TESTIMONIALS.map((item, idx) => (
                         <motion.div
@@ -33,9 +31,9 @@ export const TestimonialsSection = memo(() => {
                             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
                             <div className="relative z-10 space-y-4">
-                                {/* ردیف بالا: ستاره‌ها و بج موضوعی */}
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-1" aria-label={`امتیاز ۵ از ۵`}>
+                                    {/* رفع خطای ARIA با اختصاص صریح role="img" */}
+                                    <div className="flex items-center gap-1" role="img" aria-label={`امتیاز ${item.rating} از ۵ ستاره`}>
                                         {Array.from({ length: item.rating }).map((_, sIdx) => (
                                             <Star
                                                 key={sIdx}
@@ -50,16 +48,14 @@ export const TestimonialsSection = memo(() => {
                                     </span>
                                 </div>
 
-                                {/* متن نقل‌قول */}
                                 <div className="relative">
                                     <Quote className="w-6 h-6 text-amber-500/20 absolute -top-1 -right-2 rotate-180 pointer-events-none" aria-hidden="true" />
-                                    <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-normal pt-2 pr-4">
+                                    <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-normal pt-2 pr-4">
                                         «{item.quote}»
                                     </p>
                                 </div>
                             </div>
 
-                            {/* فوتر کارت: آواتار RPG، نام کاراکتر فانتزی و عنوان */}
                             <div className="relative z-10 pt-5 mt-4 border-t border-[#1c1f2e] flex items-center justify-between">
                                 <div className="flex items-center gap-3 min-w-0">
                                     <div className="relative shrink-0">
@@ -76,8 +72,8 @@ export const TestimonialsSection = memo(() => {
                                         <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-amber-300 transition-colors truncate">
                                             {item.name}
                                         </h3>
-                                        <div className="text-[10px] sm:text-[11px] text-zinc-400 truncate">
-                                            {item.role} · <span className="text-zinc-500">{item.experience}</span>
+                                        <div className="text-[10px] sm:text-[11px] text-zinc-300 truncate">
+                                            {item.role} · <span className="text-zinc-400">{item.experience}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -91,7 +87,6 @@ export const TestimonialsSection = memo(() => {
                     ))}
                 </div>
 
-                {/* بنر آمار میزهای ماجراجویی */}
                 <div className="mt-10 sm:mt-14 text-center">
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-zinc-950/80 border border-zinc-800 text-xs text-zinc-300 shadow-inner">
                         <Sparkles className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />

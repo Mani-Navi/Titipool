@@ -20,7 +20,6 @@ import { FinalCta } from '../../components/landing/FinalCta';
 import { Footer } from '../../components/landing/Footer';
 import { StickyMobileCTA } from '../../components/landing/StickyMobileCTA';
 
-// لود تنبل استیج سه‌بعدی تاس از مسیر لندینگ
 const DiceSection = lazy(() =>
     import('../../components/landing/DiceSection').then((m) => ({
         default: m.DiceSection || m.default,
@@ -52,17 +51,9 @@ export default function LandingPage() {
         document.documentElement.style.height = 'auto';
         document.body.style.overflowY = 'auto';
         document.body.style.height = 'auto';
-
-        const timer = setTimeout(() => {
-            ScrollTrigger.refresh();
-        }, 250);
-
-        return () => {
-            clearTimeout(timer);
-        };
     }, []);
 
-    // مشاهده‌گر تقاطع برای استیج ۳بعدی
+    // کاهش مارجین لود استیج ۳بعدی به ۵۰ پیکسل برای محافظت از CPU موبایل
     useEffect(() => {
         if (!diceTriggerRef.current || shouldLoadDice) return;
 
@@ -73,7 +64,7 @@ export default function LandingPage() {
                     observer.disconnect();
                 }
             },
-            { rootMargin: '400px' }
+            { rootMargin: '50px' }
         );
 
         observer.observe(diceTriggerRef.current);
@@ -143,11 +134,10 @@ export default function LandingPage() {
                                 <DiceSection />
                             </Suspense>
                         ) : (
-                            <div className="w-full h-32 bg-transparent pointer-events-none" />
+                            <div className="w-full h-24 bg-transparent pointer-events-none" />
                         )}
                     </div>
 
-                    {/* سکشن جدید و جذاب نظرات ماجراجویان */}
                     <TestimonialsSection />
 
                     <GameMasterSection />
