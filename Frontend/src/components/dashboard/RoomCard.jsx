@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, memo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useClipboard } from "../../hooks/useClipboard";
 import {
@@ -19,6 +19,8 @@ import {
 import { Badge } from "../ui/Badge.jsx";
 import { Button } from "../ui/Button.jsx";
 
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
 export const RoomCard = memo(({ room, onRequestDelete, onRequestEdit, onRequestLeave }) => {
   const navigate = useNavigate();
   const { copy, copied } = useClipboard();
@@ -33,31 +35,37 @@ export const RoomCard = memo(({ room, onRequestDelete, onRequestEdit, onRequestL
     };
   }, []);
 
-  const getDaysLeft = (expiresAt) => {
+  const daysLeft = useMemo(() => {
+    const expiresAt = room.expires_at || room.expiresAt;
     if (!expiresAt) return 30;
     const diff = new Date(expiresAt).getTime() - Date.now();
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-  };
+    return Math.max(0, Math.ceil(diff / MS_PER_DAY));
+  }, [room.expires_at, room.expiresAt]);
 
-  const daysLeft = getDaysLeft(room.expires_at || room.expiresAt);
-  const isOptimistic = !!room.isOptimistic;
+  const isOptimistic = Boolean(room.isOptimistic);
   const isGM = room.role === "GM";
 
-  const resolvedHostTitle =
-      room.hostRoleTitle ||
-      room.host_role_title ||
-      (typeof window !== "undefined" && room.id ? localStorage.getItem(`room_${room.id}_host_title`) : null) ||
-      "میزبان";
+  const resolvedHostTitle = useMemo(() => {
+    return (
+        room.hostRoleTitle ||
+        room.host_role_title ||
+        (typeof window !== "undefined" && room.id ? localStorage.getItem(`room_${room.id}_host_title`) : null) ||
+        "میزبان"
+    );
+  }, [room.id, room.hostRoleTitle, room.host_role_title]);
 
-  const resolvedPlayerTitle =
-      room.playerRoleTitle ||
-      room.player_role_title ||
-      (typeof window !== "undefined" && room.id ? localStorage.getItem(`room_${room.id}_player_title`) : null) ||
-      "بازیکن";
+  const resolvedPlayerTitle = useMemo(() => {
+    return (
+        room.playerRoleTitle ||
+        room.player_role_title ||
+        (typeof window !== "undefined" && room.id ? localStorage.getItem(`room_${room.id}_player_title`) : null) ||
+        "بازیکن"
+    );
+  }, [room.id, room.playerRoleTitle, room.player_role_title]);
 
   const displayRoleTitle = isGM ? resolvedHostTitle : resolvedPlayerTitle;
 
-  const handleCopyLink = () => {
+  const handleCopyLink = useCallback(() => {
     const inviteUrl = `${window.location.origin}/dashboard?join=${room.code}`;
     if (navigator?.clipboard?.writeText) {
       navigator.clipboard
@@ -71,7 +79,7 @@ export const RoomCard = memo(({ room, onRequestDelete, onRequestEdit, onRequestL
           })
           .catch(() => {});
     }
-  };
+  }, [room.code]);
 
   return (
       <div

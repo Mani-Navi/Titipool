@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -27,7 +27,7 @@ const createRoomSchema = z.object({
   password: z.string().max(30, "رمز عبور حداکثر ۳۰ کاراکتر است").optional(),
 });
 
-export const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
+export const CreateRoomModal = memo(({ isOpen, onClose, onCreate }) => {
   const [tab, setTab] = useState("blank");
   const [templates, setTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -331,7 +331,7 @@ export const CreateRoomModal = ({ isOpen, onClose, onCreate }) => {
         </div>
       </Modal>
   );
-};
+});
 
 CreateRoomModal.displayName = "CreateRoomModal";
 export default CreateRoomModal;
