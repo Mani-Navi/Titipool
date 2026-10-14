@@ -1,24 +1,25 @@
 import React, { memo } from 'react';
 import { motion } from 'motion/react';
-import { Star, Quote, CheckCircle2, Sparkles } from 'lucide-react';
+import { Star, Quote, CheckCircle2, Sparkles, Shield } from 'lucide-react';
 import { TESTIMONIALS } from '../../data/landingData';
+import { RpgAvatar } from '../profile/RpgAvatar';
 import { GsapHeadingReveal } from './GsapHeadingReveal';
 
 export const TestimonialsSection = memo(() => {
     return (
         <section id="testimonials" className="py-20 sm:py-32 px-4 sm:px-8 overflow-hidden w-full relative" dir="rtl">
-            {/* هاله نور طلایی پس‌زمینه */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 sm:w-[600px] h-96 sm:h-[400px] bg-amber-500/5 rounded-full blur-[140px] pointer-events-none transform-gpu" />
+            {/* هاله نور طلایی محیطی */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 sm:w-[650px] h-96 sm:h-[450px] bg-amber-500/5 rounded-full blur-[140px] pointer-events-none transform-gpu" />
 
             <div className="max-w-6xl mx-auto relative z-10">
                 <GsapHeadingReveal
-                    eyebrow="تجربه جامعه بازیکنان · ADVENTURERS' VOICES"
+                    eyebrow="تجربه جامعه قهرمانان · ADVENTURERS' GUILD"
                     lines={['روایت ماجراجویانی که', 'دور این میز نشسته‌اند.']}
-                    subtitle="نظرات واقعی دانجن‌مسترها و بازیکنانی که جلسات هفتگی نقش‌آفرینی خود را به Titipool منتقل کرده‌اند."
+                    subtitle="نظرات واقعی دانجن‌مسترها و قهرمانانی که جلسات هفتگی نقش‌آفرینی خود را به میز مجازی Titipool منتقل کرده‌اند."
                     containerClassName="max-w-3xl mx-auto mb-12 sm:mb-18 text-center"
                 />
 
-                {/* شبکه ۴ ستونه واکنش‌گرا و جذاب کارت‌های نظر */}
+                {/* شبکه ۴ ستونه کارت‌های شیشه‌ای */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
                     {TESTIMONIALS.map((item, idx) => (
                         <motion.div
@@ -29,7 +30,6 @@ export const TestimonialsSection = memo(() => {
                             transition={{ duration: 0.5, delay: idx * 0.1, ease: [0.16, 1, 0.3, 1] }}
                             className="group relative rounded-3xl p-6 sm:p-7 bg-[#0b0d14]/90 hover:bg-[#0f121a] border border-[#202334] hover:border-amber-500/40 transition-all duration-300 shadow-[0_15px_40px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_50px_rgba(245,158,11,0.08)] flex flex-col justify-between select-none"
                         >
-                            {/* افکت نوری گوشه کارت در حالت هاور */}
                             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
                             <div className="relative z-10 space-y-4">
@@ -59,17 +59,16 @@ export const TestimonialsSection = memo(() => {
                                 </div>
                             </div>
 
-                            {/* فوتر کارت: آواتار، مشخصات گوینده و نشان رسمی */}
+                            {/* فوتر کارت: آواتار RPG، نام کاراکتر فانتزی و عنوان */}
                             <div className="relative z-10 pt-5 mt-4 border-t border-[#1c1f2e] flex items-center justify-between">
                                 <div className="flex items-center gap-3 min-w-0">
                                     <div className="relative shrink-0">
-                                        <img
-                                            src={item.avatar}
-                                            alt={`تصویر نمایه ${item.name}`}
-                                            loading="lazy"
-                                            decoding="async"
-                                            className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover border border-amber-500/30 group-hover:border-amber-400/60 shadow-md transition-colors"
-                                        />
+                                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full p-0.5 bg-gradient-to-tr from-amber-600 via-amber-300 to-amber-500 shadow-md group-hover:scale-105 transition-transform duration-200">
+                                            <RpgAvatar
+                                                avatarId={item.avatarId}
+                                                className="w-full h-full border border-zinc-950"
+                                            />
+                                        </div>
                                         <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#0b0d14] absolute -bottom-0.5 -right-0.5 shadow-sm" aria-hidden="true" />
                                     </div>
 
@@ -84,7 +83,7 @@ export const TestimonialsSection = memo(() => {
                                 </div>
 
                                 <div className="hidden sm:flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 px-2 py-0.5 rounded-lg shrink-0">
-                                    <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                                    <Shield className="w-3 h-3 text-amber-400" aria-hidden="true" />
                                     <span>{item.badge}</span>
                                 </div>
                             </div>
@@ -92,10 +91,10 @@ export const TestimonialsSection = memo(() => {
                     ))}
                 </div>
 
-                {/* بنر کوچک انتهای بخش */}
+                {/* بنر آمار میزهای ماجراجویی */}
                 <div className="mt-10 sm:mt-14 text-center">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-zinc-950/80 border border-zinc-800 text-xs text-zinc-400 shadow-inner">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-zinc-950/80 border border-zinc-800 text-xs text-zinc-300 shadow-inner">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
                         <span>بیش از ۱,۴۰۰ ساعت جلسه ماجراجویی موفق در سراسر کشور</span>
                     </div>
                 </div>
