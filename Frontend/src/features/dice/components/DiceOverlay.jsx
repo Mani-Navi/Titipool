@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { DiceCanvas } from './DiceCanvas';
 import { useDiceStore } from '../state/dice.store';
 import { DICE_THEMES } from '../engine/textureGenerator';
@@ -6,7 +6,7 @@ import { diceAudio } from '../engine/diceAudio';
 import { RotateCcw, X, Trash2, Dices, Zap, User, Sparkles } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 
-const DICE_TYPES = [
+const DICE_TYPES = Object.freeze([
     { type: 'd4', label: 'D4', maxVal: 4 },
     { type: 'd6', label: 'D6', maxVal: 6 },
     { type: 'd8', label: 'D8', maxVal: 8 },
@@ -14,31 +14,28 @@ const DICE_TYPES = [
     { type: 'd12', label: 'D12', maxVal: 12 },
     { type: 'd20', label: 'D20', maxVal: 20 },
     { type: 'd100', label: 'D100', maxVal: 100 },
-];
+]);
 
 export function DiceOverlay() {
-    const {
-        isOpen,
-        isRolling,
-        results,
-        totalSum,
-        rollerName,
-        isRemoteRoll,
-        setOpen,
-        triggerRoll,
-        clearDice,
-        activeDice,
-        selectedTheme,
-        setSelectedTheme,
-    } = useDiceStore();
+    const isOpen = useDiceStore((s) => s.isOpen);
+    const isRolling = useDiceStore((s) => s.isRolling);
+    const results = useDiceStore((s) => s.results);
+    const totalSum = useDiceStore((s) => s.totalSum);
+    const rollerName = useDiceStore((s) => s.rollerName);
+    const isRemoteRoll = useDiceStore((s) => s.isRemoteRoll);
+    const setOpen = useDiceStore((s) => s.setOpen);
+    const triggerRoll = useDiceStore((s) => s.triggerRoll);
+    const clearDice = useDiceStore((s) => s.clearDice);
+    const activeDiceLength = useDiceStore((s) => s.activeDice.length);
+    const selectedTheme = useDiceStore((s) => s.selectedTheme);
+    const setSelectedTheme = useDiceStore((s) => s.setSelectedTheme);
 
     const [mode, setMode] = useState('quick');
     const [poolCounts, setPoolCounts] = useState({});
     const [lastRollTypes, setLastRollTypes] = useState(['d20']);
     const playedCritAudioRef = useRef(false);
 
-    // بررسی رخ دادن Max Die / Critical
-    const isAnyCritical = React.useMemo(() => {
+    const isAnyCritical = useMemo(() => {
         if (results.length === 0 || isRolling) return false;
         return results.some((r) => {
             const config = DICE_TYPES.find((d) => d.type === r.type);
@@ -48,7 +45,6 @@ export function DiceOverlay() {
         });
     }, [results, isRolling]);
 
-    // افکت صدای Critical
     useEffect(() => {
         if (isAnyCritical && !playedCritAudioRef.current) {
             diceAudio.playCriticalSuccess();
@@ -59,22 +55,20 @@ export function DiceOverlay() {
         }
     }, [isAnyCritical, isRolling]);
 
-    if (!isOpen && activeDice.length === 0) return null;
-
-    const handleQuickRoll = (type) => {
+    const handleQuickRoll = useCallback((type) => {
         const diceToRoll = type === 'd100' ? ['d100', 'd10'] : [type];
         setLastRollTypes(diceToRoll);
         triggerRoll(diceToRoll);
-    };
+    }, [triggerRoll]);
 
-    const handleAddToPool = (type) => {
+    const handleAddToPool = useCallback((type) => {
         setPoolCounts((prev) => ({
             ...prev,
             [type]: (prev[type] || 0) + 1,
         }));
-    };
+    }, []);
 
-    const handleRemoveFromPool = (type, e) => {
+    const handleRemoveFromPool = useCallback((type, e) => {
         e.stopPropagation();
         setPoolCounts((prev) => {
             const current = prev[type] || 0;
@@ -85,13 +79,13 @@ export function DiceOverlay() {
             }
             return { ...prev, [type]: current - 1 };
         });
-    };
+    }, []);
 
-    const handleClearPool = () => {
+    const handleClearPool = useCallback(() => {
         setPoolCounts({});
-    };
+    }, []);
 
-    const handleRollPool = () => {
+    const handleRollPool = useCallback(() => {
         const diceToRoll = [];
         Object.entries(poolCounts).forEach(([type, count]) => {
             for (let i = 0; i < count; i++) {
@@ -107,26 +101,28 @@ export function DiceOverlay() {
 
         setLastRollTypes(diceToRoll);
         triggerRoll(diceToRoll);
-    };
+    }, [poolCounts, triggerRoll]);
 
-    const totalPoolDiceCount = Object.values(poolCounts).reduce((a, b) => a + b, 0);
+    const totalPoolDiceCount = useMemo(() => {
+        return Object.values(poolCounts).reduce((a, b) => a + b, 0);
+    }, [poolCounts]);
 
-    const handleReRoll = () => {
+    const handleReRoll = useCallback(() => {
         if (lastRollTypes.length > 0) {
             triggerRoll(lastRollTypes);
         } else {
             triggerRoll(['d20']);
         }
-    };
+    }, [lastRollTypes, triggerRoll]);
+
+    if (!isOpen && activeDiceLength === 0) return null;
 
     return (
         <div className="fixed inset-0 z-[110] pointer-events-none select-none font-fa" dir="rtl">
-            {/* در اتاق بازی overlayMode={true} است تا کلیک‌های فضای خالی به بوم و مپ برسد */}
             <div className="absolute inset-0">
                 <DiceCanvas overlayMode={true} />
             </div>
 
-            {/* بنر نتیجه نهایی */}
             {results.length > 0 && (
                 <div className="absolute top-14 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-1.5 animate-fade-in-up">
                     <div
@@ -212,7 +208,6 @@ export function DiceOverlay() {
                 </div>
             )}
 
-            {/* داک شناور انتخاب تاس */}
             {isOpen && !isRemoteRoll && (
                 <div className="absolute bottom-20 sm:bottom-6 left-3 sm:left-6 pointer-events-auto flex flex-col gap-2 animate-fade-in-up">
                     {mode === 'pool' && totalPoolDiceCount > 0 && (

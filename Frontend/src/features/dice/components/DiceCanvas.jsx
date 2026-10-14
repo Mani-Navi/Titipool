@@ -1,5 +1,5 @@
 // src/features/dice/components/DiceCanvas.jsx
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense, useEffect, useRef } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import * as THREE from 'three';
@@ -9,17 +9,31 @@ import { useDiceStore } from '../state/dice.store';
 
 /**
  * مدیر عبور کلیک: صرفاً زمانی که کانواس به صورت Overlay تمام‌صفحه روی اتاق بازی است،
- * کلیک‌های فضای خالی را به نقشه و ابزارها عبور می‌دهد.
+ * کلیک‌های فضای خالی را به نقشه و ابزارها عبور می‌دهد بدون اجرای traverse مداوم در هر فریم.
  */
 function ClickThroughManager() {
     const { camera, scene, gl } = useThree();
     const activeDice = useDiceStore((s) => s.activeDice);
+    const diceMeshesRef = useRef([]);
 
     useEffect(() => {
         if (activeDice.length === 0) {
+            diceMeshesRef.current = [];
             gl.domElement.style.pointerEvents = 'none';
             return;
         }
+
+        const meshes = [];
+        scene.traverse((obj) => {
+            if (obj.isMesh && obj.userData?.isDie) {
+                meshes.push(obj);
+            }
+        });
+        diceMeshesRef.current = meshes;
+    }, [activeDice, scene, gl]);
+
+    useEffect(() => {
+        if (activeDice.length === 0) return;
 
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
@@ -31,27 +45,20 @@ function ClickThroughManager() {
                 return;
             }
 
-            const rect = gl.domElement.getBoundingClientRect();
-            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-
-            const diceMeshes = [];
-            scene.traverse((obj) => {
-                if (obj.isMesh && obj.userData?.isDie) {
-                    diceMeshes.push(obj);
-                }
-            });
-
-            if (diceMeshes.length === 0) {
+            const meshes = diceMeshesRef.current;
+            if (!meshes || meshes.length === 0) {
                 if (gl.domElement.style.pointerEvents !== 'none') {
                     gl.domElement.style.pointerEvents = 'none';
                 }
                 return;
             }
 
-            const intersects = raycaster.intersectObjects(diceMeshes, false);
+            const rect = gl.domElement.getBoundingClientRect();
+            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(meshes, false);
             const hitsDie = intersects.length > 0;
 
             if (hitsDie) {
@@ -76,24 +83,23 @@ function ClickThroughManager() {
                 gl.domElement.style.pointerEvents = 'none';
             }
         };
-    }, [camera, scene, gl, activeDice]);
+    }, [camera, gl, activeDice.length]);
 
     return null;
 }
 
 export function DiceCanvas({ overlayMode = false }) {
-    const activeDice = useDiceStore((s) => s.activeDice);
+    const activeDiceCount = useDiceStore((s) => s.activeDice.length);
 
     return (
         <Canvas
             shadows
-            gl={{ alpha: true, antialias: true }}
+            gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
             camera={{ position: [0, 16, 0.01], fov: 45 }}
             style={{
                 width: '100%',
                 height: '100%',
-                // در حالت عادی (لندینگ پیج) کانواس تعاملی کامل است؛ در حالت Overlay اتاق توسط مدیر کنترل می‌شود
-                pointerEvents: overlayMode ? 'none' : (activeDice.length > 0 ? 'auto' : 'none'),
+                pointerEvents: overlayMode ? 'none' : (activeDiceCount > 0 ? 'auto' : 'none'),
                 touchAction: 'none',
             }}
         >
@@ -103,8 +109,8 @@ export function DiceCanvas({ overlayMode = false }) {
                 position={[2, 22, 3]}
                 intensity={1.8}
                 castShadow
-                shadow-mapSize-width={2048}
-                shadow-mapSize-height={2048}
+                shadow-mapSize-width={1024}
+                shadow-mapSize-height={1024}
                 shadow-camera-near={0.5}
                 shadow-camera-far={40}
                 shadow-camera-left={-25}

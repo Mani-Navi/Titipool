@@ -13,7 +13,7 @@ const VELOCITY_THRESHOLD = 0.08;
 const ANGULAR_THRESHOLD = 0.12;
 const REQUIRED_STABLE_FRAMES = 25;
 
-const DRAG_PLANE = new THREE.Plane(new THREE.Vector3(0, 1, 0), -3.2);
+const DRAG_PLANE = new THREE.Plane(new THREE.Vector3(0, 1, 0), -2.6);
 
 export function Die({
                         id,
@@ -40,9 +40,9 @@ export function Die({
     const isDraggingRef = useRef(false);
     const dragHistoryRef = useRef([]);
 
-    // محدوده امن حرکتی ماوس برای جلوگیری از عبور تاس از دیواره‌های سینی
-    const safeLimitX = Math.max((viewport.width / 2) - 1.8, 2.2);
-    const safeLimitZ = Math.max((viewport.height / 2) - 1.8, 2.2);
+    // محدوده امن حرکتی ماوس برای تاس‌های جدید کوچک‌تر
+    const safeLimitX = Math.max((viewport.width / 2) - 1.2, 1.8);
+    const safeLimitZ = Math.max((viewport.height / 2) - 1.2, 1.8);
 
     // همگام‌سازی دوران و موقعیت قطعی دریافتی از پرتاب‌کننده
     useEffect(() => {
@@ -105,6 +105,18 @@ export function Die({
         const mats = createMaterialsForType(type, faceValues, theme);
         return { geometry: geom, materials: mats };
     }, [type, config, theme]);
+
+    // پاکسازی کامل ژئومتری و متریال در هنگام خروج تاس از صحنه جهت دفع نشت حافظه وب‌جی‌ال
+    useEffect(() => {
+        return () => {
+            geometry.dispose();
+            if (Array.isArray(materials)) {
+                materials.forEach((mat) => {
+                    mat.dispose();
+                });
+            }
+        };
+    }, [geometry, materials]);
 
     const handleCollision = () => {
         if (!rigidBodyRef.current || isDraggingRef.current) return;
@@ -187,9 +199,7 @@ export function Die({
 
         try {
             e.target.setPointerCapture(e.pointerId);
-        } catch {
-            // fallback امن برای مرورگرهای لمسی
-        }
+        } catch {}
 
         isDraggingRef.current = true;
         isSettledRef.current = true;
@@ -214,7 +224,7 @@ export function Die({
             const clampedZ = THREE.MathUtils.clamp(targetPoint.z, -safeLimitZ, safeLimitZ);
 
             rigidBodyRef.current.setTranslation(
-                { x: clampedX, y: 3.2, z: clampedZ },
+                { x: clampedX, y: 2.6, z: clampedZ },
                 true
             );
 
@@ -232,9 +242,7 @@ export function Die({
 
         try {
             e.target.releasePointerCapture(e.pointerId);
-        } catch {
-            // fallback امن
-        }
+        } catch {}
 
         isDraggingRef.current = false;
         document.body.style.cursor = 'default';
@@ -278,7 +286,7 @@ export function Die({
 
         broadcastReThrow(
             id,
-            { x: lastPos.x, y: 3.2, z: lastPos.z },
+            { x: lastPos.x, y: 2.6, z: lastPos.z },
             finalVelocity,
             finalAngvel
         );
