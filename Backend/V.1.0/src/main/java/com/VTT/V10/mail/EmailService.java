@@ -10,6 +10,9 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+/**
+ * Asynchronous dispatching service for OTP authentication and system transactional notifications.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -20,7 +23,10 @@ public class EmailService {
     @Value("${spring.mail.username:noreply@titipool.ir}")
     private String fromEmail;
 
-    @Async
+    /**
+     * Dispatches a verification email containing a 6-digit one-time passcode on the dedicated background thread pool.
+     */
+    @Async("generalTaskExecutor")
     public void sendOtpCode(String toEmail, String code) {
         if (toEmail == null || code == null || !code.matches("^\\d{6}$")) {
             log.warn("Invalid email or OTP code format for sending");
