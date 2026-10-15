@@ -20,6 +20,9 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
+
     @Value("${spring.mail.username:noreply@titipool.ir}")
     private String fromEmail;
 
@@ -30,6 +33,11 @@ public class EmailService {
     public void sendOtpCode(String toEmail, String code) {
         if (toEmail == null || code == null || !code.matches("^\\d{6}$")) {
             log.warn("Invalid email or OTP code format for sending");
+            return;
+        }
+
+        if (mailUsername == null || mailUsername.isBlank()) {
+            log.warn("SMTP credentials are not configured. Simulated OTP for {}: [{}]", toEmail, code);
             return;
         }
 
