@@ -1,13 +1,11 @@
 package com.VTT.V10.voice;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
 import java.nio.charset.StandardCharsets;
-import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -18,22 +16,25 @@ import java.util.concurrent.CompletableFuture;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class VoiceService {
 
-    private final LiveKitConfig config;
     private static final String HMAC_ALGORITHM = "HmacSHA256";
 
-    // ThreadLocal cache to reuse Mac instances across calls on the same worker thread safely
-    private final ThreadLocal<Mac> macThreadLocal = ThreadLocal.withInitial(() -> {
-        try {
-            Mac mac = Mac.getInstance(HMAC_ALGORITHM);
-            mac.init(config.getSecretKeySpec());
-            return mac;
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to initialize ThreadLocal HMAC instance", e);
-        }
-    });
+    private final LiveKitConfig config;
+    private final ThreadLocal<Mac> macThreadLocal;
+
+    public VoiceService(LiveKitConfig config) {
+        this.config = config;
+        this.macThreadLocal = ThreadLocal.withInitial(() -> {
+            try {
+                Mac mac = Mac.getInstance(HMAC_ALGORITHM);
+                mac.init(config.getSecretKeySpec());
+                return mac;
+            } catch (Exception e) {
+                throw new IllegalStateException("Failed to initialize ThreadLocal HMAC instance", e);
+            }
+        });
+    }
 
     /**
      * Asynchronously generates an access token for LiveKit voice rooms.
