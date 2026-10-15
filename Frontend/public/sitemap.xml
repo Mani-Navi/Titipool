@@ -4,54 +4,54 @@
 
     <!-- صفحه اصلی لندینگ پیج -->
     <url>
-        <loc>https://persianvtt.ir/</loc>
-        <lastmod>2026-10-12</lastmod>
+        <loc>https://titipool.ir/</loc>
+        <lastmod>2026-10-14</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
-        <xhtml:link rel="alternate" hreflang="fa" href="https://persianvtt.ir/"/>
+        <xhtml:link rel="alternate" hreflang="fa" href="https://titipool.ir/"/>
     </url>
 
     <!-- صفحه ورود -->
     <url>
-        <loc>https://persianvtt.ir/login</loc>
-        <lastmod>2026-10-12</lastmod>
+        <loc>https://titipool.ir/login</loc>
+        <lastmod>2026-10-14</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
 
     <!-- صفحه ثبت‌نام -->
     <url>
-        <loc>https://persianvtt.ir/register</loc>
-        <lastmod>2026-10-12</lastmod>
+        <loc>https://titipool.ir/register</loc>
+        <lastmod>2026-10-14</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
 
     <!-- صفحات قوانین و حقوقی -->
     <url>
-        <loc>https://persianvtt.ir/privacy-policy</loc>
-        <lastmod>2026-10-12</lastmod>
+        <loc>https://titipool.ir/privacy-policy</loc>
+        <lastmod>2026-10-14</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.3</priority>
     </url>
 
     <url>
-        <loc>https://persianvtt.ir/terms-of-service</loc>
-        <lastmod>2026-10-12</lastmod>
+        <loc>https://titipool.ir/terms-of-service</loc>
+        <lastmod>2026-10-14</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.3</priority>
     </url>
 
     <url>
-        <loc>https://persianvtt.ir/cookie-policy</loc>
-        <lastmod>2026-10-12</lastmod>
+        <loc>https://titipool.ir/cookie-policy</loc>
+        <lastmod>2026-10-14</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.3</priority>
     </url>
 
     <url>
-        <loc>https://persianvtt.ir/refund-policy</loc>
-        <lastmod>2026-10-12</lastmod>
+        <loc>https://titipool.ir/refund-policy</loc>
+        <lastmod>2026-10-14</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.3</priority>
     </url>
