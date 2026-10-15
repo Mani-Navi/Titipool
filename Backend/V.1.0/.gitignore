@@ -17,6 +17,9 @@ application-local.properties
 application-secret.yml
 application-secret.properties
 
+### Uploads & Data ###
+uploads/
+
 ### Logs & OS Files ###
 *.log
 logs/
