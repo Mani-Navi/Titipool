@@ -19,6 +19,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Service managing canvas tokens, attributes, permissions, and asynchronous movement state persistence.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -30,7 +33,7 @@ public class TokenService {
     private final RoomMemberRepository roomMemberRepository;
     private final PlayerPermissionRepository playerPermissionRepository;
 
-    @Async
+    @Async("wsTaskExecutor")
     @Transactional
     public void asyncUpdateTokenFromEvent(TokenMoveEvent data, String userEmail, UUID roomId) {
         updateTokenFromEvent(data, userEmail, roomId);
@@ -51,7 +54,6 @@ public class TokenService {
         boolean isGM = (room.getOwner() != null && userEmail != null && room.getOwner().getEmail().equalsIgnoreCase(userEmail)) ||
                 (requester != null && (requester.getRole() == RoomMember.Role.ADMIN || requester.getRole() == RoomMember.Role.GM));
 
-        boolean hasEditTokenPerm = false;
         String finalControlledBy = "";
 
         if (requester != null && requester.getUser() != null) {
@@ -62,13 +64,6 @@ public class TokenService {
                 boolean alreadyHasToken = existing.stream().anyMatch(t -> uid.equals(t.getControlledBy()));
                 if (alreadyHasToken) {
                     throw new ResponseStatusException(HttpStatus.FORBIDDEN, "هر بازیکن تنها مجاز به داشتن یک توکن اختصاصی است");
-                }
-
-                try {
-                    var permOpt = playerPermissionRepository.findByMemberId(requester.getId());
-                    hasEditTokenPerm = permOpt.isPresent() && Boolean.TRUE.equals(permOpt.get().getCanEditToken());
-                } catch (Exception e) {
-                    log.warn("Could not check player permission: {}", e.getMessage());
                 }
             } else {
                 finalControlledBy = (request.getControlledBy() != null && !request.getControlledBy().isBlank())
@@ -190,7 +185,6 @@ public class TokenService {
             if (Boolean.TRUE.equals(data.getIsDeleted())) {
                 if (isGM || isOwner) {
                     tokenRepository.deleteById(tokenId);
-                    tokenRepository.flush();
                 }
                 return;
             }
@@ -248,7 +242,7 @@ public class TokenService {
                 if (data.getAllowPlayerSize() != null) token.setAllowPlayerSize(data.getAllowPlayerSize());
             }
 
-            tokenRepository.saveAndFlush(token);
+            tokenRepository.save(token);
         } catch (Exception e) {
             log.warn("Token event update error: {}", e.getMessage());
         }
@@ -286,7 +280,7 @@ public class TokenService {
                 .isHidden(token.getIsHidden())
                 .isLocked(token.getIsLocked())
                 .controlledBy(token.getControlledBy())
-                .gmNotes(isGM ? token.getGmNotes() : null) // فیلتر کردن اطلاعات محرمانه
+                .gmNotes(isGM ? token.getGmNotes() : null)
                 .isProp(token.getIsProp())
                 .goldValue(isGM ? token.getGoldValue() : 0)
                 .xpValue(isGM ? token.getXpValue() : 0)

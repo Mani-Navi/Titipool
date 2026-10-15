@@ -1,7 +1,10 @@
 package com.VTT.V10.room;
 
+import com.VTT.V10.config.CacheConfig;
 import com.VTT.V10.room.dto.RoomSettingsResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,6 +12,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
+/**
+ * Service managing room settings with Caffeine cache integration.
+ */
 @Service
 @RequiredArgsConstructor
 public class RoomSettingsService {
@@ -17,7 +23,8 @@ public class RoomSettingsService {
     private final RoomRepository roomRepository;
     private final RoomMemberRepository memberRepository;
 
-    @Transactional
+    @Cacheable(value = CacheConfig.CACHE_ROOM_SETTINGS, key = "#roomId")
+    @Transactional(readOnly = true)
     public RoomSettingsResponse getSettings(UUID roomId, String userEmail) {
         validateMembership(roomId, userEmail);
 
@@ -47,15 +54,17 @@ public class RoomSettingsService {
                 .isGridSnapping(true)
                 .build();
 
-        return repository.saveAndFlush(settings);
+        return repository.save(settings);
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_ROOM_SETTINGS, key = "#roomId")
     @Transactional
     public RoomSettingsResponse updateSettings(UUID roomId, RoomSettingsResponse request, String userEmail) {
         validateGMRole(roomId, userEmail);
         return updateSettings(roomId, request);
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_ROOM_SETTINGS, key = "#roomId")
     @Transactional
     public RoomSettingsResponse updateSettings(UUID roomId, RoomSettingsResponse request) {
         RoomSettings settings = repository.findById(roomId)
@@ -80,10 +89,11 @@ public class RoomSettingsService {
             if (request.getIsGridSnapping() != null) settings.setIsGridSnapping(request.getIsGridSnapping());
         }
 
-        RoomSettings saved = repository.saveAndFlush(settings);
+        RoomSettings saved = repository.save(settings);
         return convertToResponse(saved);
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_ROOM_SETTINGS, key = "#roomId")
     @Transactional
     public RoomSettingsResponse resetToDefault(UUID roomId, String userEmail) {
         validateGMRole(roomId, userEmail);
@@ -107,12 +117,12 @@ public class RoomSettingsService {
                 .isGridSnapping(true)
                 .build();
 
-        return convertToResponse(repository.saveAndFlush(settings));
+        return convertToResponse(repository.save(settings));
     }
 
     private void validateMembership(UUID roomId, String email) {
-        if (!memberRepository.findByRoomIdAndUserEmail(roomId, email).isPresent() &&
-                !roomRepository.findById(roomId).filter(r -> r.getOwner() != null && r.getOwner().getEmail().equalsIgnoreCase(email)).isPresent()) {
+        if (memberRepository.findByRoomIdAndUserEmail(roomId, email).isEmpty() &&
+                roomRepository.findById(roomId).filter(r -> r.getOwner() != null && r.getOwner().getEmail().equalsIgnoreCase(email)).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "شما عضو این اتاق نیستید");
         }
     }

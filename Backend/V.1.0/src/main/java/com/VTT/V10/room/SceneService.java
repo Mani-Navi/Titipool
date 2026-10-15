@@ -2,11 +2,14 @@ package com.VTT.V10.room;
 
 import com.VTT.V10.asset.Asset;
 import com.VTT.V10.asset.AssetRepository;
+import com.VTT.V10.config.CacheConfig;
 import com.VTT.V10.room.dto.CreateSceneRequest;
 import com.VTT.V10.room.dto.SceneResponse;
 import com.VTT.V10.room.dto.SceneStateResponse;
 import com.VTT.V10.room.dto.TokenResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -19,6 +22,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Service managing canvas scenes, map attachments, and scene lifecycle transitions.
+ */
 @Service
 @RequiredArgsConstructor
 public class SceneService {
@@ -35,6 +41,7 @@ public class SceneService {
     private final FogRegionRepository fogRegionRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
+    @CacheEvict(value = CacheConfig.CACHE_SCENES, key = "#request.roomId")
     @Transactional
     public SceneResponse createScene(CreateSceneRequest request, String userEmail) {
         Room room = roomRepository.findById(request.getRoomId())
@@ -152,6 +159,7 @@ public class SceneService {
         return response;
     }
 
+    @Cacheable(value = CacheConfig.CACHE_SCENES, key = "#roomId")
     @Transactional(readOnly = true)
     public List<SceneResponse> getRoomScenes(UUID roomId, String userEmail) {
         validateMembership(roomId, userEmail);
@@ -192,12 +200,7 @@ public class SceneService {
 
         tokenRepository.deleteBySceneId(sceneId);
         fogRegionRepository.deleteBySceneId(sceneId);
-
-        List<Drawing> drawings = drawingRepository.findBySceneId(sceneId);
-        if (drawings != null && !drawings.isEmpty()) {
-            drawingRepository.deleteAll(drawings);
-        }
-
+        drawingRepository.deleteBySceneId(sceneId);
         sceneRepository.delete(scene);
 
         UUID nextActiveId = null;
