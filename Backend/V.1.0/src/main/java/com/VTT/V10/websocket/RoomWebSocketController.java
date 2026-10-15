@@ -1,8 +1,17 @@
 package com.VTT.V10.websocket;
 
-import com.VTT.V10.room.*;
+import com.VTT.V10.room.DrawingService;
+import com.VTT.V10.room.FogService;
+import com.VTT.V10.room.RoomService;
+import com.VTT.V10.room.RoomSettingsService;
+import com.VTT.V10.room.TokenService;
 import com.VTT.V10.room.dto.RoomSettingsResponse;
-import com.VTT.V10.websocket.dto.*;
+import com.VTT.V10.websocket.dto.ConditionPoolEvent;
+import com.VTT.V10.websocket.dto.DiceRollEvent;
+import com.VTT.V10.websocket.dto.DrawingEvent;
+import com.VTT.V10.websocket.dto.FogEvent;
+import com.VTT.V10.websocket.dto.SocketEvent;
+import com.VTT.V10.websocket.dto.TokenMoveEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -16,6 +25,9 @@ import java.security.Principal;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Inbound STOMP controller with zero-blocking immediate broadcasts and decoupled asynchronous persistence.
+ */
 @Slf4j
 @Controller
 @RequiredArgsConstructor
@@ -60,13 +72,11 @@ public class RoomWebSocketController {
     ) {
         if (event == null || event.getData() == null || principal == null) return;
 
-        // اعتبارسنجی اولیه: کاربر باید حتماً عضو رسمی اتاق باشد
         if (!roomService.isMember(roomId, principal.getName())) {
             log.warn("Blocked unprivileged token event from {} in room {}", principal.getName(), roomId);
             return;
         }
 
-        // انتشار پیام به تاپیک اتاق و ذخیره‌سازی
         messagingTemplate.convertAndSend(WsConstants.TOPIC_ROOM_PREFIX + roomId, event);
         tokenService.asyncUpdateTokenFromEvent(event.getData(), principal.getName(), roomId);
     }
@@ -134,7 +144,7 @@ public class RoomWebSocketController {
             messagingTemplate.convertAndSend(WsConstants.TOPIC_ROOM_PREFIX + roomId, event);
             drawingService.asyncSaveOrUpdateDrawing(roomId, data);
         } else {
-            log.warn("User {} lack permission {} for drawing in room {}", principal.getName(), requiredPerm, roomId);
+            log.warn("User {} lacks permission {} for drawing in room {}", principal.getName(), requiredPerm, roomId);
         }
     }
 
