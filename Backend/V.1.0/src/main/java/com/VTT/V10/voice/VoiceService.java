@@ -7,10 +7,15 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * High-performance cryptographic signing service for LiveKit SFU access tokens.
+ * Utilizes pre-initialized thread-local HMAC-SHA256 instances to eliminate instantiation overhead.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -19,11 +24,33 @@ public class VoiceService {
     private final LiveKitConfig config;
     private static final String HMAC_ALGORITHM = "HmacSHA256";
 
-    @Async
+    // ThreadLocal cache to reuse Mac instances across calls on the same worker thread safely
+    private final ThreadLocal<Mac> macThreadLocal = ThreadLocal.withInitial(() -> {
+        try {
+            Mac mac = Mac.getInstance(HMAC_ALGORITHM);
+            mac.init(config.getSecretKeySpec());
+            return mac;
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to initialize ThreadLocal HMAC instance", e);
+        }
+    });
+
+    /**
+     * Asynchronously generates an access token for LiveKit voice rooms.
+     */
+    @Async("generalTaskExecutor")
     public CompletableFuture<String> generateTokenAsync(UUID roomId, UUID userId, String username) {
         return CompletableFuture.completedFuture(generateToken(roomId, userId, username));
     }
 
+    /**
+     * Generates a signed LiveKit JWT access token compliant with LiveKit SFU claim expectations.
+     *
+     * @param roomId   target room UUID
+     * @param userId   authenticated user UUID
+     * @param username user display name in voice channel
+     * @return signed JWT string
+     */
     public String generateToken(UUID roomId, UUID userId, String username) {
         if (roomId == null || userId == null) {
             throw new IllegalArgumentException("roomId and userId cannot be null");
@@ -31,7 +58,7 @@ public class VoiceService {
 
         try {
             long nowSec = System.currentTimeMillis() / 1000L;
-            long expSec = nowSec + (4L * 60L * 60L); // ۴ ساعت اعتبار
+            long expSec = nowSec + (4L * 60L * 60L); // 4 hours validity
 
             String safeUserId = userId.toString();
             String safeUsername = (username != null && !username.isBlank())
@@ -39,10 +66,10 @@ public class VoiceService {
                     : "Player";
             String safeRoomId = roomId.toString();
 
-            // ۱. Header استاندارد JWT (دقیقاً بر اساس نیاز LiveKit SFU)
+            // 1. Standard JWT Header
             String headerJson = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
 
-            // ۲. Payload دقیق استاندارد LiveKit RFC-7519
+            // 2. LiveKit RFC-7519 Payload
             String payloadJson = String.format(
                     "{\"iss\":\"%s\",\"sub\":\"%s\",\"name\":\"%s\",\"video\":{\"canPublish\":true,\"canSubscribe\":true,\"room\":\"%s\",\"roomJoin\":true},\"iat\":%d,\"nbf\":%d,\"exp\":%d}",
                     config.getApiKey(), safeUserId, safeUsername, safeRoomId, nowSec, nowSec, expSec
@@ -53,10 +80,9 @@ public class VoiceService {
             String encodedPayload = b64.encodeToString(payloadJson.getBytes(StandardCharsets.UTF_8));
             String dataToSign = encodedHeader + "." + encodedPayload;
 
-            // ۳. محاسبه امضای دیجیتال HMAC-SHA256 بدون SDK خارجی
-            Mac mac = Mac.getInstance(HMAC_ALGORITHM);
-            mac.init(config.getSecretKeySpec());
-
+            // 3. Fast Cryptographic Signature via Cached ThreadLocal Mac
+            Mac mac = macThreadLocal.get();
+            mac.reset();
             byte[] signatureBytes = mac.doFinal(dataToSign.getBytes(StandardCharsets.UTF_8));
             String encodedSignature = b64.encodeToString(signatureBytes);
 

@@ -1,10 +1,6 @@
 package com.VTT.V10.auth;
 
-import com.VTT.V10.auth.dto.AuthResponse;
-import com.VTT.V10.auth.dto.GoogleAuthRequest;
-import com.VTT.V10.auth.dto.LoginRequest;
-import com.VTT.V10.auth.dto.RegisterRequest;
-import com.VTT.V10.auth.dto.UserDto;
+import com.VTT.V10.auth.dto.*;
 import com.VTT.V10.room.RoomMemberRepository;
 import com.VTT.V10.user.User;
 import com.VTT.V10.user.UserRepository;
@@ -27,6 +23,9 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Authentication service handling credentials validation, Google OAuth verification, and account creation.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -116,9 +115,7 @@ public class AuthService {
     }
 
     /**
-     * منطق هوشمند Find or Create برای ورود و ثبت‌نام با گوگل:
-     * ۱. اگر کاربر از قبل با این ایمیل وجود داشته باشد -> لاگین با همان اکانت (بدون ساخت اکانت تکراری)
-     * ۲. اگر کاربر وجود نداشته باشد -> ایجاد اکانت جدید و ورود خودکار
+     * Resolves or provisions user account based on verified Google OAuth ID Token.
      */
     @Transactional
     public AuthResponse loginWithGoogle(GoogleAuthRequest request) {
@@ -147,7 +144,6 @@ public class AuthService {
             User user;
 
             if (existingUserOpt.isPresent()) {
-                // کاربر از قبل وجود دارد -> ورود با اکانت قبلی و بروزرسانی پیوند گوگل
                 user = existingUserOpt.get();
                 boolean shouldUpdate = false;
 
@@ -169,22 +165,15 @@ public class AuthService {
                 }
                 log.info("Google Sign-In: Existing account found for email: [{}]. Logged in successfully.", email);
             } else {
-                // کاربر وجود ندارد -> ثبت‌نام اکانت جدید
                 String baseUsername = (name != null ? name.replaceAll("[^a-zA-Z0-9_]", "_").toLowerCase() : email.split("@")[0].replaceAll("[^a-zA-Z0-9_]", "_"));
                 if (baseUsername.length() < 3) {
                     baseUsername = "user_" + baseUsername;
                 }
-                if (baseUsername.length() > 40) {
-                    baseUsername = baseUsername.substring(0, 40);
+                if (baseUsername.length() > 30) {
+                    baseUsername = baseUsername.substring(0, 30);
                 }
 
-                String generatedUsername = baseUsername;
-                int attempts = 0;
-                while (userRepository.existsByUsername(generatedUsername) && attempts < 10) {
-                    generatedUsername = baseUsername + "_" + (100 + SECURE_RANDOM.nextInt(900));
-                    attempts++;
-                }
-
+                String generatedUsername = baseUsername + "_" + (1000 + SECURE_RANDOM.nextInt(9000));
                 if (userRepository.existsByUsername(generatedUsername)) {
                     generatedUsername = "user_" + UUID.randomUUID().toString().substring(0, 8);
                 }

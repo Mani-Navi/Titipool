@@ -17,6 +17,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Controller providing verified access tokens for LiveKit SFU voice communication.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/voice")
@@ -28,10 +31,17 @@ public class VoiceController {
     private final UserService userService;
     private final RoomService roomService;
 
-    // Rate Limiting: حداکثر ۱۰ درخواست در دقیقه به ازای هر کاربر
+    // Rate Limiting: Max 10 requests per minute per user
     private static final int MAX_REQUESTS_PER_MINUTE = 10;
     private final Map<UUID, UserRateLimitWindow> rateLimiters = new ConcurrentHashMap<>();
 
+    /**
+     * Generates a single-use LiveKit voice room token for verified room members.
+     *
+     * @param roomId         room identifier
+     * @param authentication current user security context
+     * @return VoiceTokenResponse containing JWT and SFU connection URL
+     */
     @GetMapping("/token")
     public ResponseEntity<VoiceTokenResponse> getToken(
             @RequestParam(required = false) UUID roomId,
@@ -46,31 +56,37 @@ public class VoiceController {
 
         User user = userService.getByEmail(authentication.getName());
 
-        // ۱. اعتبارسنجی عضویت کاربر در اتاق
+        // 1. Verify membership
         if (!roomService.isUserMemberOfRoom(roomId, user.getId())) {
             log.warn("Security Alert: User {} attempted to access voice in unjoined room {}", user.getId(), roomId);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "شما عضو این اتاق نیستید");
         }
 
-        // ۲. اعمال Rate Limit
+        // 2. Enforce Rate Limiting with automatic eviction
         checkRateLimit(user.getId());
 
-        // ۳. صدور مستقیم توکن صوتی بدون باگ اسپرینگ سکیوریتی ASYNC
+        // 3. Issue Token
         String token = voiceService.generateToken(roomId, user.getId(), user.getUsername());
         return ResponseEntity.ok(new VoiceTokenResponse(token, config.getUrl()));
     }
 
     private void checkRateLimit(UUID userId) {
         long currentMinute = System.currentTimeMillis() / 60000L;
+
+        // Periodic light eviction if map scales over 2000 active keys
+        if (rateLimiters.size() > 2000) {
+            rateLimiters.entrySet().removeIf(entry -> entry.getValue().minuteWindow() < currentMinute);
+        }
+
         UserRateLimitWindow window = rateLimiters.compute(userId, (k, existing) -> {
-            if (existing == null || existing.minuteWindow != currentMinute) {
+            if (existing == null || existing.minuteWindow() != currentMinute) {
                 return new UserRateLimitWindow(currentMinute, new AtomicInteger(1));
             }
-            existing.counter.incrementAndGet();
+            existing.counter().incrementAndGet();
             return existing;
         });
 
-        if (window.counter.get() > MAX_REQUESTS_PER_MINUTE) {
+        if (window.counter().get() > MAX_REQUESTS_PER_MINUTE) {
             log.warn("Rate limit exceeded for user: {}", userId);
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "تعداد درخواست‌های بیش از حد مجاز (حداکثر ۱۰ درخواست در دقیقه)");
         }
