@@ -11,6 +11,9 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Web MVC configuration for static upload resources and CORS policies.
+ */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 

@@ -17,11 +17,15 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 
+/**
+ * Intercepts incoming WebSocket CONNECT frames and authenticates STOMP connections via Bearer JWT.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class WebSocketAuthenticationInterceptor implements ChannelInterceptor {
 
+    private static final String BEARER_PREFIX = "Bearer ";
     private final JwtService jwtService;
 
     @Override
@@ -34,12 +38,12 @@ public class WebSocketAuthenticationInterceptor implements ChannelInterceptor {
                 authHeader = accessor.getFirstNativeHeader("authorization");
             }
 
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
                 log.warn("WebSocket CONNECT rejected: Missing Bearer authorization header");
                 throw new MessageDeliveryException("Unauthorized: Missing or malformed STOMP Authorization header");
             }
 
-            String token = authHeader.substring(7);
+            String token = authHeader.substring(BEARER_PREFIX.length());
             try {
                 if (!jwtService.validateToken(token)) {
                     throw new AuthenticationCredentialsNotFoundException("Token validation failed");
