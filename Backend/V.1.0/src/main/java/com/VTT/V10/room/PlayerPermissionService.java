@@ -1,5 +1,6 @@
 package com.VTT.V10.room;
 
+import com.VTT.V10.config.CacheConfig;
 import com.VTT.V10.room.dto.PermissionResponse;
 import com.VTT.V10.room.dto.UpdatePermissionRequest;
 import com.VTT.V10.user.User;
@@ -8,6 +9,8 @@ import com.VTT.V10.websocket.WsConstants;
 import com.VTT.V10.websocket.dto.SocketEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -17,6 +20,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Service managing contextual participant permissions inside tactical rooms.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -75,7 +81,8 @@ public class PlayerPermissionService {
 
         PermissionResponse updated = updatePermissions(request);
 
-        messagingTemplate.convertAndSend(WsConstants.TOPIC_ROOM_PREFIX + roomId,
+        messagingTemplate.convertAndSend(
+                WsConstants.TOPIC_ROOM_PREFIX + roomId,
                 SocketEvent.<PermissionResponse>builder()
                         .roomId(roomId)
                         .action("PERMISSION_UPDATED")
@@ -86,6 +93,7 @@ public class PlayerPermissionService {
         return updated;
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_PERMISSIONS, key = "#request.memberId")
     @Transactional
     public PermissionResponse updatePermissions(UpdatePermissionRequest request) {
         if (request == null || request.getMemberId() == null) {
@@ -118,7 +126,7 @@ public class PlayerPermissionService {
         if (request.getCanRuler() != null) perm.setCanRuler(request.getCanRuler());
         if (request.getCanEditToken() != null) perm.setCanEditToken(request.getCanEditToken());
 
-        permissionRepository.saveAndFlush(perm);
+        permissionRepository.save(perm);
         return convertToResponse(perm);
     }
 
@@ -138,6 +146,7 @@ public class PlayerPermissionService {
         return getMemberPermissions(memberId);
     }
 
+    @Cacheable(value = CacheConfig.CACHE_PERMISSIONS, key = "#memberId")
     @Transactional(readOnly = true)
     public PermissionResponse getMemberPermissions(UUID memberId) {
         PlayerPermission perm = permissionRepository.findByMemberId(memberId).orElseGet(() -> {
@@ -160,7 +169,7 @@ public class PlayerPermissionService {
         return convertToResponse(perm);
     }
 
-    private PermissionResponse convertToResponse(PlayerPermission p) {
+    public PermissionResponse convertToResponse(PlayerPermission p) {
         return PermissionResponse.builder()
                 .memberId(p.getMember().getId())
                 .username(p.getMember().getUser() != null ? p.getMember().getUser().getUsername() : "")

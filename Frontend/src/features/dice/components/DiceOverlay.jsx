@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { DiceCanvas } from './DiceCanvas';
 import { useDiceStore } from '../state/dice.store';
 import { DICE_THEMES } from '../engine/textureGenerator';
@@ -6,39 +6,36 @@ import { diceAudio } from '../engine/diceAudio';
 import { RotateCcw, X, Trash2, Dices, Zap, User, Sparkles } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 
-const DICE_TYPES = [
+const DICE_TYPES = Object.freeze([
     { type: 'd4', label: 'D4', maxVal: 4 },
     { type: 'd6', label: 'D6', maxVal: 6 },
     { type: 'd8', label: 'D8', maxVal: 8 },
-    { type: 'd10', label: 'D10', maxVal: 9 }, // در فرمت تک d10 مقدار 0 تا 9 است
+    { type: 'd10', label: 'D10', maxVal: 9 },
     { type: 'd12', label: 'D12', maxVal: 12 },
     { type: 'd20', label: 'D20', maxVal: 20 },
     { type: 'd100', label: 'D100', maxVal: 100 },
-];
+]);
 
 export function DiceOverlay() {
-    const {
-        isOpen,
-        isRolling,
-        results,
-        totalSum,
-        rollerName,
-        isRemoteRoll,
-        setOpen,
-        triggerRoll,
-        clearDice,
-        activeDice,
-        selectedTheme,
-        setSelectedTheme,
-    } = useDiceStore();
+    const isOpen = useDiceStore((s) => s.isOpen);
+    const isRolling = useDiceStore((s) => s.isRolling);
+    const results = useDiceStore((s) => s.results);
+    const totalSum = useDiceStore((s) => s.totalSum);
+    const rollerName = useDiceStore((s) => s.rollerName);
+    const isRemoteRoll = useDiceStore((s) => s.isRemoteRoll);
+    const setOpen = useDiceStore((s) => s.setOpen);
+    const triggerRoll = useDiceStore((s) => s.triggerRoll);
+    const clearDice = useDiceStore((s) => s.clearDice);
+    const activeDiceLength = useDiceStore((s) => s.activeDice.length);
+    const selectedTheme = useDiceStore((s) => s.selectedTheme);
+    const setSelectedTheme = useDiceStore((s) => s.setSelectedTheme);
 
     const [mode, setMode] = useState('quick');
     const [poolCounts, setPoolCounts] = useState({});
     const [lastRollTypes, setLastRollTypes] = useState(['d20']);
     const playedCritAudioRef = useRef(false);
 
-    // بررسی اینکه آیا هر یک از تاس‌ها به حداکثر مقدار ممکن خود (Max / Critical) رسیده‌اند یا خیر
-    const isAnyCritical = React.useMemo(() => {
+    const isAnyCritical = useMemo(() => {
         if (results.length === 0 || isRolling) return false;
         return results.some((r) => {
             const config = DICE_TYPES.find((d) => d.type === r.type);
@@ -48,7 +45,6 @@ export function DiceOverlay() {
         });
     }, [results, isRolling]);
 
-    // پخش افکت صدای جادویی در صورت وقوع Critical
     useEffect(() => {
         if (isAnyCritical && !playedCritAudioRef.current) {
             diceAudio.playCriticalSuccess();
@@ -59,22 +55,20 @@ export function DiceOverlay() {
         }
     }, [isAnyCritical, isRolling]);
 
-    if (!isOpen && activeDice.length === 0) return null;
-
-    const handleQuickRoll = (type) => {
+    const handleQuickRoll = useCallback((type) => {
         const diceToRoll = type === 'd100' ? ['d100', 'd10'] : [type];
         setLastRollTypes(diceToRoll);
         triggerRoll(diceToRoll);
-    };
+    }, [triggerRoll]);
 
-    const handleAddToPool = (type) => {
+    const handleAddToPool = useCallback((type) => {
         setPoolCounts((prev) => ({
             ...prev,
             [type]: (prev[type] || 0) + 1,
         }));
-    };
+    }, []);
 
-    const handleRemoveFromPool = (type, e) => {
+    const handleRemoveFromPool = useCallback((type, e) => {
         e.stopPropagation();
         setPoolCounts((prev) => {
             const current = prev[type] || 0;
@@ -85,13 +79,13 @@ export function DiceOverlay() {
             }
             return { ...prev, [type]: current - 1 };
         });
-    };
+    }, []);
 
-    const handleClearPool = () => {
+    const handleClearPool = useCallback(() => {
         setPoolCounts({});
-    };
+    }, []);
 
-    const handleRollPool = () => {
+    const handleRollPool = useCallback(() => {
         const diceToRoll = [];
         Object.entries(poolCounts).forEach(([type, count]) => {
             for (let i = 0; i < count; i++) {
@@ -107,26 +101,28 @@ export function DiceOverlay() {
 
         setLastRollTypes(diceToRoll);
         triggerRoll(diceToRoll);
-    };
+    }, [poolCounts, triggerRoll]);
 
-    const totalPoolDiceCount = Object.values(poolCounts).reduce((a, b) => a + b, 0);
+    const totalPoolDiceCount = useMemo(() => {
+        return Object.values(poolCounts).reduce((a, b) => a + b, 0);
+    }, [poolCounts]);
 
-    const handleReRoll = () => {
+    const handleReRoll = useCallback(() => {
         if (lastRollTypes.length > 0) {
             triggerRoll(lastRollTypes);
         } else {
             triggerRoll(['d20']);
         }
-    };
+    }, [lastRollTypes, triggerRoll]);
+
+    if (!isOpen && activeDiceLength === 0) return null;
 
     return (
         <div className="fixed inset-0 z-[110] pointer-events-none select-none font-fa" dir="rtl">
-            {/* رندر بلادرنگ کانواس سه‌بعدی */}
             <div className="absolute inset-0">
-                <DiceCanvas />
+                <DiceCanvas overlayMode={true} />
             </div>
 
-            {/* بنر نتیجه نهایی در بالای صفحه با عمق بصری بالا */}
             {results.length > 0 && (
                 <div className="absolute top-14 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-1.5 animate-fade-in-up">
                     <div
@@ -137,7 +133,6 @@ export function DiceOverlay() {
                                 : "bg-zinc-950/90 border border-amber-500/30 shadow-[0_10px_35px_rgba(0,0,0,0.7)]"
                         )}
                     >
-                        {/* نشان افتخاری در صورت Critical */}
                         {isAnyCritical && (
                             <div className="flex items-center gap-1 text-amber-300 text-xs font-black px-2.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400/50 animate-pulse shadow-sm">
                                 <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-spin" />
@@ -164,8 +159,8 @@ export function DiceOverlay() {
                                         : "text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.35)]"
                             )}
                         >
-              {totalSum}
-            </span>
+                            {totalSum}
+                        </span>
 
                         <div className="flex items-center gap-1.5 border-r border-zinc-800/80 pr-3.5 mr-1">
                             {results.map((r, i) => {
@@ -182,8 +177,8 @@ export function DiceOverlay() {
                                                 : "bg-zinc-900 border border-zinc-700/80 text-amber-200/90"
                                         )}
                                     >
-                    {r.value}
-                  </span>
+                                        {r.value}
+                                    </span>
                                 );
                             })}
                         </div>
@@ -199,7 +194,6 @@ export function DiceOverlay() {
                             </button>
                         )}
 
-                        {/* دکمه بستن بنر برای تماشاگران */}
                         {isRemoteRoll && (
                             <button
                                 type="button"
@@ -214,7 +208,6 @@ export function DiceOverlay() {
                 </div>
             )}
 
-            {/* داک شناور انتخاب تاس */}
             {isOpen && !isRemoteRoll && (
                 <div className="absolute bottom-20 sm:bottom-6 left-3 sm:left-6 pointer-events-auto flex flex-col gap-2 animate-fade-in-up">
                     {mode === 'pool' && totalPoolDiceCount > 0 && (
@@ -258,7 +251,6 @@ export function DiceOverlay() {
                     )}
 
                     <div className="flex items-center gap-1.5 bg-zinc-950/90 border border-zinc-800/80 p-1.5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.7)] backdrop-blur-2xl">
-                        {/* انتخاب تِم رنگی ۶‌گانه با افکت درخشش هاور */}
                         <div className="flex items-center gap-1 bg-zinc-900/80 p-1 rounded-xl border border-zinc-800/80 ml-1">
                             {Object.values(DICE_THEMES).map((t) => (
                                 <button
@@ -282,7 +274,6 @@ export function DiceOverlay() {
 
                         <div className="w-px h-5 bg-zinc-800/80 mx-0.5" />
 
-                        {/* سوییچر حالت تکی / استخر به سبک Segmented Control */}
                         <div className="flex items-center bg-zinc-900/80 p-0.5 rounded-xl border border-zinc-800/80 ml-1">
                             <button
                                 type="button"
@@ -314,7 +305,6 @@ export function DiceOverlay() {
 
                         <div className="w-px h-5 bg-zinc-800/80 mx-0.5" />
 
-                        {/* کلیدهای تاس‌های D4 تا D100 */}
                         {DICE_TYPES.map((d) => {
                             const inPoolCount = poolCounts[d.type] || 0;
                             return (
@@ -333,8 +323,8 @@ export function DiceOverlay() {
                                     <span>{d.label}</span>
                                     {mode === 'pool' && inPoolCount > 0 && (
                                         <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-zinc-950 text-[10px] font-sans font-black rounded-full flex items-center justify-center shadow-md animate-fade-in-up">
-                      {inPoolCount}
-                    </span>
+                                            {inPoolCount}
+                                        </span>
                                     )}
                                 </button>
                             );

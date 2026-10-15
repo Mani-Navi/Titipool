@@ -20,6 +20,9 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+/**
+ * Service handling user profiles, credentials updates, and email verification workflows.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -45,7 +48,6 @@ public class UserService {
 
         if (request.getUsername() != null && !request.getUsername().isBlank()) {
             String trimmedUsername = request.getUsername().trim();
-            // اگر یوزرنیم تغییر کرده بود، چک کن که متعلق به کاربر دیگری نباشد (رفع خطای 409)
             if (!trimmedUsername.equalsIgnoreCase(user.getUsername())) {
                 Optional<User> existingUser = userRepository.findByUsername(trimmedUsername);
                 if (existingUser.isPresent() && !existingUser.get().getId().equals(user.getId())) {
@@ -66,7 +68,6 @@ public class UserService {
     @Transactional
     public void changePassword(String userEmail, ChangePasswordRequest request) {
         User user = getByEmail(userEmail);
-
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
@@ -106,7 +107,6 @@ public class UserService {
     public void sendVerificationCode(String userEmail) {
         User user = getByEmail(userEmail);
 
-        // اعتبارسنجی محدودیت زمانی: جلوگیری از درخواست مجدد قبل از سپری شدن ۶۰ ثانیه
         if (user.getVerificationExpiry() != null &&
                 LocalDateTime.now().isBefore(user.getVerificationExpiry().minusSeconds(60))) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "لطفاً پیش از درخواست مجدد یک دقیقه صبر کنید");

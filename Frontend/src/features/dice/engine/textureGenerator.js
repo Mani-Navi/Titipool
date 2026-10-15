@@ -93,7 +93,14 @@ export const DICE_THEMES = {
     },
 };
 
-export function createThemedMarbleTexture(text, type = 'd20', themeName = 'amethyst', size = 512) {
+const textureCache = new Map();
+
+export function createThemedMarbleTexture(text, type = 'd20', themeName = 'amethyst', size = 256) {
+    const cacheKey = `${type}-${themeName}-${text}-${size}`;
+    if (textureCache.has(cacheKey)) {
+        return textureCache.get(cacheKey);
+    }
+
     const theme = DICE_THEMES[themeName] || DICE_THEMES.amethyst;
     const isIvory = theme.id === 'ivory';
 
@@ -113,32 +120,30 @@ export function createThemedMarbleTexture(text, type = 'd20', themeName = 'ameth
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, size, size);
 
-    // ۲. رگه‌های ابری سنگ مرمر جواهری (Marble Veining)
+    // ۲. رگه‌های ابری سنگ مرمر
     ctx.save();
-    ctx.lineWidth = 18;
+    ctx.lineWidth = 10;
     ctx.lineCap = 'round';
-    ctx.filter = 'blur(12px)';
+    ctx.filter = 'blur(6px)';
 
-    // رگه اول
     ctx.strokeStyle = theme.vein1;
     ctx.beginPath();
     ctx.moveTo(size * 0.12, size * 0.15);
     ctx.bezierCurveTo(size * 0.4, size * 0.28, size * 0.52, size * 0.75, size * 0.88, size * 0.88);
     ctx.stroke();
 
-    // رگه دوم
     ctx.strokeStyle = theme.vein2;
-    ctx.lineWidth = 11;
+    ctx.lineWidth = 6;
     ctx.beginPath();
     ctx.moveTo(size * 0.88, size * 0.18);
     ctx.bezierCurveTo(size * 0.62, size * 0.42, size * 0.38, size * 0.62, size * 0.12, size * 0.82);
     ctx.stroke();
     ctx.restore();
 
-    // ۳. رسم خطوط فرورفته کادر دور هر وجه (Inset Border)
+    // ۳. رسم خطوط فرورفته کادر دور هر وجه
     ctx.save();
     ctx.strokeStyle = theme.borderColor;
-    ctx.lineWidth = 7;
+    ctx.lineWidth = 4;
     ctx.lineJoin = 'round';
 
     if (type === 'd6') {
@@ -172,10 +177,10 @@ export function createThemedMarbleTexture(text, type = 'd20', themeName = 'ameth
     }
     ctx.restore();
 
-    // ۴. رسم اعداد حکاکی شده با استایل قلم Cinzel و گرادیان ورق طلا / برنز
+    // ۴. رسم اعداد حکاکی شده
     const textStr = String(text);
     const isPercentile = type === 'd100';
-    const fontSize = isPercentile ? 122 : textStr.length >= 2 ? 142 : 185;
+    const fontSize = isPercentile ? 64 : textStr.length >= 2 ? 74 : 96;
 
     ctx.font = `bold ${fontSize}px "Cinzel", "Times New Roman", Georgia, serif`;
     ctx.textAlign = 'center';
@@ -183,15 +188,14 @@ export function createThemedMarbleTexture(text, type = 'd20', themeName = 'ameth
 
     const centerY = (type === 'd4' || type === 'd8' || type === 'd20') ? size * 0.55 : size * 0.51;
 
-    // افکت سایه حکاکی
     if (isIvory) {
         ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-        ctx.shadowBlur = 6;
-        ctx.shadowOffsetY = 3;
+        ctx.shadowBlur = 3;
+        ctx.shadowOffsetY = 2;
     } else {
         ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetY = 6;
+        ctx.shadowBlur = 5;
+        ctx.shadowOffsetY = 3;
     }
 
     const goldGrad = ctx.createLinearGradient(0, size * 0.25, 0, size * 0.75);
@@ -202,21 +206,21 @@ export function createThemedMarbleTexture(text, type = 'd20', themeName = 'ameth
     ctx.fillStyle = goldGrad;
     ctx.fillText(textStr, size * 0.5, centerY);
 
-    // خط بیرونی ظریف برای وضوح لبه‌ها
     ctx.shadowColor = 'transparent';
     ctx.strokeStyle = isIvory ? 'rgba(69, 26, 3, 0.6)' : 'rgba(254, 240, 138, 0.75)';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 1.5;
     ctx.strokeText(textStr, size * 0.5, centerY);
 
-    // خط زیر ۶ و ۹ مطابق شیت مرجع
     if (text === 6 || text === 9) {
         ctx.fillStyle = goldGrad;
-        ctx.fillRect(size * 0.38, centerY + 80, size * 0.24, 12);
+        ctx.fillRect(size * 0.38, centerY + 40, size * 0.24, 6);
     }
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.generateMipmaps = true;
     texture.minFilter = THREE.LinearMipmapLinearFilter;
+
+    textureCache.set(cacheKey, texture);
     return texture;
 }
 

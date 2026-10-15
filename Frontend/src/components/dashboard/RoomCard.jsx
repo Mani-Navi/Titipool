@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, memo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useClipboard } from "../../hooks/useClipboard";
 import {
@@ -19,6 +19,8 @@ import {
 import { Badge } from "../ui/Badge.jsx";
 import { Button } from "../ui/Button.jsx";
 
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
 export const RoomCard = memo(({ room, onRequestDelete, onRequestEdit, onRequestLeave }) => {
   const navigate = useNavigate();
   const { copy, copied } = useClipboard();
@@ -33,31 +35,37 @@ export const RoomCard = memo(({ room, onRequestDelete, onRequestEdit, onRequestL
     };
   }, []);
 
-  const getDaysLeft = (expiresAt) => {
+  const daysLeft = useMemo(() => {
+    const expiresAt = room.expires_at || room.expiresAt;
     if (!expiresAt) return 30;
     const diff = new Date(expiresAt).getTime() - Date.now();
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-  };
+    return Math.max(0, Math.ceil(diff / MS_PER_DAY));
+  }, [room.expires_at, room.expiresAt]);
 
-  const daysLeft = getDaysLeft(room.expires_at || room.expiresAt);
-  const isOptimistic = !!room.isOptimistic;
+  const isOptimistic = Boolean(room.isOptimistic);
   const isGM = room.role === "GM";
 
-  const resolvedHostTitle =
-      room.hostRoleTitle ||
-      room.host_role_title ||
-      (typeof window !== "undefined" && room.id ? localStorage.getItem(`room_${room.id}_host_title`) : null) ||
-      "میزبان";
+  const resolvedHostTitle = useMemo(() => {
+    return (
+        room.hostRoleTitle ||
+        room.host_role_title ||
+        (typeof window !== "undefined" && room.id ? localStorage.getItem(`room_${room.id}_host_title`) : null) ||
+        "میزبان"
+    );
+  }, [room.id, room.hostRoleTitle, room.host_role_title]);
 
-  const resolvedPlayerTitle =
-      room.playerRoleTitle ||
-      room.player_role_title ||
-      (typeof window !== "undefined" && room.id ? localStorage.getItem(`room_${room.id}_player_title`) : null) ||
-      "بازیکن";
+  const resolvedPlayerTitle = useMemo(() => {
+    return (
+        room.playerRoleTitle ||
+        room.player_role_title ||
+        (typeof window !== "undefined" && room.id ? localStorage.getItem(`room_${room.id}_player_title`) : null) ||
+        "بازیکن"
+    );
+  }, [room.id, room.playerRoleTitle, room.player_role_title]);
 
   const displayRoleTitle = isGM ? resolvedHostTitle : resolvedPlayerTitle;
 
-  const handleCopyLink = () => {
+  const handleCopyLink = useCallback(() => {
     const inviteUrl = `${window.location.origin}/dashboard?join=${room.code}`;
     if (navigator?.clipboard?.writeText) {
       navigator.clipboard
@@ -71,7 +79,7 @@ export const RoomCard = memo(({ room, onRequestDelete, onRequestEdit, onRequestL
           })
           .catch(() => {});
     }
-  };
+  }, [room.code]);
 
   return (
       <div
@@ -80,12 +88,12 @@ export const RoomCard = memo(({ room, onRequestDelete, onRequestEdit, onRequestL
           }`}
           dir="rtl"
       >
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-500/0 via-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-500/0 via-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" aria-hidden="true" />
 
         {isOptimistic && (
-            <div className="absolute inset-0 bg-zinc-950/70 backdrop-blur-xs flex items-center justify-center rounded-2xl z-20">
+            <div className="absolute inset-0 bg-zinc-950/70 backdrop-blur-xs flex items-center justify-center rounded-2xl z-20" role="status">
               <Badge variant="amber" size="md">
-                <span className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin ml-1.5" />
+                <span className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin ml-1.5" aria-hidden="true" />
                 در حال ساخت اتاق در سرور...
               </Badge>
             </div>
@@ -105,17 +113,19 @@ export const RoomCard = memo(({ room, onRequestDelete, onRequestEdit, onRequestL
                     <span
                         className="p-1 rounded-md bg-amber-500/10 text-amber-400 shrink-0 border border-amber-500/20"
                         title="اتاق دارای رمز عبور است"
+                        aria-label="اتاق محافظت‌شده با رمز عبور"
                     >
-                  <Lock className="w-3 h-3" />
-                </span>
+                      <Lock className="w-3 h-3" aria-hidden="true" />
+                    </span>
                 )}
                 {room.type === "OFFICIAL" && (
                     <span
                         className="p-1 rounded-md bg-amber-500/10 text-amber-500 shrink-0 border border-amber-500/20"
                         title="قالب و سناریوی آماده Titipool"
+                        aria-label="سناریوی رسمی Titipool"
                     >
-                  <Scroll className="w-3 h-3" />
-                </span>
+                      <Scroll className="w-3 h-3" aria-hidden="true" />
+                    </span>
                 )}
               </div>
 
@@ -133,9 +143,9 @@ export const RoomCard = memo(({ room, onRequestDelete, onRequestEdit, onRequestL
 
             <Badge variant={isGM ? "gm" : "player"} className="shrink-0 font-semibold gap-1 text-[10px]">
               {isGM ? (
-                  <Crown className="w-3 h-3 text-amber-400" />
+                  <Crown className="w-3 h-3 text-amber-400" aria-hidden="true" />
               ) : (
-                  <Swords className="w-3 h-3 text-blue-400" />
+                  <Swords className="w-3 h-3 text-blue-400" aria-hidden="true" />
               )}
               <span>{displayRoleTitle}</span>
             </Badge>
@@ -145,58 +155,61 @@ export const RoomCard = memo(({ room, onRequestDelete, onRequestEdit, onRequestL
             <button
                 type="button"
                 onClick={() => copy(room.code)}
-                className="group/code text-xs font-mono bg-zinc-950/90 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 px-2.5 py-1.5 rounded-xl border border-zinc-700/60 hover:border-amber-500/40 active:scale-95 transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-inner"
+                aria-label={`کپی کد ۶ رقمی اتاق ${room.name}: ${room.code}`}
+                className="group/code text-xs font-mono bg-zinc-950/90 hover:bg-zinc-800 text-zinc-300 hover:text-amber-300 px-2.5 py-1.5 rounded-xl border border-zinc-700/60 hover:border-amber-500/40 active:scale-95 transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-inner focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-400"
                 title="کلیک برای کپی کد ۶ حرفی"
             >
               <span className="tracking-widest font-bold">{room.code}</span>
               {copied ? (
                   <span className="flex items-center gap-1 text-emerald-400 text-[10px] font-fa font-bold">
-                <Check className="w-3 h-3" /> کپی شد
-              </span>
+                    <Check className="w-3 h-3" aria-hidden="true" /> کپی شد
+                  </span>
               ) : (
-                  <Copy className="w-3.5 h-3.5 text-zinc-500 group-hover/code:text-amber-400 transition-colors" />
+                  <Copy className="w-3.5 h-3.5 text-zinc-500 group-hover/code:text-amber-400 transition-colors" aria-hidden="true" />
               )}
             </button>
 
             <button
                 type="button"
                 onClick={handleCopyLink}
-                className="p-1.5 rounded-xl bg-zinc-950/90 hover:bg-zinc-800 text-zinc-400 hover:text-amber-300 border border-zinc-700/60 active:scale-95 transition-all duration-150 cursor-pointer flex items-center gap-1 text-xs"
+                aria-label={`کپی لینک مستقیم دعوت به اتاق ${room.name}`}
+                className="p-1.5 rounded-xl bg-zinc-950/90 hover:bg-zinc-800 text-zinc-400 hover:text-amber-300 border border-zinc-700/60 active:scale-95 transition-all duration-150 cursor-pointer flex items-center gap-1 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-400"
                 title="کپی لینک مستقیم دعوت"
             >
               {linkCopied ? (
                   <span className="text-emerald-400 text-[10px] font-fa flex items-center gap-1 px-1">
-                <Check className="w-3 h-3" /> کپی شد
-              </span>
+                    <Check className="w-3 h-3" aria-hidden="true" /> کپی شد
+                  </span>
               ) : (
-                  <Link2 className="w-3.5 h-3.5" />
+                  <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
               )}
             </button>
 
             <span className="flex items-center gap-1.5 text-[11px] text-zinc-400 mr-auto bg-zinc-950/60 px-2 py-1 rounded-lg border border-zinc-800/80">
-            <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                    room.is_active || room.isActive
-                        ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"
-                        : "bg-zinc-600"
-                }`}
-            />
-              {room.is_active || room.isActive ? "فعال" : "غیرفعال"}
-          </span>
+              <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                      room.is_active || room.isActive
+                          ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"
+                          : "bg-zinc-600"
+                  }`}
+                  aria-hidden="true"
+              />
+              <span>{room.is_active || room.isActive ? "فعال" : "غیرفعال"}</span>
+            </span>
           </div>
         </div>
 
         <div className="pt-3 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-400">
           <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1 text-zinc-400 text-[11px]">
-            <Users className="w-3.5 h-3.5 text-zinc-500" />
-            {room.player_count || room.playerCount || 1} بازیکن
-          </span>
+            <span className="flex items-center gap-1 text-zinc-400 text-[11px]">
+              <Users className="w-3.5 h-3.5 text-zinc-500" aria-hidden="true" />
+              <span>{room.player_count || room.playerCount || 1} بازیکن</span>
+            </span>
 
             <span className="flex items-center gap-1 text-zinc-400 text-[11px]">
-            <Clock className="w-3.5 h-3.5 text-zinc-500" />
-              {`${daysLeft} روز`}
-          </span>
+              <Clock className="w-3.5 h-3.5 text-zinc-500" aria-hidden="true" />
+              <span>{`${daysLeft} روز`}</span>
+            </span>
           </div>
 
           <div className="flex items-center gap-1">
@@ -205,18 +218,20 @@ export const RoomCard = memo(({ room, onRequestDelete, onRequestEdit, onRequestL
                   <button
                       type="button"
                       onClick={() => onRequestEdit(room)}
-                      className="p-1.5 text-zinc-500 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg active:scale-90 transition-all duration-150 cursor-pointer"
+                      aria-label={`ویرایش مشخصات اتاق ${room.name}`}
+                      className="p-1.5 text-zinc-500 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg active:scale-90 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-400"
                       title="ویرایش مشخصات اتاق"
                   >
-                    <Settings2 className="w-3.5 h-3.5" />
+                    <Settings2 className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
                   <button
                       type="button"
                       onClick={() => onRequestDelete(room)}
-                      className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg active:scale-90 transition-all duration-150 cursor-pointer"
+                      aria-label={`حذف اتاق ${room.name}`}
+                      className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg active:scale-90 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose-400"
                       title="حذف اتاق"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
                 </>
             )}
@@ -225,10 +240,11 @@ export const RoomCard = memo(({ room, onRequestDelete, onRequestEdit, onRequestL
                 <button
                     type="button"
                     onClick={() => onRequestLeave(room)}
-                    className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg active:scale-90 transition-all duration-150 cursor-pointer"
+                    aria-label={`خروج از اتاق ${room.name}`}
+                    className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg active:scale-90 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose-400"
                     title="خروج از این ماجراجویی"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
             )}
 
@@ -236,10 +252,11 @@ export const RoomCard = memo(({ room, onRequestDelete, onRequestEdit, onRequestL
                 size="sm"
                 variant="amber"
                 onClick={() => navigate(`/room/${room.id}`)}
+                aria-label={`ورود به میز بازی اتاق ${room.name}`}
                 className="px-3 py-1.5 text-xs gap-1 font-bold shadow-sm shadow-amber-500/10 hover:shadow-md hover:shadow-amber-500/20 active:scale-[0.97] transition-all duration-150 h-8 mr-1"
             >
               <span>ورود</span>
-              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-150 group-hover:-translate-x-0.5" />
+              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-150 group-hover:-translate-x-0.5" aria-hidden="true" />
             </Button>
           </div>
         </div>

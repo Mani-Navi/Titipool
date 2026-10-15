@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# مسدودسازی صفحات خصوصی برای موتورهای جستجو
+Disallow: /api/
+Disallow: /room/
+Disallow: /dashboard
+
+Sitemap: https://titipool.ir/sitemap.xml

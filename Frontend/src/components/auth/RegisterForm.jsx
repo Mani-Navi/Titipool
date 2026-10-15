@@ -18,6 +18,12 @@ const registerSchema = z
         email: z.string().email("ایمیل معتبر وارد کنید"),
         password: z.string().min(8, "حداقل ۸ کاراکتر").max(72, "حداکثر ۷۲ کاراکتر"),
         confirmPassword: z.string(),
+        acceptTerms: z.boolean().refine((val) => val === true, {
+            message: "پذیرش قوانین و مقررات الزامی است",
+        }),
+        acceptPrivacy: z.boolean().refine((val) => val === true, {
+            message: "پذیرش سیاست حریم خصوصی الزامی است",
+        }),
     })
     .refine((data) => data.password === data.confirmPassword, {
         message: "رمزها یکسان نیستند",
@@ -45,6 +51,10 @@ export const RegisterForm = ({ onSuccess }) => {
         formState: { errors, isSubmitting },
     } = useForm({
         resolver: zodResolver(registerSchema),
+        defaultValues: {
+            acceptTerms: false,
+            acceptPrivacy: false,
+        },
     });
 
     const passwordValue = watch("password", "");
@@ -138,21 +148,29 @@ export const RegisterForm = ({ onSuccess }) => {
     return (
         <div className="space-y-2.5 text-right w-full" dir="rtl">
             <div className="flex justify-center w-full min-h-[42px] overflow-hidden">
-                <div ref={googleButtonRef} className="w-full flex justify-center max-w-[340px]" />
+                <div
+                    ref={googleButtonRef}
+                    className="w-full flex justify-center max-w-[340px]"
+                    aria-label="ورود و ثبت‌نام سریع با حساب کاربری گوگل"
+                />
             </div>
 
-            <div className="relative flex items-center justify-center my-1.5">
+            <div className="relative flex items-center justify-center my-1.5" aria-hidden="true">
                 <div className="h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent w-full" />
                 <span className="bg-zinc-950 px-3 text-[10px] text-zinc-500 font-medium shrink-0">
-          یا تکمیل فرم زیر
-        </span>
+                    یا تکمیل فرم زیر
+                </span>
                 <div className="h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent w-full" />
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-2.5">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-2.5" noValidate>
                 {serverError && (
-                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center gap-2 animate-shake-subtle">
-                        <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                    <div
+                        role="alert"
+                        aria-live="assertive"
+                        className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center gap-2 animate-shake-subtle"
+                    >
+                        <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" aria-hidden="true" />
                         <span>{serverError}</span>
                     </div>
                 )}
@@ -163,6 +181,8 @@ export const RegisterForm = ({ onSuccess }) => {
                     error={errors.username?.message}
                     disabled={isSubmitting}
                     className="h-9 sm:h-9.5 text-xs sm:text-sm"
+                    aria-required="true"
+                    aria-invalid={!!errors.username}
                     {...register("username")}
                 />
 
@@ -173,6 +193,8 @@ export const RegisterForm = ({ onSuccess }) => {
                     error={errors.email?.message}
                     disabled={isSubmitting}
                     className="h-9 sm:h-9.5 text-xs sm:text-sm"
+                    aria-required="true"
+                    aria-invalid={!!errors.email}
                     {...register("email")}
                 />
 
@@ -185,21 +207,26 @@ export const RegisterForm = ({ onSuccess }) => {
                             error={errors.password?.message}
                             disabled={isSubmitting}
                             className="h-9 sm:h-9.5 text-xs sm:text-sm pl-10"
+                            aria-required="true"
+                            aria-invalid={!!errors.password}
                             {...register("password")}
                         />
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute left-2 top-[34px] sm:top-[33px] -translate-y-1/2 text-zinc-400 hover:text-zinc-200 active:text-amber-400 p-1.5 cursor-pointer rounded-lg active:scale-90 transition-all duration-150 flex items-center justify-center focus-visible:outline-none"
-                            tabIndex={-1}
-                            aria-label="تغییر وضعیت نمایش رمز"
+                            className="absolute left-2 top-[34px] sm:top-[33px] -translate-y-1/2 text-zinc-400 hover:text-zinc-200 active:text-amber-400 p-1.5 cursor-pointer rounded-lg active:scale-90 transition-all duration-150 flex items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-400"
+                            aria-label={showPassword ? "پنهان کردن رمز عبور" : "نمایش رمز عبور"}
+                            aria-pressed={showPassword}
                         >
-                            {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                            {showPassword ? <EyeOff className="w-3.5 h-3.5" aria-hidden="true" /> : <Eye className="w-3.5 h-3.5" aria-hidden="true" />}
                         </button>
                     </div>
 
                     {passwordValue.length > 0 && (
-                        <div className="p-2 rounded-lg bg-zinc-900/90 border border-zinc-800 text-[10px] space-y-1.5 animate-fade-in-up">
+                        <div
+                            className="p-2 rounded-lg bg-zinc-900/90 border border-zinc-800 text-[10px] space-y-1.5 animate-fade-in-up"
+                            aria-live="polite"
+                        >
                             <div className="flex items-center justify-between text-[10px]">
                                 <span className="text-zinc-400">امنیت رمز:</span>
                                 <span
@@ -213,11 +240,11 @@ export const RegisterForm = ({ onSuccess }) => {
                                                     : "text-emerald-400"
                                     }`}
                                 >
-                  {strengthInfo.label}
-                </span>
+                                    {strengthInfo.label}
+                                </span>
                             </div>
 
-                            <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
+                            <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden" aria-hidden="true">
                                 <div
                                     className={`h-full transition-all duration-300 ease-out ${strengthInfo.color}`}
                                     style={{ width: strengthInfo.width }}
@@ -233,9 +260,9 @@ export const RegisterForm = ({ onSuccess }) => {
                                         }`}
                                     >
                                         {item.valid ? (
-                                            <Check className="w-3 h-3 shrink-0 text-emerald-400" />
+                                            <Check className="w-3 h-3 shrink-0 text-emerald-400" aria-hidden="true" />
                                         ) : (
-                                            <X className="w-3 h-3 shrink-0 text-zinc-600" />
+                                            <X className="w-3 h-3 shrink-0 text-zinc-600" aria-hidden="true" />
                                         )}
                                         <span className="truncate">{item.label}</span>
                                     </div>
@@ -253,17 +280,79 @@ export const RegisterForm = ({ onSuccess }) => {
                         error={errors.confirmPassword?.message}
                         disabled={isSubmitting}
                         className="h-9 sm:h-9.5 text-xs sm:text-sm pl-10"
+                        aria-required="true"
+                        aria-invalid={!!errors.confirmPassword}
                         {...register("confirmPassword")}
                     />
                     <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute left-2 top-[34px] sm:top-[33px] -translate-y-1/2 text-zinc-400 hover:text-zinc-200 active:text-amber-400 p-1.5 cursor-pointer rounded-lg active:scale-90 transition-all duration-150 flex items-center justify-center focus-visible:outline-none"
-                        tabIndex={-1}
-                        aria-label="تغییر وضعیت نمایش تکرار رمز"
+                        className="absolute left-2 top-[34px] sm:top-[33px] -translate-y-1/2 text-zinc-400 hover:text-zinc-200 active:text-amber-400 p-1.5 cursor-pointer rounded-lg active:scale-90 transition-all duration-150 flex items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-400"
+                        aria-label={showConfirmPassword ? "پنهان کردن تکرار رمز عبور" : "نمایش تکرار رمز عبور"}
+                        aria-pressed={showConfirmPassword}
                     >
-                        {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" aria-hidden="true" /> : <Eye className="w-3.5 h-3.5" aria-hidden="true" />}
                     </button>
+                </div>
+
+                {/* چک‌باکس رضایت صریح به قوانین و مقررات */}
+                <div className="pt-1 space-y-2">
+                    <div className="flex items-start gap-2">
+                        <input
+                            type="checkbox"
+                            id="acceptTerms"
+                            {...register("acceptTerms")}
+                            disabled={isSubmitting}
+                            className="mt-0.5 w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-amber-500 focus:ring-amber-400/30 accent-amber-500 cursor-pointer"
+                            aria-describedby={errors.acceptTerms ? "acceptTermsError" : undefined}
+                            aria-invalid={!!errors.acceptTerms}
+                        />
+                        <label htmlFor="acceptTerms" className="text-xs text-zinc-300 leading-snug cursor-pointer select-none">
+                            <a
+                                href="/terms-of-service"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-amber-400 hover:underline underline-offset-2"
+                            >
+                                شرایط و قوانین استفاده
+                            </a>
+                            {" "}از پلتفرم را خوانده و می‌پذیرم.
+                        </label>
+                    </div>
+                    {errors.acceptTerms && (
+                        <p id="acceptTermsError" role="alert" className="text-rose-400 text-[11px] font-medium pr-6 animate-fade-in-up">
+                            {errors.acceptTerms.message}
+                        </p>
+                    )}
+
+                    {/* چک‌باکس رضایت صریح به سیاست حریم خصوصی */}
+                    <div className="flex items-start gap-2">
+                        <input
+                            type="checkbox"
+                            id="acceptPrivacy"
+                            {...register("acceptPrivacy")}
+                            disabled={isSubmitting}
+                            className="mt-0.5 w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-amber-500 focus:ring-amber-400/30 accent-amber-500 cursor-pointer"
+                            aria-describedby={errors.acceptPrivacy ? "acceptPrivacyError" : undefined}
+                            aria-invalid={!!errors.acceptPrivacy}
+                        />
+                        <label htmlFor="acceptPrivacy" className="text-xs text-zinc-300 leading-snug cursor-pointer select-none">
+                            <a
+                                href="/privacy-policy"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-amber-400 hover:underline underline-offset-2"
+                            >
+                                سیاست حفظ حریم خصوصی
+                            </a>
+                            {" "}را مطالعه کرده و موافقم.
+                        </label>
+                    </div>
+                    {errors.acceptPrivacy && (
+                        <p id="acceptPrivacyError" role="alert" className="text-rose-400 text-[11px] font-medium pr-6 animate-fade-in-up">
+                            {errors.acceptPrivacy.message}
+                        </p>
+                    )}
                 </div>
 
                 <Button
@@ -271,9 +360,12 @@ export const RegisterForm = ({ onSuccess }) => {
                     variant="amber"
                     className="w-full !mt-3 font-bold shadow-md shadow-amber-500/10 hover:shadow-lg hover:shadow-amber-500/20 active:scale-[0.98] transition-all duration-150 h-10 sm:h-10 text-xs sm:text-sm flex items-center justify-center"
                     isLoading={isSubmitting}
+                    aria-busy={isSubmitting}
                 >
-                    <UserPlus className="w-4 h-4 ml-1.5" />
-                    ساخت حساب و شروع بازی
+                    {!isSubmitting && (
+                        <UserPlus className="w-4 h-4 ml-1.5" aria-hidden="true" />
+                    )}
+                    <span>{isSubmitting ? "در حال ساخت حساب کاربری..." : "ساخت حساب و شروع بازی"}</span>
                 </Button>
             </form>
         </div>

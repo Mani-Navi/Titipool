@@ -1,52 +1,145 @@
 import React, { Suspense, lazy } from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
-import { LoginPage } from "../pages/auth/LoginPage.jsx";
-import { RegisterPage } from "../pages/auth/RegisterPage.jsx";
-import { DashboardPage } from "../pages/dashboard/DashboardPage.jsx";
+import { createBrowserRouter } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
-import { useAuthStore } from "../stores/auth.store";
-import { isTokenExpired } from "../utils/jwt";
+import { RouteErrorBoundary } from "../components/ui/RouteErrorBoundary.jsx";
 
-// لود تنبل صفحه پروفایل برای رفع باگ دو نقطه در مسیر قبلی
+// لود تنبل صفحه لندینگ اصلی
+const LandingPage = lazy(() => import("../pages/LandingPage/LandingPage.jsx"));
+
+// لود تنبل احراز هویت و داشبورد جهت کاهش حجم بسته نخستین (First Load < 1.5s)
+const LoginPage = lazy(() =>
+    import("../pages/auth/LoginPage.jsx").then((m) => ({ default: m.LoginPage || m.default }))
+);
+const RegisterPage = lazy(() =>
+    import("../pages/auth/RegisterPage.jsx").then((m) => ({ default: m.RegisterPage || m.default }))
+);
+const DashboardPage = lazy(() =>
+    import("../pages/dashboard/DashboardPage.jsx").then((m) => ({ default: m.DashboardPage || m.default }))
+);
+
+// لود تنبل صفحات حقوقی الزامی
+const PrivacyPolicyPage = lazy(() => import("../pages/legal/PrivacyPolicyPage.jsx"));
+const TermsOfServicePage = lazy(() => import("../pages/legal/TermsOfServicePage.jsx"));
+const CookiePolicyPage = lazy(() => import("../pages/legal/CookiePolicyPage.jsx"));
+const RefundPolicyPage = lazy(() => import("../pages/legal/RefundPolicyPage.jsx"));
+
+// لود تنبل صفحه پروفایل
 const ProfilePage = lazy(() =>
     import("../pages/profile/ProfilePage.jsx").then((m) => ({
         default: m.ProfilePage || m.default,
     }))
 );
 
-// طبق بند ۲ سند: RoomPage و کتابخانه صوتی ۵۰۰ کیلوبایتی باید فقط در زمان ورود به اتاق لود شوند
+// لود تنبل صفحه اتاق بازی (حاوی کانواس و لایوکیت)
 const RoomPage = lazy(() =>
     import("../pages/room/RoomPage.jsx").then((m) => ({
         default: m.RoomPage || m.default,
     }))
 );
 
-// اسپینر لودینگ هماهنگ با پالت تاریک و طلایی VTT
-const LoadingFallback = () => (
-    <div className="min-h-screen w-full bg-[#090a0f] flex flex-col items-center justify-center gap-3">
-        <div className="w-10 h-10 border-3 border-amber-500 border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs text-zinc-400 font-medium">در حال بارگذاری میز بازی...</span>
-    </div>
-);
+// لود تنبل صفحه خوش‌آمدگویی پس از ثبت‌نام
+const WelcomePage = lazy(() => import("../pages/WelcomePage.jsx"));
 
-const RootRedirect = () => {
-    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-    const token = useAuthStore((state) => state.token);
-    const isSessionValid = Boolean(isAuthenticated && token && !isTokenExpired(token));
+// لود تنبل صفحه ۴۰۴
+const NotFoundPage = lazy(() => import("../pages/NotFoundPage.jsx"));
 
-    return <Navigate to={isSessionValid ? "/dashboard" : "/login"} replace />;
-};
+// پس‌زمینه خام بدون هیچ انیمیشن یا اسپینر لودینگ
+const LoadingFallback = () => <div className="min-h-screen w-full bg-[#090a0f]" />;
 
 export const router = createBrowserRouter([
-    { path: "/", element: <RootRedirect /> },
-    { path: "/login", element: <LoginPage /> },
-    { path: "/register", element: <RegisterPage /> },
+    // روت اصلی: نمایش لندینگ پیج مدرن
+    {
+        path: "/",
+        errorElement: <RouteErrorBoundary />,
+        element: (
+            <Suspense fallback={<LoadingFallback />}>
+                <LandingPage />
+            </Suspense>
+        ),
+    },
+    {
+        path: "/login",
+        errorElement: <RouteErrorBoundary />,
+        element: (
+            <Suspense fallback={<LoadingFallback />}>
+                <LoginPage />
+            </Suspense>
+        ),
+    },
+    {
+        path: "/register",
+        errorElement: <RouteErrorBoundary />,
+        element: (
+            <Suspense fallback={<LoadingFallback />}>
+                <RegisterPage />
+            </Suspense>
+        ),
+    },
+
+    // مسیرهای عمومی الزامات قانونی
+    {
+        path: "/privacy-policy",
+        errorElement: <RouteErrorBoundary />,
+        element: (
+            <Suspense fallback={<LoadingFallback />}>
+                <PrivacyPolicyPage />
+            </Suspense>
+        ),
+    },
+    {
+        path: "/terms-of-service",
+        errorElement: <RouteErrorBoundary />,
+        element: (
+            <Suspense fallback={<LoadingFallback />}>
+                <TermsOfServicePage />
+            </Suspense>
+        ),
+    },
+    {
+        path: "/cookie-policy",
+        errorElement: <RouteErrorBoundary />,
+        element: (
+            <Suspense fallback={<LoadingFallback />}>
+                <CookiePolicyPage />
+            </Suspense>
+        ),
+    },
+    {
+        path: "/refund-policy",
+        errorElement: <RouteErrorBoundary />,
+        element: (
+            <Suspense fallback={<LoadingFallback />}>
+                <RefundPolicyPage />
+            </Suspense>
+        ),
+    },
+
+    // مسیرهای محافظت‌شده کاربری
     {
         element: <ProtectedRoute />,
+        errorElement: <RouteErrorBoundary />,
         children: [
-            { path: "/dashboard", element: <DashboardPage /> },
+            {
+                path: "/dashboard",
+                errorElement: <RouteErrorBoundary />,
+                element: (
+                    <Suspense fallback={<LoadingFallback />}>
+                        <DashboardPage />
+                    </Suspense>
+                ),
+            },
+            {
+                path: "/welcome",
+                errorElement: <RouteErrorBoundary />,
+                element: (
+                    <Suspense fallback={<LoadingFallback />}>
+                        <WelcomePage />
+                    </Suspense>
+                ),
+            },
             {
                 path: "/profile",
+                errorElement: <RouteErrorBoundary />,
                 element: (
                     <Suspense fallback={<LoadingFallback />}>
                         <ProfilePage />
@@ -55,6 +148,7 @@ export const router = createBrowserRouter([
             },
             {
                 path: "/room/:roomId",
+                errorElement: <RouteErrorBoundary />,
                 element: (
                     <Suspense fallback={<LoadingFallback />}>
                         <RoomPage />
@@ -62,5 +156,16 @@ export const router = createBrowserRouter([
                 ),
             },
         ],
+    },
+
+    // روت Catch-all برای صفحات ۴۰۴
+    {
+        path: "*",
+        errorElement: <RouteErrorBoundary />,
+        element: (
+            <Suspense fallback={<LoadingFallback />}>
+                <NotFoundPage />
+            </Suspense>
+        ),
     },
 ]);

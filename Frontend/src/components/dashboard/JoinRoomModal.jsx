@@ -113,9 +113,15 @@ export const JoinRoomModal = memo(({ isOpen, onClose }) => {
             <Button type="button" variant="ghost" onClick={handleClose} className="h-10 text-xs active:scale-95">
               انصراف
             </Button>
-            <Button type="submit" variant="amber" isLoading={isSubmitting} className="font-bold h-10 text-xs active:scale-[0.98] shadow-md shadow-amber-500/10 hover:shadow-amber-500/20">
-              <LogIn className="w-4 h-4 ml-1.5" />
-              ورود به اتاق
+            <Button
+                type="submit"
+                variant="amber"
+                isLoading={isSubmitting}
+                aria-busy={isSubmitting}
+                className="font-bold h-10 text-xs active:scale-[0.98] shadow-md shadow-amber-500/10 hover:shadow-amber-500/20"
+            >
+              {!isSubmitting && <LogIn className="w-4 h-4 ml-1.5" />}
+              <span>{isSubmitting ? "در حال اتصال به اتاق..." : "ورود به اتاق"}</span>
             </Button>
           </div>
         </form>

@@ -36,7 +36,7 @@ export const useDiceStore = create((set, get) => ({
     rollerName: null,
     isRemoteRoll: false,
     remoteReThrow: null,
-    settledTransforms: {}, // نگهداری موقعیت و دوران قطعی تمام تاس‌ها
+    settledTransforms: {},
     rollHistory: [],
     selectedTheme: getSavedTheme(),
 
@@ -179,17 +179,22 @@ export const useDiceStore = create((set, get) => ({
     setDieResult: (dieId, value, transform = null) => {
         const { activeDice, results, isRemoteRoll, settledTransforms } = get();
 
-        const updatedDice = activeDice.map((d) =>
-            d.id === dieId ? { ...d, settled: true, value } : d
-        );
+        const dieIdx = activeDice.findIndex((d) => d.id === dieId);
+        if (dieIdx === -1) return;
 
-        const currentDie = activeDice.find((d) => d.id === dieId);
-        const dieType = currentDie?.type || 'd20';
+        const updatedDice = [...activeDice];
+        updatedDice[dieIdx] = { ...updatedDice[dieIdx], settled: true, value };
 
-        const newResults = [
-            ...results.filter((r) => r.id !== dieId),
-            { id: dieId, type: dieType, value: Number(value) },
-        ];
+        const currentDie = updatedDice[dieIdx];
+        const dieType = currentDie.type || 'd20';
+
+        const existingResultIdx = results.findIndex((r) => r.id === dieId);
+        const newResults = [...results];
+        if (existingResultIdx !== -1) {
+            newResults[existingResultIdx] = { id: dieId, type: dieType, value: Number(value) };
+        } else {
+            newResults.push({ id: dieId, type: dieType, value: Number(value) });
+        }
 
         const updatedTransforms = transform
             ? { ...settledTransforms, [dieId]: transform }
@@ -206,7 +211,9 @@ export const useDiceStore = create((set, get) => ({
             const onesVal = Number(onesDie.value);
             sum = tensVal === 0 && onesVal === 0 ? 100 : tensVal + onesVal;
         } else {
-            sum = newResults.reduce((acc, curr) => acc + curr.value, 0);
+            for (let i = 0; i < newResults.length; i++) {
+                sum += newResults[i].value;
+            }
         }
 
         set({

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   define: {
     global: 'window',
   },
@@ -17,10 +17,14 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  esbuild: {
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+  },
   build: {
     target: 'es2020',
     minify: 'esbuild',
     sourcemap: false,
+    cssCodeSplit: true,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -29,12 +33,23 @@ export default defineConfig({
           'vendor-livekit': ['livekit-client'],
           'vendor-stomp': ['@stomp/stompjs', 'sockjs-client'],
           'vendor-zustand': ['zustand'],
+          'vendor-three': ['three', '@react-three/fiber', '@react-three/rapier', 'cannon-es'],
         },
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]',
       },
     },
   },
   optimizeDeps: {
-    include: ['konva', 'react-konva', 'livekit-client', '@stomp/stompjs'],
+    include: [
+      'konva',
+      'react-konva',
+      'livekit-client',
+      '@stomp/stompjs',
+      'sockjs-client',
+      'zustand',
+    ],
   },
   server: {
     port: 5173,
@@ -47,4 +62,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

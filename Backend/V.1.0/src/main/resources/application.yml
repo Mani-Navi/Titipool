@@ -2,8 +2,20 @@ server:
   port: ${PORT:8080}
   compression:
     enabled: true
-    min-response-size: 1024
-    mime-types: application/json,application/javascript,text/css,text/plain
+    min-response-size: 512
+    mime-types:
+      - application/json
+      - application/javascript
+      - text/css
+      - text/plain
+  http2:
+    enabled: true
+  tomcat:
+    threads:
+      max: 50
+      min-spare: 5
+    accept-count: 100
+    connection-timeout: 20000
   error:
     include-stacktrace: never
     include-message: never
@@ -18,20 +30,40 @@ spring:
     password: ${DB_PASS:13850207}
     driver-class-name: org.postgresql.Driver
     hikari:
+      pool-name: VTT-Hikari-Pool
       maximum-pool-size: 10
-      minimum-idle: 2
+      minimum-idle: 3
       connection-timeout: 20000
       idle-timeout: 300000
       max-lifetime: 1200000
+      leak-detection-threshold: 60000
 
   jpa:
     hibernate:
       ddl-auto: validate
+    open-in-view: false
+    show-sql: false
     properties:
       hibernate:
+        jdbc:
+          batch_size: 25
+          fetch_size: 50
+        order_inserts: true
+        order_updates: true
+        generate_statistics: false
         format_sql: false
-    show-sql: false
-    open-in-view: false
+
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=60s
+
+  task:
+    execution:
+      pool:
+        core-size: 4
+        max-size: 8
+        queue-capacity: 500
 
   flyway:
     enabled: true
@@ -41,8 +73,8 @@ spring:
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -51,31 +83,26 @@ spring:
             enable: true
             required: true
 
-# CORS Configuration
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
 
-# Google OAuth
 google:
   client-id: ${GOOGLE_CLIENT_ID:your-google-client-id.apps.googleusercontent.com}
 
-# Stateless JWT Security
 jwt:
   secret: ${JWT_SECRET:vtt-persian-platform-super-secret-key-must-be-32-chars-minimum!}
-  expiration: ${JWT_EXPIRATION:900000} # تغییر به ۱۵ دقیقه مطابق با الزامات امنیتی سشن‌های توکن کوتاه
+  expiration: ${JWT_EXPIRATION:900000}
 
-# LiveKit SFU Voice Server
 livekit:
   url: ${LIVEKIT_URL:ws://localhost:7880}
   api-key: ${LIVEKIT_API_KEY:devkey}
   api-secret: ${LIVEKIT_API_SECRET:secret}
 
-# Monitoring & Production Health Endpoint
 management:
   endpoints:
     web:
       exposure:
-        include: "health,info"
+        include: "health,info,metrics"
   endpoint:
     health:
       show-details: when_authorized
@@ -86,10 +113,12 @@ management:
     mail:
       enabled: false
 
-# Production Log Levels
 logging:
   level:
     root: WARN
     com.VTT.V10: INFO
     org.springframework.security: WARN
     org.hibernate.SQL: WARN
+    org.hibernate.stat: WARN
+  pattern:
+    console: "%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

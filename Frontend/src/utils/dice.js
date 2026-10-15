@@ -1,11 +1,15 @@
 import confetti from "canvas-confetti";
 
+const DICE_FORMULA_REGEX = /^(\d*)d(\d+)(?:kh(\d+))?([+-]\d+)?$/;
+const CLEAN_WHITESPACE_REGEX = /\s+/g;
+const CONFETTI_COLORS = Object.freeze(["#fbbf24", "#f59e0b", "#ef4444", "#3b82f6", "#10b981"]);
+
 export function parseDiceFormula(formula) {
   if (!formula) return { count: 1, sides: 20, modifier: 0 };
-  const clean = formula.toLowerCase().replace(/\s+/g, "");
+  const clean = formula.toLowerCase().replace(CLEAN_WHITESPACE_REGEX, "");
 
   // الگوهایی مثل 2d20kh1+5 یا 4d6kh3 یا 1d20+3
-  const match = clean.match(/^(\d*)d(\d+)(?:kh(\d+))?([+-]\d+)?$/);
+  const match = clean.match(DICE_FORMULA_REGEX);
 
   if (!match) {
     return { count: 1, sides: 20, modifier: 0 };
@@ -53,16 +57,19 @@ export function rollDice(
         sortedIndices.slice(0, parsed.keepHighest).map((s) => s.index)
     );
 
-    dice.forEach((die, index) => {
-      if (!keptIndices.has(index)) {
-        die.dropped = true;
+    for (let i = 0; i < dice.length; i++) {
+      if (!keptIndices.has(i)) {
+        dice[i].dropped = true;
       }
-    });
+    }
   }
 
-  const activeDiceSum = dice
-      .filter((d) => !d.dropped)
-      .reduce((sum, d) => sum + d.result, 0);
+  let activeDiceSum = 0;
+  for (let i = 0; i < dice.length; i++) {
+    if (!dice[i].dropped) {
+      activeDiceSum += dice[i].result;
+    }
+  }
 
   const total = activeDiceSum + parsed.modifier;
 
@@ -77,7 +84,7 @@ export function rollDice(
         particleCount: 90,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ["#fbbf24", "#f59e0b", "#ef4444", "#3b82f6", "#10b981"],
+        colors: CONFETTI_COLORS,
       });
     } catch {
       // نادیده گرفتن در صورت عدم پشتیبانی یا خطای محیطی

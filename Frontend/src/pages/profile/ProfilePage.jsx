@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuthStore } from "../../stores/auth.store";
 import { userApi } from "../../api/user.api";
+import { usePageTitle } from "../../hooks/usePageTitle";
 import { RpgAvatar, AVATAR_LIST } from "../../components/profile/RpgAvatar";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -51,6 +52,7 @@ const checkPasswordCriteria = (pass = "") => [
 ];
 
 export const ProfilePage = () => {
+    usePageTitle("پروفایل کاربری");
     const navigate = useNavigate();
 
     const user = useAuthStore((state) => state.user);

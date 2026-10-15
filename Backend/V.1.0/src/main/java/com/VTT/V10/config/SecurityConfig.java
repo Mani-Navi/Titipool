@@ -25,6 +25,9 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Spring Security configuration enforcing stateless authentication, hardened headers, and optimized CORS.
+ */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -109,6 +112,7 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/actuator/health",
                                 "/actuator/health/**",
+                                "/actuator/metrics/**",
                                 "/ws/**",
                                 "/uploads/**"
                         ).permitAll()

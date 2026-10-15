@@ -17,6 +17,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.function.Function;
 
+/**
+ * High-speed stateless JWT generation and parsing service with cached cryptographic signing keys.
+ */
 @Slf4j
 @Service
 public class JwtService {
@@ -27,7 +30,7 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    @Value("${jwt.expiration:900000}") // پیش‌فرض استاندارد ۱۵ دقیقه
+    @Value("${jwt.expiration:900000}")
     private long jwtExpirationMs;
 
     private SecretKey cachedSignInKey;
@@ -52,10 +55,13 @@ public class JwtService {
         this.cachedSignInKey = Keys.hmacShaKeyFor(utf8Bytes);
     }
 
+    /**
+     * Issues signed JWT containing standard audience, issuer, and claim properties.
+     */
     public String generateToken(User user) {
         String userIdStr = user.getId() != null ? user.getId().toString() : "";
-
         long now = System.currentTimeMillis();
+
         return Jwts.builder()
                 .issuer(ISSUER)
                 .audience().add(AUDIENCE).and()
@@ -65,7 +71,7 @@ public class JwtService {
                 .claim("email", user.getEmail())
                 .claim("avatarUrl", user.getAvatarUrl() != null ? user.getAvatarUrl() : "")
                 .issuedAt(new Date(now))
-                .notBefore(new Date(now - 1000)) // کلیم nbf برای دفاع در برابر عدم همگام‌سازی ساعت کلاینت/سرور
+                .notBefore(new Date(now - 1000))
                 .expiration(new Date(now + jwtExpirationMs))
                 .signWith(getSignInKey(), Jwts.SIG.HS256)
                 .compact();

@@ -40,9 +40,9 @@ function applyPlanarUVs(geom, faces, trianglesPerFace, faceRadius) {
     geom.computeVertexNormals();
 }
 
-// ---------------- D4 (20mm / 4 Faces) ----------------
+// ---------------- D4 (کوچک‌تر شده) ----------------
 function createD4Data() {
-    const radius = 1.35;
+    const radius = 0.98;
     const geom = new THREE.TetrahedronGeometry(radius, 0).toNonIndexed();
     const pos = geom.attributes.position;
     const faces = [];
@@ -60,10 +60,10 @@ function createD4Data() {
     return { type: 'd4', radius, faces, createGeometry: () => geom.clone() };
 }
 
-// ---------------- D6 (16mm / 6 Faces) ----------------
+// ---------------- D6 (کوچک‌تر شده) ----------------
 export const D6_DEFINITION = {
     type: 'd6',
-    radius: 1.0,
+    radius: 0.72,
     faces: [
         { normal: new THREE.Vector3( 0,  1,  0), value: 6 },
         { normal: new THREE.Vector3( 0, -1,  0), value: 1 },
@@ -72,12 +72,12 @@ export const D6_DEFINITION = {
         { normal: new THREE.Vector3( 0,  0,  1), value: 5 },
         { normal: new THREE.Vector3( 0,  0, -1), value: 2 },
     ],
-    createGeometry: () => new THREE.BoxGeometry(1.4, 1.4, 1.4),
+    createGeometry: () => new THREE.BoxGeometry(1.0, 1.0, 1.0),
 };
 
-// ---------------- D8 (20mm / 8 Faces) ----------------
+// ---------------- D8 (کوچک‌تر شده) ----------------
 function createD8Data() {
-    const radius = 1.35;
+    const radius = 0.96;
     const geom = new THREE.OctahedronGeometry(radius, 0).toNonIndexed();
     const pos = geom.attributes.position;
     const faces = [];
@@ -95,20 +95,15 @@ function createD8Data() {
     return { type: 'd8', radius, faces, createGeometry: () => geom.clone() };
 }
 
-// ---------------- D10 & D100 (100% Flat-Faced Planar Pentagonal Trapezohedron) ----------------
+// ---------------- D10 & D100 (کوچک‌تر شده) ----------------
 function createD10GeometryData(isPercentile = false) {
-    // ابعاد استاندارد بر اساس بلوپرینت ۲۰ میلی‌متری
-    const H = 1.30;    // ارتفاع قطب‌ها
-    const R = 1.25;    // شعاع بیرونی استوا
-
-    // فرمول طلایی مسطح‌سازی کایت‌ها: (1 - cos36) / (1 + cos36) = 0.1055728
-    // این نسبت تضمین می‌کند دو مثلث هر کایت زاویه 0 درجه با هم دارند و کاملاً تخت هستند
-    const h = H * 0.105572809; // دقیقاً 0.13724
+    const H = 0.92;
+    const R = 0.88;
+    const h = H * 0.105572809;
 
     const topPole = new THREE.Vector3(0, H, 0);
     const bottomPole = new THREE.Vector3(0, -H, 0);
 
-    // ۱۰ راس زیگزاگی استوا با زاویه ۳۶ درجه
     const ring = [];
     for (let i = 0; i < 10; i++) {
         const angle = (i * Math.PI) / 5;
@@ -120,7 +115,6 @@ function createD10GeometryData(isPercentile = false) {
     const uvs = [];
     const faces = [];
 
-    // چینش اعداد استاندارد D&D
     const upperValues = isPercentile ? [0, 20, 40, 60, 80] : [0, 2, 4, 6, 8];
     const lowerValues = isPercentile ? [90, 70, 50, 30, 10] : [9, 7, 5, 3, 1];
 
@@ -132,7 +126,6 @@ function createD10GeometryData(isPercentile = false) {
             .add(pWaistLeft)
             .multiplyScalar(0.25);
 
-        // محاسبه بردار عمود سطح کایت مسطح
         const diagLong = new THREE.Vector3().subVectors(pOppositeTip, pApex);
         const diagWaist = new THREE.Vector3().subVectors(pWaistLeft, pWaistRight);
         let normal = new THREE.Vector3().crossVectors(diagLong, diagWaist).normalize();
@@ -141,11 +134,10 @@ function createD10GeometryData(isPercentile = false) {
         }
         faces.push({ normal, value: faceValue });
 
-        // محورهای دوبعدی UV دقیقاً تراز با قطر طولی
         const upUV = new THREE.Vector3().subVectors(pApex, center).normalize();
         const rightUV = new THREE.Vector3().crossVectors(upUV, normal).normalize();
 
-        const scale = 2.05;
+        const scale = 1.48;
         function getUV(pt) {
             const d = new THREE.Vector3().subVectors(pt, center);
             return [0.5 + d.dot(rightUV) / scale, 0.5 + d.dot(upUV) / scale];
@@ -156,31 +148,26 @@ function createD10GeometryData(isPercentile = false) {
         const uvR = getUV(pWaistRight);
         const uvL = getUV(pWaistLeft);
 
-        // دو مثلث تشکیل دهنده کایت که حالا به دلیل فرمول طلایی، ۱۰۰٪ در یک صفحه مسطح قرار دارند
-        // مثلث اول
         positions.push(...pApex.toArray(), ...pWaistLeft.toArray(), ...pOppositeTip.toArray());
         uvs.push(...uvApex, ...uvL, ...uvTip);
 
-        // مثلث دوم
         positions.push(...pApex.toArray(), ...pOppositeTip.toArray(), ...pWaistRight.toArray());
         uvs.push(...uvApex, ...uvTip, ...uvR);
     }
 
-    // ۱. ساخت ۵ کایت بالایی (نوک بالا = topPole)
     for (let i = 0; i < 5; i++) {
         const pApex = topPole;
-        const pBottomTip = ring[(i * 2 + 1) % 10]; // راس پایین در -h
-        const pWaistRight = ring[i * 2];            // راس راست در +h
-        const pWaistLeft = ring[(i * 2 + 2) % 10];  // راس چپ در +h
+        const pBottomTip = ring[(i * 2 + 1) % 10];
+        const pWaistRight = ring[i * 2];
+        const pWaistLeft = ring[(i * 2 + 2) % 10];
         addFlatKite(pApex, pWaistRight, pBottomTip, pWaistLeft, upperValues[i]);
     }
 
-    // ۲. ساخت ۵ کایت پایینی (نوک پایین = bottomPole)
     for (let i = 0; i < 5; i++) {
         const pApex = bottomPole;
-        const pTopTip = ring[(i * 2 + 2) % 10];     // راس بالا در +h
-        const pWaistRight = ring[(i * 2 + 3) % 10]; // راس راست در -h
-        const pWaistLeft = ring[(i * 2 + 1) % 10];  // راس چپ در -h
+        const pTopTip = ring[(i * 2 + 2) % 10];
+        const pWaistRight = ring[(i * 2 + 3) % 10];
+        const pWaistLeft = ring[(i * 2 + 1) % 10];
         addFlatKite(pApex, pWaistRight, pTopTip, pWaistLeft, lowerValues[i]);
     }
 
@@ -202,9 +189,9 @@ function createD10GeometryData(isPercentile = false) {
     };
 }
 
-// ---------------- D12 (22mm / Dodecahedron) ----------------
+// ---------------- D12 (کوچک‌تر شده) ----------------
 function createD12Data() {
-    const radius = 1.35;
+    const radius = 0.98;
     const geom = new THREE.DodecahedronGeometry(radius, 0).toNonIndexed();
     const pos = geom.attributes.position;
     const faces = [];
@@ -222,9 +209,9 @@ function createD12Data() {
     return { type: 'd12', radius, faces, createGeometry: () => geom.clone() };
 }
 
-// ---------------- D20 (20mm / Icosahedron) ----------------
+// ---------------- D20 (کوچک‌تر شده) ----------------
 function createD20Data() {
-    const radius = 1.3;
+    const radius = 0.94;
     const geom = new THREE.IcosahedronGeometry(radius, 0).toNonIndexed();
     const pos = geom.attributes.position;
     const faces = [];
@@ -250,7 +237,7 @@ export const DICE_CONFIGS = {
     d6: D6_DEFINITION,
     d8: createD8Data(),
     d10: createD10GeometryData(false),
-    d100: createD10GeometryData(true), // عیناً همان ژئومتری d10 با ارقام ده‌گان
+    d100: createD10GeometryData(true),
     d12: createD12Data(),
     d20: createD20Data(),
 };

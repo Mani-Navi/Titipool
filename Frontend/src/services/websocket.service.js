@@ -19,13 +19,11 @@ class WebSocketService {
         }
     }
 
-    // تولید آدرس امن وب‌سوکت با لحاظ کردن اجباری بودن wss در بستر HTTPS
     resolveBrokerUrl() {
         const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
         const rawUrl = ENV.WS_URL || `${isHttps ? "wss:" : "ws:"}//${window.location.hostname}:8080/ws`;
 
         if (isHttps) {
-            // در صورتی که صفحه با HTTPS باز شده باشد، اتصال ناامن ws قطعاً مسدود می‌شود
             return rawUrl.replace(/^ws:\/\//i, "wss://").replace(/^http:\/\//i, "wss://").replace(/^https:\/\//i, "wss://");
         }
         return rawUrl.startsWith("ws") ? rawUrl : `ws://${rawUrl.replace(/^https?:\/\//, "")}`;
@@ -55,7 +53,7 @@ class WebSocketService {
 
             this.client = new Client({
                 brokerURL: brokerURL,
-                reconnectDelay: 2000,
+                reconnectDelay: 2500,
                 heartbeatIncoming: 20000,
                 heartbeatOutgoing: 20000,
                 beforeConnect: () => {
@@ -130,11 +128,11 @@ class WebSocketService {
     }
 
     clearSubscriptions() {
-        this.subscriptions.forEach((sub) => {
+        for (let i = 0; i < this.subscriptions.length; i++) {
             try {
-                sub.unsubscribe();
+                this.subscriptions[i].unsubscribe();
             } catch (ignored) {}
-        });
+        }
         this.subscriptions = [];
     }
 

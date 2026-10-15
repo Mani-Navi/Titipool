@@ -81,11 +81,16 @@ export const useCanvasStore = create((set, get) => ({
     setGmFogBlend: (val) => set({ gmFogBlend: Number(val) || 0.45 }),
 
     setActiveTool: (tool) =>
-        set({
-            activeTool: tool,
-            selectedDrawingId: null,
-            selectedFogId: null,
-            laserPosition: null,
+        set((state) => {
+            if (state.activeTool === tool && state.selectedDrawingId === null && state.selectedFogId === null && state.laserPosition === null) {
+                return state;
+            }
+            return {
+                activeTool: tool,
+                selectedDrawingId: null,
+                selectedFogId: null,
+                laserPosition: null,
+            };
         }),
     toggleActiveTool: (tool) =>
         set((state) => ({
@@ -140,10 +145,16 @@ export const useCanvasStore = create((set, get) => ({
     setRulerUnit: (unit) => set({ rulerUnit: unit }),
 
     setZoom: (zoom) =>
-        set((state) => ({
-            zoom: typeof zoom === "function" ? zoom(state.zoom) : zoom,
-        })),
-    setStagePos: (stageX, stageY) => set({ stageX, stageY }),
+        set((state) => {
+            const nextZoom = typeof zoom === "function" ? zoom(state.zoom) : zoom;
+            if (state.zoom === nextZoom) return state;
+            return { zoom: nextZoom };
+        }),
+    setStagePos: (stageX, stageY) =>
+        set((state) => {
+            if (state.stageX === stageX && state.stageY === stageY) return state;
+            return { stageX, stageY };
+        }),
 
     fitToMap: (mapW = null, mapH = null, containerW = null, containerH = null) => {
         let screenW = containerW;
@@ -196,8 +207,8 @@ export const useCanvasStore = create((set, get) => ({
         const windowWidth = typeof window !== "undefined" ? window.innerWidth : 1920;
         const windowHeight = typeof window !== "undefined" ? window.innerHeight : 1080;
         set((state) => ({
-            stageX: windowWidth / 2 - targetX * state.zoom,
-            stageY: windowHeight / 2 - targetY * state.zoom,
+            stageX: Math.round(windowWidth / 2 - targetX * state.zoom),
+            stageY: Math.round(windowHeight / 2 - targetY * state.zoom),
         }));
     },
 
@@ -231,7 +242,12 @@ export const useCanvasStore = create((set, get) => ({
     closeTokenEditor: () => set({ isTokenEditorOpen: false, editingTokenId: null }),
 
     closeAllMenus: () =>
-        set({ isAssetMenuOpen: false, isSettingsMenuOpen: false, isDiceRollerOpen: false }),
+        set((state) => {
+            if (!state.isAssetMenuOpen && !state.isSettingsMenuOpen && !state.isDiceRollerOpen) {
+                return state;
+            }
+            return { isAssetMenuOpen: false, isSettingsMenuOpen: false, isDiceRollerOpen: false };
+        }),
 
     toggleMenu: (menuName) => {
         set((state) => {
@@ -256,7 +272,7 @@ export const useCanvasStore = create((set, get) => ({
                     isSettingsMenuOpen: false,
                 };
             }
-            return {};
+            return state;
         });
     },
 
@@ -275,6 +291,7 @@ export const useCanvasStore = create((set, get) => ({
     updateMeasurement: (x, y) => {
         set((state) => {
             if (!state.measurement) return state;
+            if (state.measurement.currentX === x && state.measurement.currentY === y) return state;
             return {
                 measurement: {
                     ...state.measurement,
@@ -317,6 +334,7 @@ export const useCanvasStore = create((set, get) => ({
         if (!userId) return;
         const key = String(userId);
         set((state) => {
+            if (!state.remoteMeasurements[key]) return state;
             const next = { ...state.remoteMeasurements };
             delete next[key];
             return { remoteMeasurements: next };
@@ -344,6 +362,7 @@ export const useCanvasStore = create((set, get) => ({
         if (!userId) return;
         const key = String(userId);
         set((state) => {
+            if (!state.remoteLasers[key]) return state;
             const next = { ...state.remoteLasers };
             delete next[key];
             return { remoteLasers: next };

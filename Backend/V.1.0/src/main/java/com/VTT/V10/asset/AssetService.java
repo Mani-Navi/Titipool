@@ -2,6 +2,7 @@ package com.VTT.V10.asset;
 
 import com.VTT.V10.asset.dto.AssetResponse;
 import com.VTT.V10.asset.dto.UpdateAssetRequest;
+import com.VTT.V10.asset.storage.StorageService;
 import com.VTT.V10.user.User;
 import com.VTT.V10.user.UserRepository;
 import jakarta.persistence.EntityManager;
@@ -22,13 +23,14 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Service managing user assets, validation, media compression, and delegated storage operations.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -36,6 +38,7 @@ public class AssetService {
 
     private final AssetRepository assetRepository;
     private final UserRepository userRepository;
+    private final StorageService storageService;
     private final EntityManager entityManager;
 
     private static final String UPLOAD_DIR = "uploads";
@@ -45,7 +48,6 @@ public class AssetService {
     private static final long MAX_PROP_SIZE = 4 * 1024 * 1024;   // 4 MB
     private static final long DEFAULT_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
-    // حذف SVG برای مهار حملات قطعی XSS
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
             "image/jpeg", "image/png", "image/webp", "image/gif",
             "audio/mpeg", "audio/ogg", "audio/wav"
@@ -77,7 +79,6 @@ public class AssetService {
             throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "فرمت فایل مجاز نیست");
         }
 
-        // اعتبارسنجی باینری بایت‌های جادویی (Magic Bytes)
         validateFileMagicBytes(file);
 
         Asset.AssetType assetType = parseAssetType(type);
@@ -86,68 +87,58 @@ public class AssetService {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "کاربر یافت نشد"));
 
-        Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-        }
-
-        // پاک‌سازی کامل و ایجاد نام تصادفی UUID خالص برای جلوگیری از Directory Traversal
         String extension = getSafeExtension(file.getOriginalFilename());
         String uniqueFileName = UUID.randomUUID() + extension;
 
-        Path targetLocation = uploadPath.resolve(uniqueFileName).normalize();
-        if (!targetLocation.startsWith(uploadPath)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "مسیر فایل نامعتبر است");
-        }
-
-        // ذخیره ایمن فایل اصلی روی دیسک با کپی مستقیم استریم
+        String publicFileUrl;
         try (InputStream inputStream = file.getInputStream()) {
-            Files.copy(inputStream, targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            publicFileUrl = storageService.store(uniqueFileName, inputStream, file.getSize(), contentType);
         }
 
         Integer width = null;
         Integer height = null;
-        long finalFileSize = Files.size(targetLocation);
+        long finalFileSize = file.getSize();
 
-        // بهینه‌سازی و استخراج متادیتا به روش ایمن
-        if (contentType.startsWith("image/") && !contentType.contains("gif")) {
-            try {
-                File savedFile = targetLocation.toFile();
-                BufferedImage bimg = ImageIO.read(savedFile);
-                if (bimg != null) {
-                    width = bimg.getWidth();
-                    height = bimg.getHeight();
+        Path localPath = Paths.get(UPLOAD_DIR).resolve(uniqueFileName).toAbsolutePath().normalize();
+        if (Files.exists(localPath)) {
+            finalFileSize = Files.size(localPath);
+            if (contentType.startsWith("image/") && !contentType.contains("gif")) {
+                try {
+                    File savedFile = localPath.toFile();
+                    BufferedImage bimg = ImageIO.read(savedFile);
+                    if (bimg != null) {
+                        width = bimg.getWidth();
+                        height = bimg.getHeight();
 
-                    if (assetType == Asset.AssetType.MAP) {
-                        int maxDim = 3840;
-                        if (width > maxDim || height > maxDim) {
-                            Thumbnails.of(savedFile)
-                                    .size(maxDim, maxDim)
-                                    .outputQuality(0.85)
-                                    .toFile(savedFile);
-                            finalFileSize = Files.size(targetLocation);
-                        }
-                    } else if (assetType == Asset.AssetType.TOKEN || assetType == Asset.AssetType.PROP) {
-                        int maxDim = 1024;
-                        if (width > maxDim || height > maxDim) {
-                            Thumbnails.of(savedFile)
-                                    .size(maxDim, maxDim)
-                                    .outputQuality(0.90)
-                                    .toFile(savedFile);
-                            finalFileSize = Files.size(targetLocation);
+                        if (assetType == Asset.AssetType.MAP) {
+                            int maxDim = 3840;
+                            if (width > maxDim || height > maxDim) {
+                                Thumbnails.of(savedFile)
+                                        .size(maxDim, maxDim)
+                                        .outputQuality(0.85)
+                                        .toFile(savedFile);
+                                finalFileSize = Files.size(localPath);
+                            }
+                        } else if (assetType == Asset.AssetType.TOKEN || assetType == Asset.AssetType.PROP) {
+                            int maxDim = 1024;
+                            if (width > maxDim || height > maxDim) {
+                                Thumbnails.of(savedFile)
+                                        .size(maxDim, maxDim)
+                                        .outputQuality(0.90)
+                                        .toFile(savedFile);
+                                finalFileSize = Files.size(localPath);
+                            }
                         }
                     }
+                } catch (Throwable t) {
+                    log.warn("Image optimization skipped for {}: {}", uniqueFileName, t.getMessage());
                 }
-            } catch (Throwable t) {
-                log.warn("Image optimization skipped for {}: {}", uniqueFileName, t.getMessage());
             }
         }
 
         String safeDisplayName = (name != null && !name.isBlank())
                 ? name.replaceAll("[^a-zA-Z0-9_\\-\\s\u0600-\u06FF]", "")
                 : "asset_" + System.currentTimeMillis();
-
-        String publicFileUrl = "/uploads/" + uniqueFileName;
 
         Asset asset = Asset.builder()
                 .name(safeDisplayName)
@@ -171,7 +162,6 @@ public class AssetService {
                 .build();
 
         assetRepository.save(asset);
-
         return mapToResponse(asset);
     }
 
@@ -187,9 +177,9 @@ public class AssetService {
             boolean isPng = (header[0] == (byte) 0x89 && header[1] == (byte) 0x50 && header[2] == (byte) 0x4E && header[3] == (byte) 0x47);
             boolean isGif = (header[0] == 'G' && header[1] == 'I' && header[2] == 'F');
             boolean isWebp = (read >= 8 && header[0] == 'R' && header[1] == 'I' && header[2] == 'F' && header[3] == 'F');
-            boolean isAudio = (header[0] == (byte) 0xFF && (header[1] & (byte) 0xE0) == (byte) 0xE0) // MP3
-                    || (header[0] == 'O' && header[1] == 'g' && header[2] == 'g' && header[3] == 'S') // OGG
-                    || (read >= 8 && header[0] == 'R' && header[1] == 'I' && header[2] == 'F' && header[3] == 'F'); // WAV
+            boolean isAudio = (header[0] == (byte) 0xFF && (header[1] & (byte) 0xE0) == (byte) 0xE0)
+                    || (header[0] == 'O' && header[1] == 'g' && header[2] == 'g' && header[3] == 'S')
+                    || (read >= 8 && header[0] == 'R' && header[1] == 'I' && header[2] == 'F' && header[3] == 'F');
 
             if (!isJpg && !isPng && !isGif && !isWebp && !isAudio) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "بایت‌های باینری فایل با پسوند آن همخوانی ندارد");
@@ -317,20 +307,7 @@ public class AssetService {
                 .setParameter("assetId", assetId)
                 .executeUpdate();
 
-        try {
-            if (asset.getFileUrl() != null && asset.getFileUrl().startsWith("/uploads/")) {
-                String subPath = asset.getFileUrl().substring("/uploads/".length());
-                Path basePath = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
-                Path targetPath = basePath.resolve(subPath).normalize();
-
-                if (targetPath.startsWith(basePath)) {
-                    Files.deleteIfExists(targetPath);
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Could not delete physical file for asset {}: {}", assetId, e.getMessage());
-        }
-
+        storageService.delete(asset.getFileUrl());
         assetRepository.delete(asset);
     }
 

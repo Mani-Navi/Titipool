@@ -15,7 +15,7 @@ import { wsService } from "../../services/websocket.service";
 import { drawingApi } from "../../api/drawing.api";
 import { tokenApi } from "../../api/token.api";
 import { WS_EVENTS } from "../../constants/wsEvents.js";
-import { MIN_ZOOM, MAX_ZOOM } from "../../constants/canvas.js";
+import { MIN_ZOOM, MAX_ZOOM, WS_THROTTLE_MS } from "../../constants/canvas.js";
 import { fogApi } from "../../api/fog.api";
 import {
   ImagePlus,
@@ -130,14 +130,26 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
   const activeMapUrl = currentScene?.mapUrl || currentScene?.assetUrl || "";
   const hasActiveMap = Boolean(activeMapUrl && activeMapUrl.trim() !== "");
 
-  const isStageDraggable = hasActiveMap && activeTool === TOOLS.PAN;
+  const normalizedTool = String(activeTool || "").toLowerCase();
+  const isSelectMode = normalizedTool === "select";
+  const isStageDraggable = hasActiveMap && normalizedTool === "pan";
 
   const isEraserActive =
-      activeTool === TOOLS.ERASER ||
-      (activeTool === TOOLS.DRAW && activeDrawShape === DRAW_MODES.ERASER);
+      normalizedTool === "eraser" ||
+      (normalizedTool === "draw" && activeDrawShape === DRAW_MODES.ERASER);
 
-  const isSelectMode = activeTool === TOOLS.SELECT;
   const canUseFog = isGM || Boolean(permissions?.canFog);
+
+  // در حالت سلکت، لایه ترسیمات و مه حتماً باید فعال باشد تا کلیک و انتخاب المان‌ها کار کند
+  const isFeaturesListening =
+      isSelectMode ||
+      normalizedTool === "draw" ||
+      normalizedTool === "fog" ||
+      normalizedTool === "ruler" ||
+      normalizedTool === "eraser" ||
+      normalizedTool === "text" ||
+      selectedDrawingId !== null ||
+      selectedFogId !== null;
 
   const myIdentifier = String(user?.id || user?.userId || user?.username || "player-1");
 
@@ -241,7 +253,6 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
             (t) => String(t.id).toLowerCase() === strId.toLowerCase()
         );
 
-        // اعتبارسنجی پرمیشن حذف: کاربر فقط توکن خودش را می‌تواند حذف کند مگر اینکه GM باشد
         if (targetToken && !isGM) {
           const owner = String(targetToken.controlledBy || "").toLowerCase().trim();
           const isTokenOwner = Boolean(
@@ -321,7 +332,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
   ]);
 
   const selectionInfo = useMemo(() => {
-    if (activeTool !== TOOLS.SELECT && activeTool !== TOOLS.FOG) return null;
+    if (!isSelectMode && normalizedTool !== "fog") return null;
 
     if (selectedDrawingId) {
       const dummy = String(selectedDrawingId).toLowerCase();
@@ -373,7 +384,8 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
 
     return null;
   }, [
-    activeTool,
+    isSelectMode,
+    normalizedTool,
     selectedDrawingId,
     selectedTokenIds,
     selectedFogId,
@@ -507,7 +519,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       }
 
       if (e.key === "Delete" || e.key === "Backspace") {
-        if (activeTool === TOOLS.SELECT || activeTool === TOOLS.FOG) {
+        if (isSelectMode || normalizedTool === "fog") {
           if (selectedDrawingId || (selectedTokenIds && selectedTokenIds.length > 0) || selectedFogId) {
             e.preventDefault();
             handleDeleteSelected();
@@ -519,6 +531,8 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     activeTool,
+    isSelectMode,
+    normalizedTool,
     measurement,
     endMeasurement,
     myIdentifier,
@@ -593,7 +607,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
           }
         }
 
-        if (isSelectMode || activeTool === TOOLS.PAN) {
+        if (isSelectMode || normalizedTool === "pan") {
           return;
         }
 
@@ -823,11 +837,12 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
               activeDrawShape === DRAW_MODES.TRIANGLE ||
               activeDrawShape === DRAW_MODES.HEXAGON
           ) {
+            const radius = 0;
             initialDraw = {
               type: activeDrawShape,
               x: pos.x,
               y: pos.y,
-              radius: 0,
+              radius: radius,
               stroke: drawStrokeColor,
               strokeWidth: drawStrokeWidth,
               fill: drawFillColor,
@@ -897,6 +912,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
         finishInlineText,
         clearSelection,
         isSelectMode,
+        normalizedTool,
         activeTool,
         getPointerCanvasPos,
         mapWidth,
@@ -937,7 +953,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       setLaserPosition(pos);
 
       const now = Date.now();
-      if (now - lastLaserBroadcastTime.current > 30) {
+      if (now - lastLaserBroadcastTime.current > WS_THROTTLE_MS) {
         lastLaserBroadcastTime.current = now;
         wsService.send("LASER_MOVE", {
           x: Math.round(pos.x),
@@ -953,7 +969,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       updateMeasurement(pos.x, pos.y);
 
       const now = Date.now();
-      if (now - lastRulerBroadcastTime.current > 30) {
+      if (now - lastRulerBroadcastTime.current > WS_THROTTLE_MS) {
         lastRulerBroadcastTime.current = now;
         const currentMeas = useCanvasStore.getState().measurement;
         if (currentMeas) {
@@ -1060,7 +1076,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
         setLiveDrawing(updatedDraw);
 
         const now = Date.now();
-        if (now - lastBroadcastTime.current > 30) {
+        if (now - lastBroadcastTime.current > WS_THROTTLE_MS) {
           lastBroadcastTime.current = now;
           wsService.send("DRAWING_LIVE", { ...updatedDraw, sceneId: currentScene?.id });
         }
@@ -1103,7 +1119,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
         setLiveFog(updatedFog);
 
         const now = Date.now();
-        if (now - lastFogBroadcastTime.current > 30) {
+        if (now - lastFogBroadcastTime.current > WS_THROTTLE_MS) {
           lastFogBroadcastTime.current = now;
           wsService.send("FOG_LIVE", { ...updatedFog, sceneId: currentScene?.id });
         }
@@ -1281,7 +1297,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
           return;
         }
 
-        if (activeTool !== TOOLS.SELECT && activeTool !== TOOLS.PAN) return;
+        if (!isSelectMode && normalizedTool !== "pan") return;
         if (e.target.findAncestor?.("#tokens-layer-group")) return;
 
         const pos = getPointerCanvasPos();
@@ -1298,6 +1314,8 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       [
         hasActiveMap,
         activeTool,
+        isSelectMode,
+        normalizedTool,
         activeDrawShape,
         polygonVertices,
         drawStrokeColor,
@@ -1317,6 +1335,15 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
         isGM,
         addPing,
       ]
+  );
+
+  const handleStageDragEnd = useCallback(
+      (e) => {
+        if (e.target === stageRef.current && isStageDraggable) {
+          setStagePos(e.target.x(), e.target.y());
+        }
+      },
+      [isStageDraggable, setStagePos]
   );
 
   return (
@@ -1341,7 +1368,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
             }}
         />
 
-        {selectionInfo && (activeTool === TOOLS.SELECT || activeTool === TOOLS.FOG) && (
+        {selectionInfo && (isSelectMode || normalizedTool === "fog") && (
             <div
                 className="absolute z-40 pointer-events-auto flex items-center gap-2 px-3 py-1.5 bg-zinc-950/95 border border-zinc-700/80 rounded-2xl shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150"
                 style={{
@@ -1466,7 +1493,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
                   </div>
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-semibold mb-2">
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>میز مجازی Persian VTT</span>
+                    <span>میز مجازی Titipool</span>
                   </div>
                   <h1 className="text-xl md:text-2xl font-black text-zinc-100">
                     به ماجراجویی خوش آمدید!
@@ -1568,11 +1595,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
             onMouseLeave={handleMouseLeave}
             onDblClick={handleDblClick}
             onContextMenu={(e) => e.evt.preventDefault()}
-            onDragEnd={(e) => {
-              if (e.target === stageRef.current && isStageDraggable) {
-                setStagePos(e.target.x(), e.target.y());
-              }
-            }}
+            onDragEnd={handleStageDragEnd}
         >
           {/* لایه ۱: نقشه و گرید */}
           <Layer id="layer-background" listening={false}>
@@ -1593,7 +1616,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
                 <Layer
                     id="layer-canvas-features"
                     clip={{ x: 0, y: 0, width: mapWidth, height: mapHeight }}
-                    listening={true}
+                    listening={isFeaturesListening}
                 >
                   <DrawingLayer
                       liveDrawing={liveDrawing}

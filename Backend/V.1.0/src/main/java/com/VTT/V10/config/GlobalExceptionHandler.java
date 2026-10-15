@@ -15,6 +15,9 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Centralized exception translator that ensures stable JSON contract across all REST endpoints.
+ */
 @Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -39,7 +42,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
         StringBuilder sb = new StringBuilder();
         ex.getBindingResult().getFieldErrors().forEach(err -> {
-            if (!sb.isEmpty()) sb.append(", ");
+            if (!sb.isEmpty()) {
+                sb.append(", ");
+            }
             sb.append(err.getField()).append(": ").append(err.getDefaultMessage());
         });
         String message = sb.isEmpty() ? "Validation failed" : sb.toString();

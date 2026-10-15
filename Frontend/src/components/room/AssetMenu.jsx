@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, memo } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import {
   Image as ImageIcon,
   X,
@@ -34,9 +34,10 @@ const resolveAssetUrl = (asset) => {
   if (!asset) return "";
   if (typeof asset === "string") return getAssetUrl(asset);
   const raw =
-      asset.fileUrl ||
-      asset.url ||
+      asset.avatarUrl ||
       asset.assetUrl ||
+      asset.url ||
+      asset.fileUrl ||
       asset.thumbnailUrl ||
       asset.filePath ||
       asset.path ||
@@ -89,35 +90,7 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
     };
   }, [isAssetOpen, activeTab, canAccessAssets, loadAssets]);
 
-  if (!isAssetOpen) return null;
-
-  if (!canAccessAssets) {
-    return (
-        <div
-            className="fixed inset-x-3 bottom-4 sm:bottom-auto sm:top-16 sm:right-6 sm:inset-x-auto z-50 w-auto sm:w-80 glass-card border border-zinc-800 rounded-3xl shadow-2xl p-5 text-zinc-100 font-fa select-none text-center animate-fade-in-up"
-            dir="rtl"
-            onWheel={(e) => e.stopPropagation()}
-        >
-          <div className="w-10 h-10 mx-auto rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mb-3">
-            <Lock className="w-5 h-5" />
-          </div>
-          <h4 className="text-sm font-bold text-zinc-100">دسترسی محدود است</h4>
-          <p className="text-xs text-zinc-400 mt-1">
-            تنها گیم‌مستر یا بازیکنان دارای پرمیشن مجاز به استفاده از کتابخانه منابع هستند.
-          </p>
-          <Button
-              size="sm"
-              variant="secondary"
-              className="mt-4 w-full text-xs font-bold active:scale-95"
-              onClick={() => toggleMenu("asset")}
-          >
-            بستن
-          </Button>
-        </div>
-    );
-  }
-
-  const handleSelectMap = async (rawMapUrl, assetId = null) => {
+  const handleSelectMap = useCallback(async (rawMapUrl, assetId = null) => {
     if (!canUploadMap) return;
 
     const fullMapUrl = getAssetUrl(rawMapUrl);
@@ -125,9 +98,9 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
 
     toggleMenu("asset");
     await setMapForCurrentScene(fullMapUrl, validAssetId);
-  };
+  }, [canUploadMap, toggleMenu, setMapForCurrentScene]);
 
-  const handleAddToken = (rawTokenUrl, tokenName, extraData = {}) => {
+  const handleAddToken = useCallback((rawTokenUrl, tokenName, extraData = {}) => {
     if (!hasActiveMap) return;
 
     const fullUrl = getAssetUrl(rawTokenUrl);
@@ -154,7 +127,7 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
 
     addToken(newToken);
     uiAudio.playTokenDrop();
-  };
+  }, [hasActiveMap, currentUser?.id, currentScene?.mapWidth, currentScene?.mapHeight, addToken]);
 
   const handleDirectUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -237,23 +210,55 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
     }
   };
 
-  const filteredPresets =
-      activeTab === "maps"
-          ? (MAP_PRESETS || []).filter(
-              (m) =>
-                  (m.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  (m.nameFa || "").includes(searchQuery)
-          )
-          : (TOKEN_PRESETS || []).filter(
-              (t) =>
-                  t.category !== "props" &&
-                  ((t.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      (t.nameFa || "").includes(searchQuery))
-          );
+  const filteredPresets = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    if (activeTab === "maps") {
+      return (MAP_PRESETS || []).filter(
+          (m) =>
+              (m.name || "").toLowerCase().includes(q) ||
+              (m.nameFa || "").includes(searchQuery)
+      );
+    }
+    return (TOKEN_PRESETS || []).filter(
+        (t) =>
+            t.category !== "props" &&
+            ((t.name || "").toLowerCase().includes(q) ||
+                (t.nameFa || "").includes(searchQuery))
+    );
+  }, [activeTab, searchQuery]);
 
-  const filteredUserAssets = userAssets.filter((a) =>
-      (a.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUserAssets = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return userAssets.filter((a) => (a.name || "").toLowerCase().includes(q));
+  }, [userAssets, searchQuery]);
+
+  if (!isAssetOpen) return null;
+
+  if (!canAccessAssets) {
+    return (
+        <div
+            className="fixed inset-x-3 bottom-4 sm:bottom-auto sm:top-16 sm:right-6 sm:inset-x-auto z-50 w-auto sm:w-80 glass-card border border-zinc-800 rounded-3xl shadow-2xl p-5 text-zinc-100 font-fa select-none text-center animate-fade-in-up"
+            dir="rtl"
+            onWheel={(e) => e.stopPropagation()}
+        >
+          <div className="w-10 h-10 mx-auto rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mb-3">
+            <Lock className="w-5 h-5" />
+          </div>
+          <h4 className="text-sm font-bold text-zinc-100">دسترسی محدود است</h4>
+          <p className="text-xs text-zinc-400 mt-1">
+            تنها گیم‌مستر یا بازیکنان دارای پرمیشن مجاز به استفاده از کتابخانه منابع هستند.
+          </p>
+          <Button
+              size="sm"
+              variant="secondary"
+              className="mt-4 w-full text-xs font-bold active:scale-95"
+              onClick={() => toggleMenu("asset")}
+          >
+            بستن
+          </Button>
+        </div>
+    );
+  }
 
   return (
       <div
@@ -406,7 +411,8 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
                       >
                         <img
                             src={resolveAssetUrl(map)}
-                            alt={map.name}
+                            alt={map.nameFa ? `نقشه بازی ${map.nameFa}` : `نقشه بازی ${map.name}`}
+                            crossOrigin="anonymous"
                             className="w-full h-24 object-cover group-hover:brightness-105 transition-all"
                             loading="lazy"
                         />
@@ -441,8 +447,9 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
                       >
                         <img
                             src={resolveAssetUrl(token)}
-                            alt={token.name}
-                            className="w-12 h-12 rounded-full object-cover border border-amber-500/30"
+                            alt={token.nameFa ? `توکن کاراکتر ${token.nameFa}` : `توکن کاراکتر ${token.name}`}
+                            crossOrigin="anonymous"
+                            className="w-12 h-12 rounded-full object-cover border-2 border-amber-500/40 shadow-md group-hover:border-amber-400 transition-all"
                             loading="lazy"
                         />
                         <span className="text-[11px] font-bold text-zinc-300 truncate max-w-full">
@@ -482,7 +489,8 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
                           <div className="w-12 h-12 rounded-xl overflow-hidden bg-zinc-900 flex items-center justify-center border border-zinc-800 relative">
                             <img
                                 src={itemUrl}
-                                alt=""
+                                alt={asset.name ? `منبع آپلودشده ${asset.name}` : "تصویر منبع کاربر"}
+                                crossOrigin="anonymous"
                                 className="w-full h-full object-cover"
                                 loading="lazy"
                                 onError={(e) => {

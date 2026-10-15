@@ -106,7 +106,6 @@ export const TokenEditorModal = memo(({ roomData }) => {
   const userEmail = currentUser?.email ? String(currentUser.email).toLowerCase().trim() : "";
   const tokenLabel = String(token?.label || token?.name || "").toLowerCase().trim();
 
-  // رفع آسیب‌پذیری BOLA: حذف !tokenOwner تا توکن‌های فاقد مالک صریح فقط توسط GM قابل کنترل باشند
   const isOwner = Boolean(
       isGM ||
       (tokenOwner &&
@@ -207,7 +206,6 @@ export const TokenEditorModal = memo(({ roomData }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // مسدودسازی صریح فایل‌های SVG جهت جلوگیری از حملات XSS
     if (file.type === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg")) {
       setUploadError("فرمت SVG به دلایل امنیتی مجاز نیست. لطفاً PNG، JPG یا WEBP آپلود کنید.");
       return;
@@ -356,7 +354,7 @@ export const TokenEditorModal = memo(({ roomData }) => {
                 {hasValidAvatar ? (
                     <img
                         src={getFullAssetUrl(avatarUrl)}
-                        alt="Avatar"
+                        alt={name ? `تصویر توکن ${name}` : "تصویر توکن کاراکتر"}
                         className="w-full h-full object-cover"
                         onError={() => setAvatarUrl("")}
                     />
@@ -450,7 +448,7 @@ export const TokenEditorModal = memo(({ roomData }) => {
                         >
                           <img
                               src={preset.url}
-                              alt={preset.label}
+                              alt={preset.label ? `آیکون آماده ${preset.label}` : "آیکون کاراکتر"}
                               className="w-11 h-11 rounded-full object-cover bg-zinc-800 shadow"
                               loading="lazy"
                           />

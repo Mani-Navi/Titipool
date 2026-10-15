@@ -1,88 +1,207 @@
 @import "tailwindcss";
 
 @layer base {
-  body {
-    background-color: #090a0f;
-    color: #f3f4f6;
-    font-family: "Vazirmatn", system-ui, sans-serif;
-    user-select: none;
-    min-height: 100vh;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    background-image:
-            radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.07) 0%, transparent 55%),
-            radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
-            radial-gradient(circle at 0% 100%, rgba(217, 119, 6, 0.04) 0%, transparent 45%);
-    background-attachment: fixed;
-  }
+    body {
+        background-color: #090a0f;
+        color: #f3f4f6;
+        font-family: "Vazirmatn", system-ui, sans-serif;
+        user-select: auto;
+        min-height: 100vh;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-image:
+                radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.07) 0%, transparent 55%),
+                radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 0% 100%, rgba(217, 119, 6, 0.04) 0%, transparent 45%);
+        background-attachment: fixed;
+    }
 
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    background: #090a0f;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #27272a;
-    border-radius: 9999px;
-    transition: background-color 0.2s ease;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #f59e0b;
-  }
+    /* شاخص وضوح فوکوس برای ناوبری با صفحه‌کلید طبق استاندارد WCAG 2.1 AA */
+    :focus-visible {
+        outline: 2px solid #f59e0b;
+        outline-offset: 2px;
+        border-radius: 4px;
+    }
+
+    :focus:not(:focus-visible) {
+        outline: none;
+    }
+
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #090a0f;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #27272a;
+        border-radius: 9999px;
+        transition: background-color 0.2s ease;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #f59e0b;
+    }
 }
 
-/* انیمیشن‌ها و ترنزیشن‌های استاندارد و بهینه */
+/* انیمیشن‌ها و ترنزیشن‌های استاندارد و بهینه (بدون وارنینگ لینتر) */
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes shakeSubtle {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-3px); }
-  40%, 80% { transform: translateX(3px); }
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-3px); }
+    40%, 80% { transform: translateX(3px); }
 }
 
 @keyframes floatGentle {
-  0%, 100% { transform: translateY(0px) rotate(var(--tw-rotate, 0deg)); }
-  50% { transform: translateY(-4px) rotate(var(--tw-rotate, 0deg)); }
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(245, 158, 11, 0.2), inset 0 0 10px rgba(245, 158, 11, 0.1);
+    }
+    50% {
+        box-shadow: 0 0 25px rgba(245, 158, 11, 0.4), inset 0 0 15px rgba(245, 158, 11, 0.2);
+    }
 }
 
 @layer utilities {
-  .animate-fade-in-up {
-    animation: fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
+    .animate-fade-in-up {
+        animation: fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
 
-  .animate-shake-subtle {
-    animation: shakeSubtle 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-  }
+    .animate-shake-subtle {
+        animation: shakeSubtle 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
 
-  .animate-float-card {
-    animation: floatGentle 5s ease-in-out infinite;
-  }
+    .animate-float-card {
+        animation: floatGentle 5s ease-in-out infinite;
+    }
 
-  .glass-card {
-    background: linear-gradient(135deg, rgba(24, 24, 27, 0.8) 0%, rgba(9, 10, 15, 0.95) 100%);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-  }
+    /* ========================================================= */
+    /*                  سیستم شیشه مایع (Liquid Glass)            */
+    /* ========================================================= */
+
+    /* ۱. شیشه مایع پایه (کارت‌ها و پنل‌های عمومی) */
+    .liquid-glass {
+        background: linear-gradient(
+                135deg,
+                rgba(24, 27, 38, 0.75) 0%,
+                rgba(11, 13, 20, 0.88) 100%
+        );
+        backdrop-filter: blur(18px) saturate(180%);
+        -webkit-backdrop-filter: blur(18px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow:
+                inset 1px 1px 1px 0 rgba(255, 255, 255, 0.35),
+                inset -1px -1px 1px 0 rgba(0, 0, 0, 0.5),
+                0 12px 32px -4px rgba(0, 0, 0, 0.65);
+    }
+
+    /* ۲. منوهای بازشونده و دراپ‌داون‌ها (تینت تیره غلیظ برای خوانایی ۱۰۰٪ روی نقشه) */
+    .liquid-glass-menu {
+        background: linear-gradient(
+                145deg,
+                rgba(18, 21, 31, 0.94) 0%,
+                rgba(10, 11, 17, 0.98) 100%
+        );
+        backdrop-filter: blur(24px) saturate(200%);
+        -webkit-backdrop-filter: blur(24px) saturate(200%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow:
+                inset 1.5px 1.5px 1px 0 rgba(255, 255, 255, 0.4),
+                inset -1px -1px 1px 0 rgba(0, 0, 0, 0.6),
+                0 20px 45px -5px rgba(0, 0, 0, 0.85);
+    }
+
+    /* ۳. سینی و داک ابزارها (مثل داک پایین تاس‌ها یا نوار ابزار GM) */
+    .liquid-glass-dock {
+        background: linear-gradient(
+                180deg,
+                rgba(26, 29, 43, 0.82) 0%,
+                rgba(12, 14, 22, 0.92) 100%
+        );
+        backdrop-filter: blur(20px) saturate(190%);
+        -webkit-backdrop-filter: blur(20px) saturate(190%);
+        border: 1px solid rgba(245, 158, 11, 0.25);
+        box-shadow:
+                inset 1px 1px 1px 0 rgba(255, 255, 255, 0.3),
+                inset -1px -1px 2px 0 rgba(0, 0, 0, 0.6),
+                0 10px 30px rgba(0, 0, 0, 0.7);
+    }
+
+    /* ۴. مدال‌ها و شیت کاراکتر (پوشش کامل بدون نشت نور نقشه زیرین) */
+    .liquid-glass-modal {
+        background: linear-gradient(
+                140deg,
+                rgba(17, 20, 29, 0.95) 0%,
+                rgba(9, 10, 15, 0.98) 100%
+        );
+        backdrop-filter: blur(28px) saturate(210%);
+        -webkit-backdrop-filter: blur(28px) saturate(210%);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow:
+                inset 2px 2px 2px 0 rgba(255, 255, 255, 0.45),
+                inset -1px -1px 2px 1px rgba(0, 0, 0, 0.7),
+                0 25px 60px -10px rgba(0, 0, 0, 0.9);
+    }
+
+    /* ۵. آیتم‌های فعال/هاور منو با هاله طلایی کهربایی */
+    .liquid-glass-item-active {
+        background: linear-gradient(
+                90deg,
+                rgba(245, 158, 11, 0.18) 0%,
+                rgba(245, 158, 11, 0.05) 100%
+        );
+        border: 1px solid rgba(245, 158, 11, 0.45);
+        color: #fbbf24;
+        text-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+    }
+
+    /* کلاس قدیمی جهت حفظ سازگاری */
+    .glass-card {
+        background: linear-gradient(135deg, rgba(24, 24, 27, 0.85) 0%, rgba(9, 10, 15, 0.95) 100%);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* کلاس دسترسی‌پذیری جهت المان‌های مخصوص صفحه‌خوان‌ها بدون تغییر چیدمان */
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
+    }
 }
 
-/* سازگاری با ترجیحات کاربر برای حذف موشن */
+/* سازگاری با ترجیحات کاربر برای حذف موشن طبق WCAG 2.3.3 */
 @media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+    *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }

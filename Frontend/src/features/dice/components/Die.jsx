@@ -1,5 +1,5 @@
 import React, { useRef, useMemo, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { DICE_CONFIGS } from '../engine/diceDefinitions';
@@ -13,7 +13,7 @@ const VELOCITY_THRESHOLD = 0.08;
 const ANGULAR_THRESHOLD = 0.12;
 const REQUIRED_STABLE_FRAMES = 25;
 
-const DRAG_PLANE = new THREE.Plane(new THREE.Vector3(0, 1, 0), -3.2);
+const DRAG_PLANE = new THREE.Plane(new THREE.Vector3(0, 1, 0), -2.6);
 
 export function Die({
                         id,
@@ -25,6 +25,7 @@ export function Die({
                         initialAngularVelocity,
                     }) {
     const rigidBodyRef = useRef(null);
+    const { viewport } = useThree();
     const config = DICE_CONFIGS[type] || DICE_CONFIGS.d6;
     const setDieResult = useDiceStore((s) => s.setDieResult);
     const isRemoteRoll = useDiceStore((s) => s.isRemoteRoll);
@@ -38,6 +39,10 @@ export function Die({
 
     const isDraggingRef = useRef(false);
     const dragHistoryRef = useRef([]);
+
+    // محدوده امن حرکتی ماوس برای تاس‌های جدید کوچک‌تر
+    const safeLimitX = Math.max((viewport.width / 2) - 1.2, 1.8);
+    const safeLimitZ = Math.max((viewport.height / 2) - 1.2, 1.8);
 
     // همگام‌سازی دوران و موقعیت قطعی دریافتی از پرتاب‌کننده
     useEffect(() => {
@@ -100,6 +105,18 @@ export function Die({
         const mats = createMaterialsForType(type, faceValues, theme);
         return { geometry: geom, materials: mats };
     }, [type, config, theme]);
+
+    // پاکسازی کامل ژئومتری و متریال در هنگام خروج تاس از صحنه جهت دفع نشت حافظه وب‌جی‌ال
+    useEffect(() => {
+        return () => {
+            geometry.dispose();
+            if (Array.isArray(materials)) {
+                materials.forEach((mat) => {
+                    mat.dispose();
+                });
+            }
+        };
+    }, [geometry, materials]);
 
     const handleCollision = () => {
         if (!rigidBodyRef.current || isDraggingRef.current) return;
@@ -179,7 +196,10 @@ export function Die({
     const handlePointerDown = (e) => {
         if (isRemoteRoll) return;
         e.stopPropagation();
-        e.target.setPointerCapture(e.pointerId);
+
+        try {
+            e.target.setPointerCapture(e.pointerId);
+        } catch {}
 
         isDraggingRef.current = true;
         isSettledRef.current = true;
@@ -188,6 +208,7 @@ export function Die({
         document.body.style.cursor = 'grabbing';
 
         if (rigidBodyRef.current) {
+            rigidBodyRef.current.setGravityScale(0, true);
             rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
             rigidBodyRef.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
         }
@@ -199,13 +220,16 @@ export function Die({
 
         const targetPoint = new THREE.Vector3();
         if (e.ray && e.ray.intersectPlane(DRAG_PLANE, targetPoint)) {
+            const clampedX = THREE.MathUtils.clamp(targetPoint.x, -safeLimitX, safeLimitX);
+            const clampedZ = THREE.MathUtils.clamp(targetPoint.z, -safeLimitZ, safeLimitZ);
+
             rigidBodyRef.current.setTranslation(
-                { x: targetPoint.x, y: 3.2, z: targetPoint.z },
+                { x: clampedX, y: 2.6, z: clampedZ },
                 true
             );
 
             const now = performance.now();
-            dragHistoryRef.current.push({ x: targetPoint.x, z: targetPoint.z, time: now });
+            dragHistoryRef.current.push({ x: clampedX, z: clampedZ, time: now });
             if (dragHistoryRef.current.length > 5) {
                 dragHistoryRef.current.shift();
             }
@@ -215,10 +239,15 @@ export function Die({
     const handlePointerUp = (e) => {
         if (isRemoteRoll || !isDraggingRef.current || !rigidBodyRef.current) return;
         e.stopPropagation();
-        e.target.releasePointerCapture(e.pointerId);
+
+        try {
+            e.target.releasePointerCapture(e.pointerId);
+        } catch {}
 
         isDraggingRef.current = false;
         document.body.style.cursor = 'default';
+
+        rigidBodyRef.current.setGravityScale(1, true);
 
         let vx = (Math.random() - 0.5) * 4;
         let vz = (Math.random() - 0.5) * 4;
@@ -234,16 +263,16 @@ export function Die({
             const calcVx = (last.x - first.x) / dt;
             const calcVz = (last.z - first.z) / dt;
 
-            vx = THREE.MathUtils.clamp(calcVx * 0.85, -28, 28);
-            vz = THREE.MathUtils.clamp(calcVz * 0.85, -28, 28);
+            vx = THREE.MathUtils.clamp(calcVx * 0.75, -20, 20);
+            vz = THREE.MathUtils.clamp(calcVz * 0.75, -20, 20);
         }
 
         const vy = -4 - Math.random() * 4;
         const finalVelocity = { x: vx, y: vy, z: vz };
         const finalAngvel = {
-            x: (Math.random() - 0.5) * 45,
-            y: (Math.random() - 0.5) * 45,
-            z: (Math.random() - 0.5) * 45,
+            x: (Math.random() - 0.5) * 40,
+            y: (Math.random() - 0.5) * 40,
+            z: (Math.random() - 0.5) * 40,
         };
 
         rigidBodyRef.current.setLinvel(finalVelocity, true);
@@ -257,7 +286,7 @@ export function Die({
 
         broadcastReThrow(
             id,
-            { x: lastPos.x, y: 3.2, z: lastPos.z },
+            { x: lastPos.x, y: 2.6, z: lastPos.z },
             finalVelocity,
             finalAngvel
         );
@@ -279,6 +308,7 @@ export function Die({
             onCollisionEnter={handleCollision}
         >
             <mesh
+                userData={{ isDie: true }}
                 geometry={geometry}
                 material={materials}
                 castShadow
@@ -286,6 +316,7 @@ export function Die({
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
                 onPointerOver={() => {
                     if (!isRemoteRoll && !isDraggingRef.current) document.body.style.cursor = 'grab';
                 }}

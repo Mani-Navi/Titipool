@@ -3,10 +3,12 @@ import { useAuthStore } from "../stores/auth.store";
 import { useRoomStore } from "../stores/room.store";
 import { ROLES } from "../constants/roles.js";
 
+const EMPTY_ROOMS = Object.freeze([]);
+
 export function usePermissions(roomData) {
   const user = useAuthStore((state) => state.user);
   const storeRoom = useRoomStore((state) => state.currentRoom || state.room || state.activeRoom);
-  const roomsList = useRoomStore((state) => state.rooms || []);
+  const roomsList = useRoomStore((state) => state.rooms) || EMPTY_ROOMS;
 
   const currentRoom = useMemo(() => {
     return (
@@ -33,7 +35,6 @@ export function usePermissions(roomData) {
     return email ? String(email).trim().toLowerCase() : "";
   }, [user]);
 
-  // رفع آسیب‌پذیری: جلوگیری از برابر شدن رشته‌های خالی ("" === "") در زمان لود نشدن اطلاعات کاربر
   const isOwnerByRoom = useMemo(() => {
     if (!currentRoom) return false;
 

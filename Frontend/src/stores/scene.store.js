@@ -53,6 +53,8 @@ const normalizeFogRegion = (fog) => {
     };
 };
 
+const activePingTimers = new Set();
+
 export const useSceneStore = create((set, get) => ({
     currentScene: null,
     scenes: [],
@@ -78,6 +80,8 @@ export const useSceneStore = create((set, get) => ({
     },
 
     resetSceneStore: () => {
+        activePingTimers.forEach((timer) => clearTimeout(timer));
+        activePingTimers.clear();
         set({
             currentScene: null,
             scenes: [],
@@ -100,13 +104,11 @@ export const useSceneStore = create((set, get) => ({
         const targetId = String(newScene.id).toLowerCase();
 
         set((state) => {
-            const exists = state.scenes.some((s) => String(s.id).toLowerCase() === targetId);
-            if (exists) {
-                return {
-                    scenes: state.scenes.map((s) =>
-                        String(s.id).toLowerCase() === targetId ? { ...s, ...newScene } : s
-                    ),
-                };
+            const idx = state.scenes.findIndex((s) => String(s.id).toLowerCase() === targetId);
+            if (idx !== -1) {
+                const nextScenes = [...state.scenes];
+                nextScenes[idx] = { ...nextScenes[idx], ...newScene };
+                return { scenes: nextScenes };
             }
             return {
                 scenes: [...state.scenes, newScene],
@@ -196,7 +198,8 @@ export const useSceneStore = create((set, get) => ({
             const loadedTokens = [];
             const seenTokenIds = new Set();
 
-            for (const t of rawTokens) {
+            for (let i = 0; i < rawTokens.length; i++) {
+                const t = rawTokens[i];
                 const tId = String(t.id).toLowerCase();
                 if (!seenTokenIds.has(tId)) {
                     seenTokenIds.add(tId);
@@ -294,10 +297,12 @@ export const useSceneStore = create((set, get) => ({
             const currentTokens = state.currentScene.tokens;
 
             if (socketData.isDeleted) {
+                const idx = currentTokens.findIndex((t) => String(t.id).toLowerCase() === strId);
+                if (idx === -1) return state;
                 return {
                     currentScene: {
                         ...state.currentScene,
-                        tokens: currentTokens.filter((t) => String(t.id).toLowerCase() !== strId),
+                        tokens: currentTokens.filter((_, i) => i !== idx),
                     },
                 };
             }
@@ -307,11 +312,13 @@ export const useSceneStore = create((set, get) => ({
             );
 
             const cleanSocketData = {};
-            Object.keys(socketData).forEach((key) => {
+            const keys = Object.keys(socketData);
+            for (let i = 0; i < keys.length; i++) {
+                const key = keys[i];
                 if (socketData[key] !== null && socketData[key] !== undefined) {
                     cleanSocketData[key] = socketData[key];
                 }
-            });
+            }
 
             const incomingAvatar = cleanSocketData.avatarUrl || cleanSocketData.assetUrl;
             const incomingName = cleanSocketData.label || cleanSocketData.name;
@@ -324,29 +331,28 @@ export const useSceneStore = create((set, get) => ({
                         ? (Array.isArray(cleanSocketData.conditions) ? cleanSocketData.conditions : [])
                         : (oldToken.conditions || []);
 
-                updatedTokens = currentTokens.map((t, idx) =>
-                    idx === existsIndex
-                        ? {
-                            ...oldToken,
-                            ...cleanSocketData,
-                            id: String(oldToken.id),
-                            name: incomingName || oldToken.name || oldToken.label,
-                            label: incomingName || oldToken.label || oldToken.name,
-                            x: cleanSocketData.x !== undefined ? Number(cleanSocketData.x) : oldToken.x,
-                            y: cleanSocketData.y !== undefined ? Number(cleanSocketData.y) : oldToken.y,
-                            avatarUrl: incomingAvatar || oldToken.avatarUrl,
-                            assetUrl: incomingAvatar || oldToken.assetUrl,
-                            showHp: cleanSocketData.showHp !== undefined ? Boolean(cleanSocketData.showHp) : oldToken.showHp,
-                            showConditions: cleanSocketData.showConditions !== undefined ? Boolean(cleanSocketData.showConditions) : oldToken.showConditions,
-                            showAc: cleanSocketData.showAc !== undefined ? Boolean(cleanSocketData.showAc) : oldToken.showAc,
-                            allowPlayerHp: cleanSocketData.allowPlayerHp !== undefined ? Boolean(cleanSocketData.allowPlayerHp) : oldToken.showHp,
-                            allowPlayerConditions: cleanSocketData.allowPlayerConditions !== undefined ? Boolean(cleanSocketData.allowPlayerConditions) : oldToken.allowPlayerConditions,
-                            allowPlayerAc: cleanSocketData.allowPlayerAc !== undefined ? Boolean(cleanSocketData.allowPlayerAc) : oldToken.allowPlayerAc,
-                            allowPlayerSize: cleanSocketData.allowPlayerSize !== undefined ? Boolean(cleanSocketData.allowPlayerSize) : oldToken.allowPlayerSize,
-                            conditions: resolvedConditions,
-                        }
-                        : t
-                );
+                const updatedSingleToken = {
+                    ...oldToken,
+                    ...cleanSocketData,
+                    id: String(oldToken.id),
+                    name: incomingName || oldToken.name || oldToken.label,
+                    label: incomingName || oldToken.label || oldToken.name,
+                    x: cleanSocketData.x !== undefined ? Number(cleanSocketData.x) : oldToken.x,
+                    y: cleanSocketData.y !== undefined ? Number(cleanSocketData.y) : oldToken.y,
+                    avatarUrl: incomingAvatar || oldToken.avatarUrl,
+                    assetUrl: incomingAvatar || oldToken.assetUrl,
+                    showHp: cleanSocketData.showHp !== undefined ? Boolean(cleanSocketData.showHp) : oldToken.showHp,
+                    showConditions: cleanSocketData.showConditions !== undefined ? Boolean(cleanSocketData.showConditions) : oldToken.showConditions,
+                    showAc: cleanSocketData.showAc !== undefined ? Boolean(cleanSocketData.showAc) : oldToken.showAc,
+                    allowPlayerHp: cleanSocketData.allowPlayerHp !== undefined ? Boolean(cleanSocketData.allowPlayerHp) : oldToken.showHp,
+                    allowPlayerConditions: cleanSocketData.allowPlayerConditions !== undefined ? Boolean(cleanSocketData.allowPlayerConditions) : oldToken.allowPlayerConditions,
+                    allowPlayerAc: cleanSocketData.allowPlayerAc !== undefined ? Boolean(cleanSocketData.allowPlayerAc) : oldToken.allowPlayerAc,
+                    allowPlayerSize: cleanSocketData.allowPlayerSize !== undefined ? Boolean(cleanSocketData.allowPlayerSize) : oldToken.allowPlayerSize,
+                    conditions: resolvedConditions,
+                };
+
+                updatedTokens = [...currentTokens];
+                updatedTokens[existsIndex] = updatedSingleToken;
             } else {
                 if (!cleanSocketData.x && !cleanSocketData.y && !incomingName) {
                     return state;
@@ -394,9 +400,15 @@ export const useSceneStore = create((set, get) => ({
             assetUrl: mapUrl,
         };
 
+        const sceneIdx = state.scenes.findIndex((s) => s.id === current.id);
+        const nextScenes = [...state.scenes];
+        if (sceneIdx !== -1) {
+            nextScenes[sceneIdx] = { ...nextScenes[sceneIdx], mapUrl, assetUrl: mapUrl };
+        }
+
         set({
             currentScene: updatedScene,
-            scenes: state.scenes.map((s) => (s.id === current.id ? { ...s, mapUrl, assetUrl: mapUrl } : s)),
+            scenes: nextScenes,
         });
 
         wsService.send("SCENE_UPDATED", { sceneId: current.id, mapUrl, assetId });
@@ -413,13 +425,21 @@ export const useSceneStore = create((set, get) => ({
         const trimmed = newName.trim();
         const targetId = String(sceneId).toLowerCase();
 
-        set((state) => ({
-            scenes: state.scenes.map((s) => (String(s.id).toLowerCase() === targetId ? { ...s, name: trimmed } : s)),
-            currentScene:
-                String(state.currentScene?.id || "").toLowerCase() === targetId
-                    ? { ...state.currentScene, name: trimmed }
-                    : state.currentScene,
-        }));
+        set((state) => {
+            const idx = state.scenes.findIndex((s) => String(s.id).toLowerCase() === targetId);
+            const nextScenes = [...state.scenes];
+            if (idx !== -1) {
+                nextScenes[idx] = { ...nextScenes[idx], name: trimmed };
+            }
+
+            return {
+                scenes: nextScenes,
+                currentScene:
+                    String(state.currentScene?.id || "").toLowerCase() === targetId
+                        ? { ...state.currentScene, name: trimmed }
+                        : state.currentScene,
+            };
+        });
 
         try {
             await sceneApi.renameScene(sceneId, trimmed);
@@ -500,11 +520,14 @@ export const useSceneStore = create((set, get) => ({
         set((state) => {
             if (!state.currentScene || !state.currentScene.tokens) return state;
             const targetId = String(tokenId).toLowerCase();
+            const tokens = state.currentScene.tokens;
+            const idx = tokens.findIndex((t) => String(t.id).toLowerCase() === targetId);
+            if (idx === -1) return state;
 
-            const updatedTokens = state.currentScene.tokens.map((t) =>
-                String(t.id).toLowerCase() === targetId ? { ...t, ...updates } : t
-            );
-            return { currentScene: { ...state.currentScene, tokens: updatedTokens } };
+            const nextTokens = [...tokens];
+            nextTokens[idx] = { ...nextTokens[idx], ...updates };
+
+            return { currentScene: { ...state.currentScene, tokens: nextTokens } };
         });
     },
 
@@ -512,12 +535,20 @@ export const useSceneStore = create((set, get) => ({
         set((state) => {
             if (!state.currentScene || !state.currentScene.tokens) return state;
             const targetId = String(tokenId).toLowerCase();
+            const tokens = state.currentScene.tokens;
+            const idx = tokens.findIndex((t) => String(t.id).toLowerCase() === targetId);
+            if (idx === -1) return state;
 
-            const updatedTokens = state.currentScene.tokens.map((t) =>
-                String(t.id).toLowerCase() === targetId ? { ...t, x: Number(x), y: Number(y) } : t
-            );
+            const nextX = Number(x);
+            const nextY = Number(y);
+            if (tokens[idx].x === nextX && tokens[idx].y === nextY) {
+                return state;
+            }
 
-            return { currentScene: { ...state.currentScene, tokens: updatedTokens } };
+            const nextTokens = [...tokens];
+            nextTokens[idx] = { ...nextTokens[idx], x: nextX, y: nextY };
+
+            return { currentScene: { ...state.currentScene, tokens: nextTokens } };
         });
     },
 
@@ -525,12 +556,14 @@ export const useSceneStore = create((set, get) => ({
         set((state) => {
             if (!state.currentScene || !state.currentScene.tokens) return state;
             const targetId = String(tokenId).toLowerCase();
+            const tokens = state.currentScene.tokens;
+            const idx = tokens.findIndex((t) => String(t.id).toLowerCase() === targetId);
+            if (idx === -1) return state;
+
             return {
                 currentScene: {
                     ...state.currentScene,
-                    tokens: state.currentScene.tokens.filter(
-                        (t) => String(t.id).toLowerCase() !== targetId
-                    ),
+                    tokens: tokens.filter((_, i) => i !== idx),
                 },
             };
         });
@@ -544,7 +577,8 @@ export const useSceneStore = create((set, get) => ({
 
             let nextDrawings;
             if (existsIndex !== -1) {
-                nextDrawings = existing.map((d, i) => (i === existsIndex ? { ...d, ...drawing } : d));
+                nextDrawings = [...existing];
+                nextDrawings[existsIndex] = { ...nextDrawings[existsIndex], ...drawing };
             } else {
                 nextDrawings = [...existing, drawing];
             }
@@ -563,9 +597,13 @@ export const useSceneStore = create((set, get) => ({
         set((state) => {
             if (!state.currentScene || !state.currentScene.drawings) return state;
             const dummy = { id: drawingId, clientDrawingId: drawingId, drawingId };
-            const nextDrawings = state.currentScene.drawings.map((d) =>
-                matchDrawingId(d, dummy) ? { ...d, ...updates } : d
-            );
+            const drawings = state.currentScene.drawings;
+            const idx = drawings.findIndex((d) => matchDrawingId(d, dummy));
+            if (idx === -1) return state;
+
+            const nextDrawings = [...drawings];
+            nextDrawings[idx] = { ...nextDrawings[idx], ...updates };
+
             return {
                 currentScene: {
                     ...state.currentScene,
@@ -579,10 +617,14 @@ export const useSceneStore = create((set, get) => ({
         set((state) => {
             if (!state.currentScene || !state.currentScene.drawings) return state;
             const dummy = { id: drawingId, clientDrawingId: drawingId, drawingId };
+            const drawings = state.currentScene.drawings;
+            const idx = drawings.findIndex((d) => matchDrawingId(d, dummy));
+            if (idx === -1) return state;
+
             return {
                 currentScene: {
                     ...state.currentScene,
-                    drawings: state.currentScene.drawings.filter((d) => !matchDrawingId(d, dummy)),
+                    drawings: drawings.filter((_, i) => i !== idx),
                 },
             };
         });
@@ -590,7 +632,9 @@ export const useSceneStore = create((set, get) => ({
 
     clearDrawings: () => {
         set((state) => {
-            if (!state.currentScene) return state;
+            if (!state.currentScene || !state.currentScene.drawings || state.currentScene.drawings.length === 0) {
+                return state;
+            }
             return { currentScene: { ...state.currentScene, drawings: [] } };
         });
     },
@@ -606,7 +650,8 @@ export const useSceneStore = create((set, get) => ({
 
             let nextFog;
             if (existsIndex !== -1) {
-                nextFog = existing.map((f, i) => (i === existsIndex ? { ...f, ...normalized } : f));
+                nextFog = [...existing];
+                nextFog[existsIndex] = { ...nextFog[existsIndex], ...normalized };
             } else {
                 nextFog = [...existing, normalized];
             }
@@ -626,9 +671,13 @@ export const useSceneStore = create((set, get) => ({
         set((state) => {
             if (!state.currentScene || !state.currentScene.fogShapes) return state;
             const targetId = String(fogId).trim().toLowerCase();
-            const nextFog = state.currentScene.fogShapes.map((f) =>
-                String(f.id).trim().toLowerCase() === targetId ? { ...f, ...updates } : f
-            );
+            const fogShapes = state.currentScene.fogShapes;
+            const idx = fogShapes.findIndex((f) => String(f.id).trim().toLowerCase() === targetId);
+            if (idx === -1) return state;
+
+            const nextFog = [...fogShapes];
+            nextFog[idx] = { ...nextFog[idx], ...updates };
+
             return {
                 currentScene: {
                     ...state.currentScene,
@@ -638,14 +687,15 @@ export const useSceneStore = create((set, get) => ({
         });
     },
 
-    // حذف یک تکه مجزا از مه جنگ انتخاب‌شده
     removeFogShape: (fogId) => {
         set((state) => {
             if (!state.currentScene || !state.currentScene.fogShapes) return state;
             const targetId = String(fogId).trim().toLowerCase();
-            const filteredFog = state.currentScene.fogShapes.filter(
-                (f) => String(f.id).trim().toLowerCase() !== targetId
-            );
+            const fogShapes = state.currentScene.fogShapes;
+            const idx = fogShapes.findIndex((f) => String(f.id).trim().toLowerCase() === targetId);
+            if (idx === -1) return state;
+
+            const filteredFog = fogShapes.filter((_, i) => i !== idx);
             return {
                 currentScene: {
                     ...state.currentScene,
@@ -687,15 +737,25 @@ export const useSceneStore = create((set, get) => ({
     },
 
     addPing: (pingData) => {
+        const pingId = `ping-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
         const newPing = {
             ...pingData,
-            id: `ping-${Date.now()}`,
+            id: pingId,
             timestamp: Date.now(),
         };
+
         set((state) => ({ pings: [...state.pings, newPing] }));
-        setTimeout(() => {
-            set((state) => ({ pings: state.pings.filter((p) => p.id !== newPing.id) }));
+
+        const timer = setTimeout(() => {
+            activePingTimers.delete(timer);
+            set((state) => {
+                const idx = state.pings.findIndex((p) => p.id === pingId);
+                if (idx === -1) return state;
+                return { pings: state.pings.filter((_, i) => i !== idx) };
+            });
         }, 4000);
+
+        activePingTimers.add(timer);
     },
 
     switchScene: async (sceneId, shouldBroadcast = true, explicitRoomId = null) => {
@@ -750,23 +810,28 @@ export const useSceneStore = create((set, get) => ({
                 }
             }
 
-            const loadedTokens = (fullState.tokens || []).map((t) => ({
-                ...t,
-                id: String(t.id),
-                avatarUrl: t.avatarUrl || t.assetUrl || "",
-                assetUrl: t.avatarUrl || t.assetUrl || "",
-                name: t.label || t.name || "",
-                label: t.label || t.name || "",
-                controlledBy: t.controlledBy ? String(t.controlledBy) : null,
-                showHp: t.showHp !== undefined ? Boolean(t.showHp) : true,
-                showConditions: t.showConditions !== undefined ? Boolean(t.showConditions) : true,
-                showAc: t.showAc !== undefined ? Boolean(t.showAc) : true,
-                allowPlayerHp: t.allowPlayerHp !== undefined ? Boolean(t.allowPlayerHp) : true,
-                allowPlayerConditions: t.allowPlayerConditions !== undefined ? Boolean(t.allowPlayerConditions) : true,
-                allowPlayerAc: t.allowPlayerAc !== undefined ? Boolean(t.allowPlayerAc) : true,
-                allowPlayerSize: t.allowPlayerSize !== undefined ? Boolean(t.allowPlayerSize) : true,
-                conditions: Array.isArray(t.conditions) ? t.conditions : [],
-            }));
+            const rawTokens = fullState.tokens || [];
+            const loadedTokens = [];
+            for (let i = 0; i < rawTokens.length; i++) {
+                const t = rawTokens[i];
+                loadedTokens.push({
+                    ...t,
+                    id: String(t.id),
+                    avatarUrl: t.avatarUrl || t.assetUrl || "",
+                    assetUrl: t.avatarUrl || t.assetUrl || "",
+                    name: t.label || t.name || "",
+                    label: t.label || t.name || "",
+                    controlledBy: t.controlledBy ? String(t.controlledBy) : null,
+                    showHp: t.showHp !== undefined ? Boolean(t.showHp) : true,
+                    showConditions: t.showConditions !== undefined ? Boolean(t.showConditions) : true,
+                    showAc: t.showAc !== undefined ? Boolean(t.showAc) : true,
+                    allowPlayerHp: t.allowPlayerHp !== undefined ? Boolean(t.allowPlayerHp) : true,
+                    allowPlayerConditions: t.allowPlayerConditions !== undefined ? Boolean(t.allowPlayerConditions) : true,
+                    allowPlayerAc: t.allowPlayerAc !== undefined ? Boolean(t.allowPlayerAc) : true,
+                    allowPlayerSize: t.allowPlayerSize !== undefined ? Boolean(t.allowPlayerSize) : true,
+                    conditions: Array.isArray(t.conditions) ? t.conditions : [],
+                });
+            }
 
             const rawFogRegions = fullState.fogRegions || sceneData.fogShapes || [];
             const normalizedFog = rawFogRegions.map(normalizeFogRegion).filter(Boolean);

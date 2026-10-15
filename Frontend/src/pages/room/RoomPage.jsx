@@ -12,8 +12,10 @@ import { useSceneStore } from "../../stores/scene.store.js";
 import { useCanvasStore } from "../../stores/canvas.store.js";
 import { useAuthStore } from "../../stores/auth.store";
 import { useRoomStore } from "../../stores/room.store";
+import { useDiceStore } from "../../features/dice/state/dice.store";
 import { useWebSocket } from "../../hooks/useWebSocket.js";
 import { usePermissions } from "../../hooks/usePermissions";
+import { usePageTitle } from "../../hooks/usePageTitle";
 import { wsService } from "../../services/websocket.service";
 import { roomApi } from "../../api/room.api";
 import { toast } from "../../stores/toast.store";
@@ -85,6 +87,8 @@ export const RoomPage = () => {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isHelpOpen, setIsHelpOpen] = useState(false);
 
+    usePageTitle(roomData?.name ? `${roomData.name} — اتاق بازی` : "اتاق بازی");
+
     const effectiveRoomId = urlParamId;
     const { isGM, permissions: userPermissions } = usePermissions(roomData);
 
@@ -93,12 +97,16 @@ export const RoomPage = () => {
         setOnlineMembers([]);
         useSceneStore.getState().resetSceneStore();
         useCanvasStore.getState().resetCanvasStore();
+        useDiceStore.getState().clearDice();
+        useDiceStore.getState().setOpen(false);
 
         return () => {
             setRoomData(null);
             setOnlineMembers([]);
             useSceneStore.getState().resetSceneStore();
             useCanvasStore.getState().resetCanvasStore();
+            useDiceStore.getState().clearDice();
+            useDiceStore.getState().setOpen(false);
         };
     }, [urlParamId]);
 

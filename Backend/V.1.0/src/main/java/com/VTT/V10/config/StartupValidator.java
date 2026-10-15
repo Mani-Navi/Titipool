@@ -11,10 +11,15 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+/**
+ * Validates production runtime constraints such as database health and secret minimum lengths upon initialization.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class StartupValidator implements ApplicationRunner {
+
+    private static final int MIN_JWT_SECRET_LENGTH = 32;
 
     @Value("${jwt.secret}")
     private String jwtSecret;
@@ -34,13 +39,11 @@ public class StartupValidator implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         log.info("🔍 Running Production Readiness Startup Checks...");
 
-        // ۱. اعتبارسنجی طول کلید JWT (حداقل ۳۲ کاراکتر)
-        if (jwtSecret == null || jwtSecret.trim().length() < 32) {
-            log.error("❌ Critical Failure: JWT secret too short — minimum 32 characters required");
+        if (jwtSecret == null || jwtSecret.trim().length() < MIN_JWT_SECRET_LENGTH) {
+            log.error("❌ Critical Failure: JWT secret too short — minimum {} characters required", MIN_JWT_SECRET_LENGTH);
             throw new IllegalStateException("JWT secret too short — min 32 chars");
         }
 
-        // ۲. اعتبارسنجی کانفیگ LiveKit SFU
         if (livekitUrl == null || livekitUrl.isBlank() ||
                 livekitApiKey == null || livekitApiKey.isBlank() ||
                 livekitApiSecret == null || livekitApiSecret.isBlank()) {
@@ -48,7 +51,6 @@ public class StartupValidator implements ApplicationRunner {
             throw new IllegalStateException("LiveKit config incomplete");
         }
 
-        // ۳. بررسی اتصال مستقیم به دیتابیس PostgreSQL
         try (Connection conn = dataSource.getConnection()) {
             if (!conn.isValid(2)) {
                 throw new SQLException("Database connection validation check failed within 2 seconds");

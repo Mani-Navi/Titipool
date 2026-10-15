@@ -12,6 +12,9 @@ import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 
 import java.util.UUID;
 
+/**
+ * Manages WebSocket connection lifecycle events, STOMP session tracking, and disconnect presence cleanup.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -49,9 +52,11 @@ public class WebSocketEventListener {
 
         if (destination != null && destination.startsWith(WsConstants.TOPIC_ROOM_PREFIX) && destination.endsWith(WsConstants.TOPIC_USERS_SUFFIX)) {
             try {
-                String[] parts = destination.split("/");
-                if (parts.length >= 4) {
-                    UUID roomId = UUID.fromString(parts[3]);
+                int prefixLength = WsConstants.TOPIC_ROOM_PREFIX.length();
+                int suffixIndex = destination.lastIndexOf(WsConstants.TOPIC_USERS_SUFFIX);
+                if (suffixIndex > prefixLength) {
+                    String roomIdPart = destination.substring(prefixLength, suffixIndex);
+                    UUID roomId = UUID.fromString(roomIdPart);
                     if (accessor.getUser() != null && roomService.isMember(roomId, accessor.getUser().getName())) {
                         sessionManager.broadcastOnlineMembers(roomId);
                     }

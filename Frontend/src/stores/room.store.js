@@ -16,15 +16,20 @@ export const useRoomStore = create((set) => ({
         })),
 
     updateRoomInStore: (updatedRoom) =>
-        set((state) => ({
-            currentRoom:
-                state.currentRoom?.id === updatedRoom.id
-                    ? { ...state.currentRoom, ...updatedRoom }
-                    : state.currentRoom,
-            rooms: state.rooms.map((r) =>
-                r.id === updatedRoom.id ? { ...r, ...updatedRoom } : r
-            ),
-        })),
+        set((state) => {
+            const idx = state.rooms.findIndex((r) => r.id === updatedRoom.id);
+            const nextRooms = idx !== -1
+                ? [...state.rooms.slice(0, idx), { ...state.rooms[idx], ...updatedRoom }, ...state.rooms.slice(idx + 1)]
+                : state.rooms;
+
+            return {
+                currentRoom:
+                    state.currentRoom?.id === updatedRoom.id
+                        ? { ...state.currentRoom, ...updatedRoom }
+                        : state.currentRoom,
+                rooms: nextRooms,
+            };
+        }),
 
     removeRoom: (id) =>
         set((state) => ({
