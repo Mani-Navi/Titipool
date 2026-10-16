@@ -40,21 +40,41 @@ function applyPlanarUVs(geom, faces, trianglesPerFace, faceRadius) {
     geom.computeVertexNormals();
 }
 
-// ---------------- D2 (سکه با ارقام ۱ و ۲) ----------------
+// ---------------- D2 (سکه دوطرفه: یک طرف ۱، یک طرف ۲ با لبه متالیک) ----------------
 function createD2Data() {
     const radius = 0.95;
     const height = 0.22;
-    const geom = new THREE.CylinderGeometry(radius, radius, height, 28).toNonIndexed();
+    const segments = 32;
+    const geom = new THREE.CylinderGeometry(radius, radius, height, segments).toNonIndexed();
+    const pos = geom.attributes.position;
+    const totalVerts = pos.count;
+    const uvs = [];
+
     geom.clearGroups();
 
-    const segs = 28;
-    const topVerts = segs * 3;
-    const bottomVerts = segs * 3;
-    const sideVerts = segs * 6;
+    const sideVerts = segments * 6;
+    const capVerts = segments * 3;
 
-    geom.addGroup(0, topVerts, 0);
-    geom.addGroup(topVerts, bottomVerts, 1);
-    geom.addGroup(topVerts + bottomVerts, sideVerts, 0);
+    // گروه 0: وجه بالا (عدد 1)، گروه 1: وجه پایین (عدد 2)، گروه 2: لبه طلایی سکه
+    geom.addGroup(sideVerts, capVerts, 0);
+    geom.addGroup(sideVerts + capVerts, capVerts, 1);
+    geom.addGroup(0, sideVerts, 2);
+
+    for (let i = 0; i < totalVerts; i++) {
+        const x = pos.getX(i);
+        const z = pos.getZ(i);
+
+        if (i >= sideVerts && i < sideVerts + capVerts) {
+            uvs.push(0.5 + x / (radius * 2.1), 0.5 - z / (radius * 2.1));
+        } else if (i >= sideVerts + capVerts) {
+            uvs.push(0.5 - x / (radius * 2.1), 0.5 - z / (radius * 2.1));
+        } else {
+            uvs.push(0.5, 0.5);
+        }
+    }
+
+    geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geom.computeVertexNormals();
 
     const faces = [
         { normal: new THREE.Vector3(0, 1, 0), value: 1, label: '1' },
@@ -104,7 +124,7 @@ export const D6_DEFINITION = {
     createGeometry: () => new THREE.BoxGeometry(1.0, 1.0, 1.0),
 };
 
-// ---------------- FUDGE (تاس فاج ۶ وجهی: ۲ مثبت، ۲ خنثی، ۲ منفی) ----------------
+// ---------------- FUDGE (تاس ۶ وجهی رسمی فاج) ----------------
 export const FUDGE_DEFINITION = {
     type: 'fudge',
     radius: 0.72,
@@ -289,7 +309,6 @@ export const DICE_CONFIGS = {
     d4: createD4Data(),
     d6: D6_DEFINITION,
     fudge: FUDGE_DEFINITION,
-    forge: FUDGE_DEFINITION, // جهت سازگاری کامل
     d8: createD8Data(),
     d10: createD10GeometryData('d10'),
     d100: createD10GeometryData('d100'),

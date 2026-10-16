@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react';
-import { RotateCcw, Sparkles, Trash2, Dices, Zap, ChevronDown, ChevronUp } from 'lucide-react';
+import { RotateCcw, Sparkles, Trash2, Dices, Zap, ChevronDown, ChevronUp, Coins } from 'lucide-react';
 
 import { GsapHeadingReveal } from './GsapHeadingReveal';
 import { DiceCanvas } from '../../features/dice/components/DiceCanvas';
@@ -7,14 +7,17 @@ import { useDiceStore } from '../../features/dice/state/dice.store';
 import { DICE_THEMES } from '../../features/dice/engine/textureGenerator';
 import { diceAudio } from '../../features/dice/engine/diceAudio';
 
-const DICE_TYPES = Object.freeze([
-    { type: 'd100', label: 'D100', maxVal: 100 },
-    { type: 'd20', label: 'D20', maxVal: 20 },
-    { type: 'd12', label: 'D12', maxVal: 12 },
-    { type: 'd10', label: 'D10', maxVal: 9 },
-    { type: 'd8', label: 'D8', maxVal: 8 },
-    { type: 'd6', label: 'D6', maxVal: 6 },
+const ALL_DICE_LANDING = Object.freeze([
+    { type: 'd2', label: 'D2 سکه', maxVal: 2, icon: Coins },
     { type: 'd4', label: 'D4', maxVal: 4 },
+    { type: 'd6', label: 'D6', maxVal: 6 },
+    { type: 'fudge', label: 'Fudge', maxVal: 1 },
+    { type: 'd8', label: 'D8', maxVal: 8 },
+    { type: 'd10', label: 'D10', maxVal: 9 },
+    { type: 'd12', label: 'D12', maxVal: 12 },
+    { type: 'd20', label: 'D20', maxVal: 20 },
+    { type: 'd100', label: 'D100', maxVal: 100 },
+    { type: 'd1000', label: 'D1000', maxVal: 900 },
 ]);
 
 export const DiceSection = memo(() => {
@@ -33,11 +36,10 @@ export const DiceSection = memo(() => {
     const [isMenuOpen, setIsMenuOpen] = useState(true);
     const playedCritAudioRef = useRef(false);
 
-    // بررسی رخ دادن کریتیکال (Max Die)
     const isAnyCritical = useMemo(() => {
         if (results.length === 0 || isRolling) return false;
         return results.some((r) => {
-            const config = DICE_TYPES.find((d) => d.type === r.type);
+            const config = ALL_DICE_LANDING.find((d) => d.type === r.type);
             if (!config) return false;
             if (r.type === 'd10') return r.value === 0 || r.value === 9;
             return r.value === config.maxVal;
@@ -54,7 +56,6 @@ export const DiceSection = memo(() => {
         }
     }, [isAnyCritical, isRolling]);
 
-    // پرتاب خودکار یک تاس D12 در ورود به بخش و پاکسازی کامل استور در زمان ترک لندینگ
     useEffect(() => {
         const timer = setTimeout(() => {
             triggerRoll(['d12']);
@@ -128,13 +129,24 @@ export const DiceSection = memo(() => {
         return Object.values(poolCounts).reduce((a, b) => a + b, 0);
     }, [poolCounts]);
 
+    const formatDieDisplayValue = (r) => {
+        if (r.type === 'd2') return r.value === 1 ? '1' : '2';
+        if (r.type === 'fudge') {
+            if (r.value > 0) return '+';
+            if (r.value < 0) return '−';
+            return '0';
+        }
+        if (r.type === 'd1000') return String(r.value).padStart(3, '0');
+        return r.value;
+    };
+
     return (
         <section id="dice" className="py-14 sm:py-28 px-3 sm:px-8 overflow-hidden w-full" dir="rtl">
             <div className="max-w-6xl mx-auto">
                 <GsapHeadingReveal
                     eyebrow="موتور فیزیک سه‌بعدی · REAL 3D RAPIER PHYSICS"
                     lines={['پرتاب واقعی،', 'درست مثل دور میز نبرد.']}
-                    subtitle="با ماوس یا لمس صفحه تاس‌ها را بردارید و پرتاب کنید. فیزیک واقعی قطعی، صداگذاری چوب و بافت مرمر دست‌ساز."
+                    subtitle="با ماوس یا لمس صفحه تاس‌ها را بردارید و پرتاب کنید. فیزیک قطعی، صداگذاری چوب و بافت مرمر دست‌ساز."
                     containerClassName="max-w-2xl mx-auto mb-8 sm:mb-14"
                 />
 
@@ -142,15 +154,11 @@ export const DiceSection = memo(() => {
                     onPointerLeave={handleContainerPointerLeave}
                     className="relative rounded-3xl bg-[#090a10] border border-[#242738] shadow-[0_30px_90px_rgba(0,0,0,0.25)] h-[520px] sm:h-[580px] overflow-hidden select-none isolate"
                 >
-                    {/* کانواس سه‌بعدی ایزوله‌شده */}
-                    <div
-                        className="absolute inset-0"
-                        style={{ touchAction: 'none' }}
-                    >
+                    <div className="absolute inset-0" style={{ touchAction: 'none' }}>
                         <DiceCanvas />
                     </div>
 
-                    {/* بنر نتیجه نهایی */}
+                    {/* بنر نتیجه نهایی با فونت بدون تداخل LTR */}
                     {results.length > 0 && (
                         <div className="absolute top-4 sm:top-6 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-1 z-20 w-auto max-w-[94%] animate-fade-in-up">
                             <div
@@ -181,13 +189,13 @@ export const DiceSection = memo(() => {
                                     {totalSum}
                                 </span>
 
-                                <div className="flex items-center gap-1 border-r border-zinc-800 pr-2 mr-0.5">
+                                <div className="flex items-center gap-1.5 border-r border-zinc-800 pr-2 mr-0.5" dir="ltr">
                                     {results.map((r, i) => (
                                         <span
                                             key={i}
                                             className="text-[10px] sm:text-xs px-2 py-0.5 rounded-lg font-mono font-bold bg-zinc-900 border border-zinc-700 text-amber-200"
                                         >
-                                            {r.value}
+                                            {formatDieDisplayValue(r)}
                                         </span>
                                     ))}
                                 </div>
@@ -206,7 +214,6 @@ export const DiceSection = memo(() => {
 
                     {/* داک کنترل کنسولی مجهز به دکمه جمع و باز شدن */}
                     <div className="absolute bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-1.5 z-20 w-full px-2.5 sm:px-4 max-w-xl transition-all duration-300">
-
                         <button
                             type="button"
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -220,7 +227,7 @@ export const DiceSection = memo(() => {
                             <div className="w-full flex flex-col gap-1.5 animate-fade-in-up">
                                 {mode === 'pool' && totalPoolCount > 0 && (
                                     <div className="bg-zinc-950/95 border border-amber-500/30 p-2 rounded-2xl shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-2 w-full">
-                                        <div className="flex items-center gap-1 flex-wrap overflow-x-auto max-w-[70%]">
+                                        <div className="flex items-center gap-1 flex-wrap overflow-x-auto max-w-[70%]" dir="ltr">
                                             {Object.entries(poolCounts).map(([type, count]) => (
                                                 <button
                                                     key={type}
@@ -255,9 +262,10 @@ export const DiceSection = memo(() => {
                                 )}
 
                                 <div className="w-full bg-zinc-950/95 border border-zinc-800/90 p-2 rounded-2xl shadow-[0_15px_45px_rgba(0,0,0,0.8)] backdrop-blur-2xl flex flex-col gap-2">
-                                    <div className="grid grid-cols-7 gap-1 w-full">
-                                        {DICE_TYPES.map((d) => {
+                                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+                                        {ALL_DICE_LANDING.map((d) => {
                                             const inPool = poolCounts[d.type] || 0;
+                                            const IconComp = d.icon;
                                             return (
                                                 <button
                                                     key={d.type}
@@ -269,11 +277,12 @@ export const DiceSection = memo(() => {
                                                             handleAddToPool(d.type);
                                                         }
                                                     }}
-                                                    className="relative py-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-amber-500/50 text-amber-300 font-mono text-[11px] sm:text-xs font-bold transition-all active:scale-90 cursor-pointer shadow-sm flex items-center justify-center"
+                                                    className="relative py-2 px-2.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-amber-500/50 text-amber-300 font-mono text-[11px] sm:text-xs font-bold transition-all active:scale-90 cursor-pointer shadow-sm flex items-center gap-1 shrink-0"
                                                 >
+                                                    {IconComp && <IconComp className="w-3.5 h-3.5 text-amber-400" />}
                                                     <span>{d.label}</span>
                                                     {mode === 'pool' && inPool > 0 && (
-                                                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 text-zinc-950 text-[9px] font-sans font-black rounded-full flex items-center justify-center">
+                                                        <span className="w-3.5 h-3.5 bg-amber-500 text-zinc-950 text-[9px] font-sans font-black rounded-full flex items-center justify-center -mr-1">
                                                             {inPool}
                                                         </span>
                                                     )}
@@ -301,9 +310,7 @@ export const DiceSection = memo(() => {
                                                     type="button"
                                                     onClick={() => setMode('quick')}
                                                     className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
-                                                        mode === 'quick'
-                                                            ? "bg-amber-500 text-zinc-950"
-                                                            : "text-zinc-400"
+                                                        mode === 'quick' ? "bg-amber-500 text-zinc-950" : "text-zinc-400"
                                                     }`}
                                                     title="پرتاب تکی"
                                                 >
@@ -313,9 +320,7 @@ export const DiceSection = memo(() => {
                                                     type="button"
                                                     onClick={() => setMode('pool')}
                                                     className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
-                                                        mode === 'pool'
-                                                            ? "bg-amber-500 text-zinc-950"
-                                                            : "text-zinc-400"
+                                                        mode === 'pool' ? "bg-amber-500 text-zinc-950" : "text-zinc-400"
                                                     }`}
                                                     title="پرتاب چندتایی"
                                                 >
@@ -331,9 +336,7 @@ export const DiceSection = memo(() => {
                                                     type="button"
                                                     onClick={() => setSelectedTheme(t.id)}
                                                     className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full transition-transform active:scale-75 ${
-                                                        selectedTheme === t.id
-                                                            ? "ring-2 ring-amber-400 scale-110"
-                                                            : "opacity-60 hover:opacity-100"
+                                                        selectedTheme === t.id ? "ring-2 ring-amber-400 scale-110" : "opacity-60 hover:opacity-100"
                                                     }`}
                                                     style={{
                                                         background: `linear-gradient(135deg, ${t.bgCenter} 0%, ${t.bgEdge} 100%)`,

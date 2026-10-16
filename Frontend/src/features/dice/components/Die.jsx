@@ -72,14 +72,18 @@ export function Die({
         const faceValues = config.faces.map((f) => f.value);
 
         if (type === 'd2') {
-            const mats = createMaterialsForType('d2', [1, 2], theme);
-            return { geometry: geom, materials: mats };
+            const matTop = createMaterialsForType('d2', [1], theme)[0];
+            const matBottom = createMaterialsForType('d2', [2], theme)[0];
+            const matRim = new THREE.MeshStandardMaterial({
+                color: theme === 'ivory' ? 0x78350f : 0xeab308,
+                metalness: 0.8,
+                roughness: 0.25,
+            });
+            return { geometry: geom, materials: [matTop, matBottom, matRim] };
         }
 
-        if (type === 'd6' || type === 'fudge' || type === 'forge') {
-            const d6Order = (type === 'fudge' || type === 'forge')
-                ? [1, -1, 1, -1, 0, 0]
-                : [3, 4, 6, 1, 5, 2];
+        if (type === 'd6' || type === 'fudge') {
+            const d6Order = type === 'fudge' ? [1, -1, 1, -1, 0, 0] : [3, 4, 6, 1, 5, 2];
             const mats = createMaterialsForType(type, d6Order, theme);
             return { geometry: geom, materials: mats };
         }
@@ -114,9 +118,7 @@ export function Die({
         return () => {
             geometry.dispose();
             if (Array.isArray(materials)) {
-                materials.forEach((mat) => {
-                    mat.dispose();
-                });
+                materials.forEach((mat) => mat.dispose());
             }
         };
     }, [geometry, materials]);
