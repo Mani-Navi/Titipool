@@ -76,8 +76,10 @@ export function Die({
             return { geometry: geom, materials: mats };
         }
 
-        if (type === 'd6' || type === 'forge') {
-            const d6Order = type === 'forge' ? [2, -2, 1, 1, -1, 0] : [3, 4, 6, 1, 5, 2];
+        if (type === 'd6' || type === 'fudge' || type === 'forge') {
+            const d6Order = (type === 'fudge' || type === 'forge')
+                ? [1, -1, 1, -1, 0, 0]
+                : [3, 4, 6, 1, 5, 2];
             const mats = createMaterialsForType(type, d6Order, theme);
             return { geometry: geom, materials: mats };
         }

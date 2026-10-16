@@ -146,12 +146,18 @@ export function createThemedMarbleTexture(text, type = 'd20', themeName = 'ameth
     ctx.lineWidth = 4;
     ctx.lineJoin = 'round';
 
-    if (type === 'd6' || type === 'forge') {
+    if (type === 'd6' || type === 'fudge' || type === 'forge') {
         ctx.strokeRect(size * 0.11, size * 0.11, size * 0.78, size * 0.78);
     } else if (type === 'd2') {
         ctx.beginPath();
         ctx.arc(size * 0.5, size * 0.5, size * 0.42, 0, Math.PI * 2);
         ctx.stroke();
+        // حاشیه سکه‌ای داخلی
+        ctx.beginPath();
+        ctx.arc(size * 0.5, size * 0.5, size * 0.38, 0, Math.PI * 2);
+        ctx.setLineDash([6, 6]);
+        ctx.stroke();
+        ctx.setLineDash([]);
     } else if (type === 'd4' || type === 'd8' || type === 'd20') {
         ctx.beginPath();
         ctx.moveTo(size * 0.5, size * 0.13);
@@ -181,25 +187,26 @@ export function createThemedMarbleTexture(text, type = 'd20', themeName = 'ameth
     }
     ctx.restore();
 
-    // ۴. رسم متن و نمادها
-    let textStr = String(text);
-    if (type === 'd2') {
-        textStr = text === 1 || text === '1' ? 'شیر' : 'خط';
+    // ۴. رسم مقادیر (ارقام یا نمادهای فاج)
+    let displayStr = String(text);
+    const isFudge = type === 'fudge' || type === 'forge';
+
+    if (isFudge) {
+        if (text === 1 || text === '1' || text === '+') displayStr = '+';
+        else if (text === -1 || text === '-1' || text === '-') displayStr = '−';
+        else displayStr = ' ';
     }
 
     const isPercentile = type === 'd100';
     const isMille = type === 'd1000';
-    const isForge = type === 'forge';
 
     let fontSize = 96;
-    if (isForge) fontSize = 72;
+    if (isFudge) fontSize = 110;
     else if (isMille) fontSize = 52;
     else if (isPercentile) fontSize = 64;
-    else if (textStr.length >= 2) fontSize = 74;
+    else if (displayStr.length >= 2) fontSize = 74;
 
-    ctx.font = isForge
-        ? `bold ${fontSize}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`
-        : `bold ${fontSize}px "Cinzel", "Vazirmatn", "Times New Roman", serif`;
+    ctx.font = `bold ${fontSize}px "Cinzel", "Times New Roman", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
@@ -221,14 +228,14 @@ export function createThemedMarbleTexture(text, type = 'd20', themeName = 'ameth
     goldGrad.addColorStop(1, theme.goldDark);
 
     ctx.fillStyle = goldGrad;
-    ctx.fillText(textStr, size * 0.5, centerY);
+    ctx.fillText(displayStr, size * 0.5, centerY);
 
     ctx.shadowColor = 'transparent';
     ctx.strokeStyle = isIvory ? 'rgba(69, 26, 3, 0.6)' : 'rgba(254, 240, 138, 0.75)';
     ctx.lineWidth = 1.5;
-    ctx.strokeText(textStr, size * 0.5, centerY);
+    ctx.strokeText(displayStr, size * 0.5, centerY);
 
-    if (text === 6 || text === 9) {
+    if (displayStr === '6' || displayStr === '9') {
         ctx.fillStyle = goldGrad;
         ctx.fillRect(size * 0.38, centerY + 40, size * 0.24, 6);
     }

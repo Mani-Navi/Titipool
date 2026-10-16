@@ -40,14 +40,13 @@ function applyPlanarUVs(geom, faces, trianglesPerFace, faceRadius) {
     geom.computeVertexNormals();
 }
 
-// ---------------- D2 (سکه دوطرفه / Coin) ----------------
+// ---------------- D2 (سکه با ارقام ۱ و ۲) ----------------
 function createD2Data() {
     const radius = 0.95;
     const height = 0.22;
     const geom = new THREE.CylinderGeometry(radius, radius, height, 28).toNonIndexed();
     geom.clearGroups();
 
-    // گروه 0: وجه بالا (شیر / 1)، گروه 1: وجه پایین (خط / 2)، گروه 2: لبه سکه
     const segs = 28;
     const topVerts = segs * 3;
     const bottomVerts = segs * 3;
@@ -58,8 +57,8 @@ function createD2Data() {
     geom.addGroup(topVerts + bottomVerts, sideVerts, 0);
 
     const faces = [
-        { normal: new THREE.Vector3(0, 1, 0), value: 1, label: 'شیر' },
-        { normal: new THREE.Vector3(0, -1, 0), value: 2, label: 'خط' },
+        { normal: new THREE.Vector3(0, 1, 0), value: 1, label: '1' },
+        { normal: new THREE.Vector3(0, -1, 0), value: 2, label: '2' },
     ];
 
     return {
@@ -105,19 +104,19 @@ export const D6_DEFINITION = {
     createGeometry: () => new THREE.BoxGeometry(1.0, 1.0, 1.0),
 };
 
-// ---------------- FORGE (تاس ۶ وجهی اساطیری سرنوشت) ----------------
-export const FORGE_DEFINITION = {
-    type: 'forge',
-    radius: 0.75,
+// ---------------- FUDGE (تاس فاج ۶ وجهی: ۲ مثبت، ۲ خنثی، ۲ منفی) ----------------
+export const FUDGE_DEFINITION = {
+    type: 'fudge',
+    radius: 0.72,
     faces: [
-        { normal: new THREE.Vector3( 0,  1,  0), value: 2, label: '⚒️ +2' },
-        { normal: new THREE.Vector3( 0, -1,  0), value: -2, label: '💀 -2' },
-        { normal: new THREE.Vector3( 1,  0,  0), value: 1, label: '⚔️ +1' },
-        { normal: new THREE.Vector3(-1,  0,  0), value: 1, label: '🛡️ +1' },
-        { normal: new THREE.Vector3( 0,  0,  1), value: -1, label: '🔥 -1' },
-        { normal: new THREE.Vector3( 0,  0, -1), value: 0, label: '⚡ 0' },
+        { normal: new THREE.Vector3( 0,  1,  0), value: 1, label: '+' },
+        { normal: new THREE.Vector3( 0, -1,  0), value: -1, label: '-' },
+        { normal: new THREE.Vector3( 1,  0,  0), value: 1, label: '+' },
+        { normal: new THREE.Vector3(-1,  0,  0), value: -1, label: '-' },
+        { normal: new THREE.Vector3( 0,  0,  1), value: 0, label: '0' },
+        { normal: new THREE.Vector3( 0,  0, -1), value: 0, label: '0' },
     ],
-    createGeometry: () => new THREE.BoxGeometry(1.04, 1.04, 1.04),
+    createGeometry: () => new THREE.BoxGeometry(1.0, 1.0, 1.0),
 };
 
 // ---------------- D8 ----------------
@@ -289,7 +288,8 @@ export const DICE_CONFIGS = {
     d2: createD2Data(),
     d4: createD4Data(),
     d6: D6_DEFINITION,
-    forge: FORGE_DEFINITION,
+    fudge: FUDGE_DEFINITION,
+    forge: FUDGE_DEFINITION, // جهت سازگاری کامل
     d8: createD8Data(),
     d10: createD10GeometryData('d10'),
     d100: createD10GeometryData('d100'),
