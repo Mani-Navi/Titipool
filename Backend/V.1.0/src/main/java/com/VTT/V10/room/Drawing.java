@@ -35,8 +35,13 @@ public class Drawing {
 
     private String stroke;
     private String color;
+
+    @Column(name = "stroke_width")
     private Double strokeWidth;
+
+    @Column(name = "line_width")
     private Double lineWidth;
+
     private String fill;
 
     private Double x;
@@ -47,14 +52,22 @@ public class Drawing {
 
     @Column(columnDefinition = "TEXT")
     private String text;
+
+    @Column(name = "font_family")
     private String fontFamily;
+
+    @Column(name = "font_style")
     private String fontStyle;
+
+    @Column(name = "font_size")
     private Double fontSize;
 
     @Builder.Default
+    @Column(name = "scale_x")
     private Double scaleX = 1.0;
 
     @Builder.Default
+    @Column(name = "scale_y")
     private Double scaleY = 1.0;
 
     @Builder.Default
@@ -65,8 +78,10 @@ public class Drawing {
     private JsonNode points;
 
     @Builder.Default
+    @Column(name = "is_gm_layer")
     private Boolean isGMLayer = false;
 
     @Builder.Default
+    @Column(name = "is_visible")
     private Boolean isVisible = true;
 }
