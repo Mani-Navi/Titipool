@@ -7,10 +7,6 @@ import { Tray } from './Tray';
 import { Die } from './Die';
 import { useDiceStore } from '../state/dice.store';
 
-/**
- * مدیر عبور کلیک: صرفاً زمانی که کانواس به صورت Overlay تمام‌صفحه روی اتاق بازی است،
- * کلیک‌های فضای خالی را به نقشه و ابزارها عبور می‌دهد بدون اجرای traverse مداوم در هر فریم.
- */
 function ClickThroughManager() {
     const { camera, scene, gl } = useThree();
     const activeDice = useDiceStore((s) => s.activeDice);
@@ -127,19 +123,19 @@ export function DiceCanvas({ overlayMode = false }) {
             <Suspense fallback={null}>
                 <Physics gravity={[0, -32, 0]} timeStep={1 / 60}>
                     <Tray />
-                    <ActiveDiceRenderer />
+                    <ActiveDiceRenderer overlayMode={overlayMode} />
                 </Physics>
             </Suspense>
         </Canvas>
     );
 }
 
-function ActiveDiceRenderer() {
+function ActiveDiceRenderer({ overlayMode }) {
     const activeDice = useDiceStore((s) => s.activeDice);
     return (
         <>
             {activeDice.map((die) => (
-                <Die key={die.id} {...die} />
+                <Die key={die.id} {...die} overlayMode={overlayMode} />
             ))}
         </>
     );

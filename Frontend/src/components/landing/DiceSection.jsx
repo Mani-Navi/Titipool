@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react';
-import { RotateCcw, Sparkles, Trash2, Dices, Zap, ChevronDown, ChevronUp, Coins, User, X } from 'lucide-react';
+import { RotateCcw, Sparkles, Trash2, Dices, Zap, ChevronDown, ChevronUp, Coins, X } from 'lucide-react';
 
 import { GsapHeadingReveal } from './GsapHeadingReveal';
 import { DiceCanvas } from '../../features/dice/components/DiceCanvas';
@@ -36,6 +36,7 @@ export const DiceSection = memo(() => {
     const [lastRollSpecs, setLastRollSpecs] = useState([{ type: 'd12', theme: selectedTheme }]);
     const [isMenuOpen, setIsMenuOpen] = useState(true);
     const playedCritAudioRef = useRef(false);
+    const hasInitialRolledRef = useRef(false);
 
     const isAnyCritical = useMemo(() => {
         if (results.length === 0 || isRolling) return false;
@@ -57,9 +58,13 @@ export const DiceSection = memo(() => {
         }
     }, [isAnyCritical, isRolling]);
 
+    // پرتاب خودکار تاس صرفاً یک‌بار در فاز Mount اولیه بدون تکرار حین تعویض تم
     useEffect(() => {
+        if (hasInitialRolledRef.current) return;
+        hasInitialRolledRef.current = true;
+
         const timer = setTimeout(() => {
-            triggerRoll([{ type: 'd12', theme: selectedTheme }]);
+            triggerRoll([{ type: 'd12', theme: useDiceStore.getState().selectedTheme }]);
         }, 800);
 
         return () => {
@@ -67,7 +72,7 @@ export const DiceSection = memo(() => {
             clearDice();
             setOpen(false);
         };
-    }, [triggerRoll, clearDice, setOpen, selectedTheme]);
+    }, [triggerRoll, clearDice, setOpen]);
 
     const handleQuickRoll = useCallback((type) => {
         let specs = [];
@@ -149,12 +154,12 @@ export const DiceSection = memo(() => {
                     className="relative rounded-3xl bg-[#090a10] border border-[#242738] shadow-[0_30px_90px_rgba(0,0,0,0.25)] h-[520px] sm:h-[580px] overflow-hidden select-none isolate"
                 >
                     <div className="absolute inset-0" style={{ touchAction: 'none' }}>
-                        <DiceCanvas />
+                        <DiceCanvas overlayMode={false} />
                     </div>
 
-                    {/* بنر نتایج چندستونه و بدون تداخل رقم و متن */}
+                    {/* بنر نتایج چندستونه */}
                     {results.length > 0 && (
-                        <div className="absolute top-4 sm:top-6 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-1.5 z-20 max-w-[95vw] sm:max-w-xl w-auto animate-fade-in-up">
+                        <div className="absolute top-4 sm:top-6 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-1 z-20 max-w-[95vw] sm:max-w-xl w-auto animate-fade-in-up">
                             <div
                                 className={cn(
                                     "flex flex-col gap-2 p-3 sm:p-3.5 rounded-3xl backdrop-blur-2xl transition-all duration-300 shadow-2xl w-full border",
@@ -283,7 +288,7 @@ export const DiceSection = memo(() => {
                                             <button
                                                 type="button"
                                                 onClick={handleClearPool}
-                                                className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-zinc-900"
+                                                className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-zinc-900 cursor-pointer"
                                                 aria-label="پاکسازی استخر"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -302,7 +307,6 @@ export const DiceSection = memo(() => {
 
                                 {/* داک دو سطری */}
                                 <div className="w-full bg-zinc-950/95 border border-zinc-800/90 p-2 sm:p-2.5 rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.8)] backdrop-blur-2xl flex flex-col gap-2">
-                                    {/* سطر اول: کپسول‌های ۱۰گانه تاس */}
                                     <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5" dir="ltr">
                                         {ALL_DICE_LANDING.map((d) => {
                                             const inPool = dicePool.filter((item) => item.type === d.type).length;
@@ -321,7 +325,7 @@ export const DiceSection = memo(() => {
                                                     className="relative py-2 px-2.5 sm:px-3 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-amber-500/50 text-amber-300 font-mono text-[11px] sm:text-xs font-bold transition-all active:scale-90 cursor-pointer shadow-sm flex items-center gap-1 shrink-0"
                                                 >
                                                     <span>{d.label}</span>
-                                                    {IconComp && <IconComp className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                                                    {IconComp && <IconComp className="w-3.5 h-3.5 text-amber-400" />}
                                                     {mode === 'pool' && inPool > 0 && (
                                                         <span className="w-3.5 h-3.5 bg-amber-500 text-zinc-950 text-[9px] font-sans font-black rounded-full flex items-center justify-center -mr-1 shadow-sm">
                                                             {inPool}
@@ -332,7 +336,6 @@ export const DiceSection = memo(() => {
                                         })}
                                     </div>
 
-                                    {/* سطر دوم: تم‌ها و کنترل‌ها */}
                                     <div className="flex items-center justify-between pt-1 border-t border-zinc-850 px-1" dir="ltr">
                                         <div className="flex items-center gap-1.5 bg-zinc-900/90 p-1 rounded-2xl border border-zinc-800">
                                             {Object.values(DICE_THEMES).map((t) => (

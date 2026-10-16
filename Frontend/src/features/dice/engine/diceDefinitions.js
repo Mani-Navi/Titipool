@@ -40,10 +40,10 @@ function applyPlanarUVs(geom, faces, trianglesPerFace, faceRadius) {
     geom.computeVertexNormals();
 }
 
-// ---------------- D2 (سکه دوطرفه: یک طرف ۱، یک طرف ۲ با لبه متالیک) ----------------
+// ---------------- D2 (سکه بزرگ پایه) ----------------
 function createD2Data() {
-    const radius = 0.95;
-    const height = 0.22;
+    const radius = 1.30;
+    const height = 0.30;
     const segments = 32;
     const geom = new THREE.CylinderGeometry(radius, radius, height, segments).toNonIndexed();
     const pos = geom.attributes.position;
@@ -91,7 +91,7 @@ function createD2Data() {
 
 // ---------------- D4 ----------------
 function createD4Data() {
-    const radius = 0.98;
+    const radius = 1.35;
     const geom = new THREE.TetrahedronGeometry(radius, 0).toNonIndexed();
     const pos = geom.attributes.position;
     const faces = [];
@@ -112,7 +112,7 @@ function createD4Data() {
 // ---------------- D6 ----------------
 export const D6_DEFINITION = {
     type: 'd6',
-    radius: 0.72,
+    radius: 1.0,
     faces: [
         { normal: new THREE.Vector3( 0,  1,  0), value: 6 },
         { normal: new THREE.Vector3( 0, -1,  0), value: 1 },
@@ -121,13 +121,13 @@ export const D6_DEFINITION = {
         { normal: new THREE.Vector3( 0,  0,  1), value: 5 },
         { normal: new THREE.Vector3( 0,  0, -1), value: 2 },
     ],
-    createGeometry: () => new THREE.BoxGeometry(1.0, 1.0, 1.0),
+    createGeometry: () => new THREE.BoxGeometry(1.4, 1.4, 1.4),
 };
 
-// ---------------- FUDGE (تاس ۶ وجهی رسمی فاج) ----------------
+// ---------------- FUDGE ----------------
 export const FUDGE_DEFINITION = {
     type: 'fudge',
-    radius: 0.72,
+    radius: 1.0,
     faces: [
         { normal: new THREE.Vector3( 0,  1,  0), value: 1, label: '+' },
         { normal: new THREE.Vector3( 0, -1,  0), value: -1, label: '-' },
@@ -136,12 +136,12 @@ export const FUDGE_DEFINITION = {
         { normal: new THREE.Vector3( 0,  0,  1), value: 0, label: '0' },
         { normal: new THREE.Vector3( 0,  0, -1), value: 0, label: '0' },
     ],
-    createGeometry: () => new THREE.BoxGeometry(1.0, 1.0, 1.0),
+    createGeometry: () => new THREE.BoxGeometry(1.4, 1.4, 1.4),
 };
 
 // ---------------- D8 ----------------
 function createD8Data() {
-    const radius = 0.96;
+    const radius = 1.35;
     const geom = new THREE.OctahedronGeometry(radius, 0).toNonIndexed();
     const pos = geom.attributes.position;
     const faces = [];
@@ -161,8 +161,8 @@ function createD8Data() {
 
 // ---------------- D10, D100 & D1000 ----------------
 function createD10GeometryData(mode = 'd10') {
-    const H = 0.92;
-    const R = 0.88;
+    const H = 1.30;
+    const R = 1.25;
     const h = H * 0.105572809;
 
     const topPole = new THREE.Vector3(0, H, 0);
@@ -209,7 +209,7 @@ function createD10GeometryData(mode = 'd10') {
         const upUV = new THREE.Vector3().subVectors(pApex, center).normalize();
         const rightUV = new THREE.Vector3().crossVectors(upUV, normal).normalize();
 
-        const scale = 1.48;
+        const scale = 2.05;
         function getUV(pt) {
             const d = new THREE.Vector3().subVectors(pt, center);
             return [0.5 + d.dot(rightUV) / scale, 0.5 + d.dot(upUV) / scale];
@@ -263,7 +263,7 @@ function createD10GeometryData(mode = 'd10') {
 
 // ---------------- D12 ----------------
 function createD12Data() {
-    const radius = 0.98;
+    const radius = 1.35;
     const geom = new THREE.DodecahedronGeometry(radius, 0).toNonIndexed();
     const pos = geom.attributes.position;
     const faces = [];
@@ -283,7 +283,7 @@ function createD12Data() {
 
 // ---------------- D20 ----------------
 function createD20Data() {
-    const radius = 0.94;
+    const radius = 1.3;
     const geom = new THREE.IcosahedronGeometry(radius, 0).toNonIndexed();
     const pos = geom.attributes.position;
     const faces = [];
