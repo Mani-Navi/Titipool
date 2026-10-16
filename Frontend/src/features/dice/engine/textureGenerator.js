@@ -109,7 +109,7 @@ export function createThemedMarbleTexture(text, type = 'd20', themeName = 'ameth
     canvas.height = size;
     const ctx = canvas.getContext('2d');
 
-    // ۱. پس‌زمینه مرمر طبیعی شعاعی
+    // ۱. پس‌زمینه مرمر طبیعی
     const bgGrad = ctx.createRadialGradient(
         size * 0.45, size * 0.42, size * 0.08,
         size * 0.5, size * 0.5, size * 0.72
@@ -120,7 +120,7 @@ export function createThemedMarbleTexture(text, type = 'd20', themeName = 'ameth
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, size, size);
 
-    // ۲. رگه‌های ابری سنگ مرمر
+    // ۲. رگه‌های ابری
     ctx.save();
     ctx.lineWidth = 10;
     ctx.lineCap = 'round';
@@ -140,14 +140,18 @@ export function createThemedMarbleTexture(text, type = 'd20', themeName = 'ameth
     ctx.stroke();
     ctx.restore();
 
-    // ۳. رسم خطوط فرورفته کادر دور هر وجه
+    // ۳. رسم کادر هندسی
     ctx.save();
     ctx.strokeStyle = theme.borderColor;
     ctx.lineWidth = 4;
     ctx.lineJoin = 'round';
 
-    if (type === 'd6') {
+    if (type === 'd6' || type === 'forge') {
         ctx.strokeRect(size * 0.11, size * 0.11, size * 0.78, size * 0.78);
+    } else if (type === 'd2') {
+        ctx.beginPath();
+        ctx.arc(size * 0.5, size * 0.5, size * 0.42, 0, Math.PI * 2);
+        ctx.stroke();
     } else if (type === 'd4' || type === 'd8' || type === 'd20') {
         ctx.beginPath();
         ctx.moveTo(size * 0.5, size * 0.13);
@@ -166,7 +170,7 @@ export function createThemedMarbleTexture(text, type = 'd20', themeName = 'ameth
         }
         ctx.closePath();
         ctx.stroke();
-    } else if (type === 'd10' || type === 'd100') {
+    } else if (type === 'd10' || type === 'd100' || type === 'd1000') {
         ctx.beginPath();
         ctx.moveTo(size * 0.5, size * 0.11);
         ctx.lineTo(size * 0.87, size * 0.52);
@@ -177,12 +181,25 @@ export function createThemedMarbleTexture(text, type = 'd20', themeName = 'ameth
     }
     ctx.restore();
 
-    // ۴. رسم اعداد حکاکی شده
-    const textStr = String(text);
-    const isPercentile = type === 'd100';
-    const fontSize = isPercentile ? 64 : textStr.length >= 2 ? 74 : 96;
+    // ۴. رسم متن و نمادها
+    let textStr = String(text);
+    if (type === 'd2') {
+        textStr = text === 1 || text === '1' ? 'شیر' : 'خط';
+    }
 
-    ctx.font = `bold ${fontSize}px "Cinzel", "Times New Roman", Georgia, serif`;
+    const isPercentile = type === 'd100';
+    const isMille = type === 'd1000';
+    const isForge = type === 'forge';
+
+    let fontSize = 96;
+    if (isForge) fontSize = 72;
+    else if (isMille) fontSize = 52;
+    else if (isPercentile) fontSize = 64;
+    else if (textStr.length >= 2) fontSize = 74;
+
+    ctx.font = isForge
+        ? `bold ${fontSize}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`
+        : `bold ${fontSize}px "Cinzel", "Vazirmatn", "Times New Roman", serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 

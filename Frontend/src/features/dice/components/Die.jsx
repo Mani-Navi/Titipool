@@ -40,11 +40,9 @@ export function Die({
     const isDraggingRef = useRef(false);
     const dragHistoryRef = useRef([]);
 
-    // محدوده امن حرکتی ماوس برای تاس‌های جدید کوچک‌تر
     const safeLimitX = Math.max((viewport.width / 2) - 1.2, 1.8);
     const safeLimitZ = Math.max((viewport.height / 2) - 1.2, 1.8);
 
-    // همگام‌سازی دوران و موقعیت قطعی دریافتی از پرتاب‌کننده
     useEffect(() => {
         if (!isRemoteRoll || !settledTransforms?.[id] || !rigidBodyRef.current) return;
 
@@ -56,7 +54,6 @@ export function Die({
         isSettledRef.current = true;
     }, [settledTransforms, id, isRemoteRoll]);
 
-    // پرتاب مجدد دست
     useEffect(() => {
         if (!remoteReThrow || remoteReThrow.dieId !== id || !rigidBodyRef.current) return;
 
@@ -74,9 +71,14 @@ export function Die({
         const geom = config.createGeometry();
         const faceValues = config.faces.map((f) => f.value);
 
-        if (type === 'd6') {
-            const d6Order = [3, 4, 6, 1, 5, 2];
-            const mats = createMaterialsForType('d6', d6Order, theme);
+        if (type === 'd2') {
+            const mats = createMaterialsForType('d2', [1, 2], theme);
+            return { geometry: geom, materials: mats };
+        }
+
+        if (type === 'd6' || type === 'forge') {
+            const d6Order = type === 'forge' ? [2, -2, 1, 1, -1, 0] : [3, 4, 6, 1, 5, 2];
+            const mats = createMaterialsForType(type, d6Order, theme);
             return { geometry: geom, materials: mats };
         }
 
@@ -84,7 +86,7 @@ export function Die({
         geom.clearGroups();
 
         const trianglesPerFace =
-            type === 'd10' || type === 'd100' ? 2 : type === 'd12' ? 3 : 1;
+            type === 'd10' || type === 'd100' || type === 'd1000' ? 2 : type === 'd12' ? 3 : 1;
 
         for (let i = 0; i < faceCount; i++) {
             geom.addGroup(i * trianglesPerFace * 3, trianglesPerFace * 3, i);
@@ -106,7 +108,6 @@ export function Die({
         return { geometry: geom, materials: mats };
     }, [type, config, theme]);
 
-    // پاکسازی کامل ژئومتری و متریال در هنگام خروج تاس از صحنه جهت دفع نشت حافظه وب‌جی‌ال
     useEffect(() => {
         return () => {
             geometry.dispose();
@@ -137,7 +138,7 @@ export function Die({
         const targetVector = type === 'd4' ? DOWN_VECTOR : UP_VECTOR;
 
         let maxDot = -Infinity;
-        let winningValue = null;
+        let winningFace = null;
 
         for (const face of config.faces) {
             const worldNormal = face.normal.clone().applyQuaternion(quat);
@@ -145,7 +146,7 @@ export function Die({
 
             if (dot > maxDot) {
                 maxDot = dot;
-                winningValue = face.value;
+                winningFace = face;
             }
         }
 
@@ -161,7 +162,7 @@ export function Die({
         if (!isRemoteRoll) {
             const pos = rigidBodyRef.current.translation();
             const rot = rigidBodyRef.current.rotation();
-            setDieResult(id, winningValue, {
+            setDieResult(id, winningFace.value, {
                 position: { x: pos.x, y: pos.y, z: pos.z },
                 rotation: { x: rot.x, y: rot.y, z: rot.z, w: rot.w },
             });

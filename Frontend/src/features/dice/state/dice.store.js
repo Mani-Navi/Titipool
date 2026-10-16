@@ -49,13 +49,17 @@ export const useDiceStore = create((set, get) => ({
 
     setOpen: (isOpen) => set({ isOpen }),
 
-    triggerRoll: (diceTypes = ['d20'], customPhysics = null) => {
-        diceAudio.playThrow(diceTypes.length);
+    // triggerRoll اکنون می‌تواند آرایه‌ای از نام تاس‌ها یا اشیائی حاوی type و theme اختصاصی دریافت کند
+    triggerRoll: (diceSpecs = ['d20'], customPhysics = null) => {
+        diceAudio.playThrow(diceSpecs.length);
         const user = getCurrentUser();
         const tabId = getClientTabId();
-        const theme = get().selectedTheme;
+        const defaultTheme = get().selectedTheme;
 
-        const newDice = diceTypes.map((type, idx) => {
+        const newDice = diceSpecs.map((item, idx) => {
+            const type = typeof item === 'string' ? item : item.type || 'd20';
+            const theme = typeof item === 'object' && item.theme ? item.theme : defaultTheme;
+
             const spreadX = (Math.random() - 0.5) * 1.5;
             const spreadZ = (Math.random() - 0.5) * 1.5;
 
@@ -182,18 +186,27 @@ export const useDiceStore = create((set, get) => ({
         const dieIdx = activeDice.findIndex((d) => d.id === dieId);
         if (dieIdx === -1) return;
 
+        const currentDie = activeDice[dieIdx];
         const updatedDice = [...activeDice];
-        updatedDice[dieIdx] = { ...updatedDice[dieIdx], settled: true, value };
+        updatedDice[dieIdx] = { ...currentDie, settled: true, value };
 
-        const currentDie = updatedDice[dieIdx];
         const dieType = currentDie.type || 'd20';
+        const dieTheme = currentDie.theme || 'midnight';
 
         const existingResultIdx = results.findIndex((r) => r.id === dieId);
         const newResults = [...results];
+        const resultItem = {
+            id: dieId,
+            type: dieType,
+            theme: dieTheme,
+            value: Number(value),
+            label: currentDie.label || null,
+        };
+
         if (existingResultIdx !== -1) {
-            newResults[existingResultIdx] = { id: dieId, type: dieType, value: Number(value) };
+            newResults[existingResultIdx] = resultItem;
         } else {
-            newResults.push({ id: dieId, type: dieType, value: Number(value) });
+            newResults.push(resultItem);
         }
 
         const updatedTransforms = transform
@@ -203,17 +216,8 @@ export const useDiceStore = create((set, get) => ({
         const allSettled = updatedDice.every((d) => d.settled);
 
         let sum = 0;
-        const tensDie = newResults.find((r) => r.type === 'd100');
-        const onesDie = newResults.find((r) => r.type === 'd10');
-
-        if (tensDie && onesDie && newResults.length === 2) {
-            const tensVal = Number(tensDie.value);
-            const onesVal = Number(onesDie.value);
-            sum = tensVal === 0 && onesVal === 0 ? 100 : tensVal + onesVal;
-        } else {
-            for (let i = 0; i < newResults.length; i++) {
-                sum += newResults[i].value;
-            }
+        for (let i = 0; i < newResults.length; i++) {
+            sum += Number(newResults[i].value) || 0;
         }
 
         set({

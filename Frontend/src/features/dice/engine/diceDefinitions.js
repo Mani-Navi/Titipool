@@ -40,7 +40,37 @@ function applyPlanarUVs(geom, faces, trianglesPerFace, faceRadius) {
     geom.computeVertexNormals();
 }
 
-// ---------------- D4 (کوچک‌تر شده) ----------------
+// ---------------- D2 (سکه دوطرفه / Coin) ----------------
+function createD2Data() {
+    const radius = 0.95;
+    const height = 0.22;
+    const geom = new THREE.CylinderGeometry(radius, radius, height, 28).toNonIndexed();
+    geom.clearGroups();
+
+    // گروه 0: وجه بالا (شیر / 1)، گروه 1: وجه پایین (خط / 2)، گروه 2: لبه سکه
+    const segs = 28;
+    const topVerts = segs * 3;
+    const bottomVerts = segs * 3;
+    const sideVerts = segs * 6;
+
+    geom.addGroup(0, topVerts, 0);
+    geom.addGroup(topVerts, bottomVerts, 1);
+    geom.addGroup(topVerts + bottomVerts, sideVerts, 0);
+
+    const faces = [
+        { normal: new THREE.Vector3(0, 1, 0), value: 1, label: 'شیر' },
+        { normal: new THREE.Vector3(0, -1, 0), value: 2, label: 'خط' },
+    ];
+
+    return {
+        type: 'd2',
+        radius,
+        faces,
+        createGeometry: () => geom.clone(),
+    };
+}
+
+// ---------------- D4 ----------------
 function createD4Data() {
     const radius = 0.98;
     const geom = new THREE.TetrahedronGeometry(radius, 0).toNonIndexed();
@@ -60,7 +90,7 @@ function createD4Data() {
     return { type: 'd4', radius, faces, createGeometry: () => geom.clone() };
 }
 
-// ---------------- D6 (کوچک‌تر شده) ----------------
+// ---------------- D6 ----------------
 export const D6_DEFINITION = {
     type: 'd6',
     radius: 0.72,
@@ -75,7 +105,22 @@ export const D6_DEFINITION = {
     createGeometry: () => new THREE.BoxGeometry(1.0, 1.0, 1.0),
 };
 
-// ---------------- D8 (کوچک‌تر شده) ----------------
+// ---------------- FORGE (تاس ۶ وجهی اساطیری سرنوشت) ----------------
+export const FORGE_DEFINITION = {
+    type: 'forge',
+    radius: 0.75,
+    faces: [
+        { normal: new THREE.Vector3( 0,  1,  0), value: 2, label: '⚒️ +2' },
+        { normal: new THREE.Vector3( 0, -1,  0), value: -2, label: '💀 -2' },
+        { normal: new THREE.Vector3( 1,  0,  0), value: 1, label: '⚔️ +1' },
+        { normal: new THREE.Vector3(-1,  0,  0), value: 1, label: '🛡️ +1' },
+        { normal: new THREE.Vector3( 0,  0,  1), value: -1, label: '🔥 -1' },
+        { normal: new THREE.Vector3( 0,  0, -1), value: 0, label: '⚡ 0' },
+    ],
+    createGeometry: () => new THREE.BoxGeometry(1.04, 1.04, 1.04),
+};
+
+// ---------------- D8 ----------------
 function createD8Data() {
     const radius = 0.96;
     const geom = new THREE.OctahedronGeometry(radius, 0).toNonIndexed();
@@ -95,8 +140,8 @@ function createD8Data() {
     return { type: 'd8', radius, faces, createGeometry: () => geom.clone() };
 }
 
-// ---------------- D10 & D100 (کوچک‌تر شده) ----------------
-function createD10GeometryData(isPercentile = false) {
+// ---------------- D10, D100 & D1000 ----------------
+function createD10GeometryData(mode = 'd10') {
     const H = 0.92;
     const R = 0.88;
     const h = H * 0.105572809;
@@ -115,8 +160,16 @@ function createD10GeometryData(isPercentile = false) {
     const uvs = [];
     const faces = [];
 
-    const upperValues = isPercentile ? [0, 20, 40, 60, 80] : [0, 2, 4, 6, 8];
-    const lowerValues = isPercentile ? [90, 70, 50, 30, 10] : [9, 7, 5, 3, 1];
+    let upperValues = [0, 2, 4, 6, 8];
+    let lowerValues = [9, 7, 5, 3, 1];
+
+    if (mode === 'd100') {
+        upperValues = [0, 20, 40, 60, 80];
+        lowerValues = [90, 70, 50, 30, 10];
+    } else if (mode === 'd1000') {
+        upperValues = [0, 200, 400, 600, 800];
+        lowerValues = [900, 700, 500, 300, 100];
+    }
 
     function addFlatKite(pApex, pWaistRight, pOppositeTip, pWaistLeft, faceValue) {
         const center = new THREE.Vector3()
@@ -182,14 +235,14 @@ function createD10GeometryData(isPercentile = false) {
     geom.computeVertexNormals();
 
     return {
-        type: isPercentile ? 'd100' : 'd10',
+        type: mode,
         radius: R,
         faces,
         createGeometry: () => geom.clone(),
     };
 }
 
-// ---------------- D12 (کوچک‌تر شده) ----------------
+// ---------------- D12 ----------------
 function createD12Data() {
     const radius = 0.98;
     const geom = new THREE.DodecahedronGeometry(radius, 0).toNonIndexed();
@@ -209,7 +262,7 @@ function createD12Data() {
     return { type: 'd12', radius, faces, createGeometry: () => geom.clone() };
 }
 
-// ---------------- D20 (کوچک‌تر شده) ----------------
+// ---------------- D20 ----------------
 function createD20Data() {
     const radius = 0.94;
     const geom = new THREE.IcosahedronGeometry(radius, 0).toNonIndexed();
@@ -233,11 +286,14 @@ function createD20Data() {
 }
 
 export const DICE_CONFIGS = {
+    d2: createD2Data(),
     d4: createD4Data(),
     d6: D6_DEFINITION,
+    forge: FORGE_DEFINITION,
     d8: createD8Data(),
-    d10: createD10GeometryData(false),
-    d100: createD10GeometryData(true),
+    d10: createD10GeometryData('d10'),
+    d100: createD10GeometryData('d100'),
+    d1000: createD10GeometryData('d1000'),
     d12: createD12Data(),
     d20: createD20Data(),
 };
