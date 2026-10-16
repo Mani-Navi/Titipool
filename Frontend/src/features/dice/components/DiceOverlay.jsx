@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { DiceCanvas } from './DiceCanvas';
 import { useDiceStore } from '../state/dice.store';
 import { DICE_THEMES } from '../engine/textureGenerator';
@@ -19,7 +19,7 @@ const ALL_DICE_BUTTONS = Object.freeze([
     { type: 'd1000', label: 'D1000', maxVal: 900 },
 ]);
 
-export function DiceOverlay() {
+export const DiceOverlay = memo(() => {
     const isOpen = useDiceStore((s) => s.isOpen);
     const isRolling = useDiceStore((s) => s.isRolling);
     const results = useDiceStore((s) => s.results);
@@ -130,7 +130,7 @@ export function DiceOverlay() {
                 <DiceCanvas overlayMode={true} />
             </div>
 
-            {/* بنر نتایج تفکیک‌شده با چیدمان LTR */}
+            {/* بنر نتایج تفکیک‌شده چندستونه با پایش خطای سرریز */}
             {results.length > 0 && (
                 <div className="absolute top-12 sm:top-14 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-1.5 max-w-[95vw] sm:max-w-2xl w-auto animate-fade-in-up">
                     <div
@@ -156,7 +156,7 @@ export function DiceOverlay() {
                                         <span>{rollerName}:</span>
                                     </div>
                                 ) : (
-                                    <span className="text-zinc-400 text-xs font-semibold">مجموع:</span>
+                                    <span className="text-zinc-400 text-xs font-semibold">مجموع امتیاز:</span>
                                 )}
 
                                 <span
@@ -198,6 +198,7 @@ export function DiceOverlay() {
                             </div>
                         </div>
 
+                        {/* گرید کارت‌های هر تاس با جهت LTR برای حذف تداخل متون و ارقام */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-[38vh] overflow-y-auto pr-1 custom-scrollbar">
                             {results.map((r) => {
                                 const themeCfg = DICE_THEMES[r.theme] || DICE_THEMES.midnight;
@@ -237,25 +238,25 @@ export function DiceOverlay() {
                 </div>
             )}
 
-            {/* داک شناور پرتاب تاس با قابلیت جمع‌شوندگی جهت دسترسی به کل صفحه */}
+            {/* داک شناور دو سطری مدرن اتاق (مطابق تصویر دقیق ارسالی) */}
             {isOpen && !isRemoteRoll && (
-                <div className="absolute bottom-20 sm:bottom-6 left-3 sm:left-6 pointer-events-auto flex flex-col items-start gap-1.5 max-w-[94vw] animate-fade-in-up">
-                    {/* دکمه جمع و باز کردن منو (دقیقاً مشابه لندینگ پیج) */}
+                <div className="absolute bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 sm:left-6 sm:translate-x-0 pointer-events-auto flex flex-col items-center sm:items-start gap-1.5 max-w-[96vw] sm:max-w-xl z-20 animate-fade-in-up">
+                    {/* دکمه جمع‌شونده ارگونومیک */}
                     <button
                         type="button"
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="px-3 py-1 rounded-full bg-zinc-950/90 hover:bg-zinc-900 border border-zinc-800 hover:border-amber-500/50 text-zinc-300 hover:text-amber-400 text-[10px] font-bold flex items-center gap-1 shadow-lg backdrop-blur-md active:scale-95 transition-all cursor-pointer"
+                        className="px-3.5 py-1 rounded-full bg-zinc-950/90 hover:bg-zinc-900 border border-zinc-800 hover:border-amber-500/50 text-zinc-300 hover:text-amber-400 text-[10px] font-bold flex items-center gap-1.5 shadow-lg backdrop-blur-md active:scale-95 transition-all cursor-pointer"
                     >
                         <span>{isMenuOpen ? 'بستن منو' : 'باز کردن منوی تاس'}</span>
-                        {isMenuOpen ? <ChevronDown className="w-3 h-3 text-amber-400" /> : <ChevronUp className="w-3 h-3 text-amber-400" />}
+                        {isMenuOpen ? <ChevronDown className="w-3.5 h-3.5 text-amber-400" /> : <ChevronUp className="w-3.5 h-3.5 text-amber-400" />}
                     </button>
 
                     {isMenuOpen && (
                         <div className="flex flex-col gap-2 w-full animate-fade-in-up">
-                            {/* استخر چندتایی با کپسول‌های LTR */}
+                            {/* استخر چندرنگ تاس‌ها */}
                             {mode === 'pool' && dicePool.length > 0 && (
-                                <div className="bg-zinc-950/95 border border-amber-500/30 p-2.5 rounded-2xl shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-3 max-w-md w-full">
-                                    <div className="flex items-center gap-1.5 flex-wrap max-h-24 overflow-y-auto pr-1 custom-scrollbar">
+                                <div className="bg-zinc-950/95 border border-amber-500/30 p-2 sm:p-2.5 rounded-2xl shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-3 w-full animate-fade-in-up">
+                                    <div className="flex items-center gap-1.5 flex-wrap overflow-x-auto max-h-24 pr-1 custom-scrollbar" dir="ltr">
                                         {dicePool.map((item, idx) => {
                                             const tCfg = DICE_THEMES[item.theme] || DICE_THEMES.midnight;
                                             return (
@@ -280,7 +281,7 @@ export function DiceOverlay() {
                                         })}
                                     </div>
 
-                                    <div className="flex items-center gap-1.5 shrink-0">
+                                    <div className="flex items-center gap-2 shrink-0 border-r border-zinc-800/80 pr-2.5 mr-0.5">
                                         <button
                                             type="button"
                                             onClick={handleClearPool}
@@ -294,7 +295,7 @@ export function DiceOverlay() {
                                         <button
                                             type="button"
                                             onClick={handleRollPool}
-                                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 text-zinc-950 font-black text-xs shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+                                            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 text-zinc-950 font-black text-xs shadow-lg shadow-amber-500/25 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer border border-amber-300"
                                         >
                                             <Dices className="w-4 h-4" />
                                             <span>پرتاب ({dicePool.length})</span>
@@ -303,62 +304,10 @@ export function DiceOverlay() {
                                 </div>
                             )}
 
-                            {/* داک اصلی تاس */}
-                            <div className="flex items-center gap-2 bg-zinc-950/95 border border-zinc-800/80 p-2 rounded-2xl shadow-[0_12px_45px_rgba(0,0,0,0.8)] backdrop-blur-2xl overflow-x-auto max-w-[92vw] sm:max-w-none">
-                                <div className="flex items-center gap-1 bg-zinc-900/90 p-1 rounded-xl border border-zinc-800 shrink-0">
-                                    {Object.values(DICE_THEMES).map((t) => (
-                                        <button
-                                            key={t.id}
-                                            type="button"
-                                            onClick={() => setSelectedTheme(t.id)}
-                                            title={`تم ${t.name}`}
-                                            aria-label={`انتخاب تم ${t.name}`}
-                                            className={cn(
-                                                "w-5 h-5 rounded-full transition-all duration-150 relative cursor-pointer active:scale-90",
-                                                selectedTheme === t.id
-                                                    ? "ring-2 ring-amber-400 scale-110 shadow-[0_0_10px_rgba(251,191,36,0.6)] z-10"
-                                                    : "opacity-60 hover:opacity-100"
-                                            )}
-                                            style={{
-                                                background: `linear-gradient(135deg, ${t.bgCenter} 0%, ${t.bgEdge} 100%)`,
-                                                border: `1.5px solid ${t.borderColor || '#ca8a04'}`,
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-
-                                <div className="w-px h-5 bg-zinc-800 shrink-0 mx-0.5" />
-
-                                <div className="flex items-center bg-zinc-900/90 p-0.5 rounded-xl border border-zinc-800 shrink-0">
-                                    <button
-                                        type="button"
-                                        onClick={() => setMode('quick')}
-                                        aria-label="پرتاب سریع تک‌تاس"
-                                        className={cn(
-                                            "p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer active:scale-95",
-                                            mode === 'quick' ? "bg-amber-500 text-zinc-950 shadow-sm" : "text-zinc-400 hover:text-zinc-200"
-                                        )}
-                                        title="پرتاب سریع تک‌تاس"
-                                    >
-                                        <Zap className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setMode('pool')}
-                                        aria-label="حالت استخر"
-                                        className={cn(
-                                            "p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer active:scale-95",
-                                            mode === 'pool' ? "bg-amber-500 text-zinc-950 shadow-sm" : "text-zinc-400 hover:text-zinc-200"
-                                        )}
-                                        title="استخر پرتاب همزمان چند تاس"
-                                    >
-                                        <Dices className="w-4 h-4" />
-                                    </button>
-                                </div>
-
-                                <div className="w-px h-5 bg-zinc-800 shrink-0 mx-0.5" />
-
-                                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                            {/* داک اصلی ۲ سطری (دقیقاً برابر استایل تصویر) */}
+                            <div className="w-full bg-zinc-950/95 border border-zinc-800/90 p-2 sm:p-2.5 rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.85)] backdrop-blur-2xl flex flex-col gap-2">
+                                {/* سطر اول: کپسول‌های دکمه‌های ۱۰گانه تاس */}
+                                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5" dir="ltr">
                                     {ALL_DICE_BUTTONS.map((d) => {
                                         const IconComp = d.icon;
                                         const inPoolCount = dicePool.filter((item) => item.type === d.type).length;
@@ -375,12 +324,12 @@ export function DiceOverlay() {
                                                     }
                                                 }}
                                                 aria-label={`تاس ${d.label}`}
-                                                className="relative px-3 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-amber-500/50 text-amber-300 font-mono text-xs font-bold transition-all shrink-0 active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-sm"
+                                                className="relative py-2 px-2.5 sm:px-3 rounded-2xl bg-zinc-900/90 hover:bg-zinc-850 border border-zinc-800 hover:border-amber-500/50 text-amber-300 font-mono text-[11px] sm:text-xs font-bold transition-all shrink-0 active:scale-90 cursor-pointer flex items-center gap-1 shadow-sm"
                                             >
-                                                {IconComp && <IconComp className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
                                                 <span>{d.label}</span>
+                                                {IconComp && <IconComp className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
                                                 {mode === 'pool' && inPoolCount > 0 && (
-                                                    <span className="w-4 h-4 rounded-full bg-amber-500 text-zinc-950 text-[10px] font-sans font-black flex items-center justify-center -mr-1">
+                                                    <span className="w-3.5 h-3.5 bg-amber-500 text-zinc-950 text-[9px] font-sans font-black rounded-full flex items-center justify-center -mr-1 shadow-sm">
                                                         {inPoolCount}
                                                     </span>
                                                 )}
@@ -389,20 +338,87 @@ export function DiceOverlay() {
                                     })}
                                 </div>
 
-                                <div className="w-px h-5 bg-zinc-800 shrink-0 mx-0.5" />
+                                {/* سطر دوم: تم‌ها در یک سمت و حالت پرتاب در سمت دیگر */}
+                                <div className="flex items-center justify-between pt-1 border-t border-zinc-850 px-1" dir="ltr">
+                                    {/* تم‌های ۶گانه سنگ مرمر */}
+                                    <div className="flex items-center gap-1.5 bg-zinc-900/90 p-1 rounded-2xl border border-zinc-800/80">
+                                        {Object.values(DICE_THEMES).map((t) => (
+                                            <button
+                                                key={t.id}
+                                                type="button"
+                                                onClick={() => setSelectedTheme(t.id)}
+                                                title={`تم ${t.name}`}
+                                                aria-label={`انتخاب تم ${t.name}`}
+                                                className={cn(
+                                                    "w-5 h-5 rounded-full transition-all duration-150 relative cursor-pointer active:scale-75",
+                                                    selectedTheme === t.id
+                                                        ? "ring-2 ring-amber-400 scale-110 shadow-[0_0_10px_rgba(251,191,36,0.6)] z-10"
+                                                        : "opacity-60 hover:opacity-100"
+                                                )}
+                                                style={{
+                                                    background: `linear-gradient(135deg, ${t.bgCenter} 0%, ${t.bgEdge} 100%)`,
+                                                    border: `1.5px solid ${t.borderColor || '#ca8a04'}`,
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
 
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        clearDice();
-                                        setOpen(false);
-                                    }}
-                                    className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer shrink-0"
-                                    title="بستن منوی تاس"
-                                    aria-label="بستن منوی تاس"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
+                                    {/* دکمه‌های کنترل حالت پرتاب و سطل آشغال */}
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="flex items-center bg-zinc-900/90 p-0.5 rounded-xl border border-zinc-800">
+                                            <button
+                                                type="button"
+                                                onClick={() => setMode('quick')}
+                                                aria-label="پرتاب سریع تکی"
+                                                className={cn(
+                                                    "p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer active:scale-95",
+                                                    mode === 'quick' ? "bg-amber-500 text-zinc-950 shadow-sm" : "text-zinc-400 hover:text-zinc-200"
+                                                )}
+                                                title="پرتاب سریع تکی"
+                                            >
+                                                <Zap className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setMode('pool')}
+                                                aria-label="پرتاب استخر چندتایی"
+                                                className={cn(
+                                                    "p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer active:scale-95",
+                                                    mode === 'pool' ? "bg-amber-500 text-zinc-950 shadow-sm" : "text-zinc-400 hover:text-zinc-200"
+                                                )}
+                                                title="پرتاب استخر چندتایی"
+                                            >
+                                                <Dices className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                clearDice();
+                                                setDicePool([]);
+                                            }}
+                                            className="p-2 text-zinc-400 hover:text-rose-400 rounded-xl bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700 active:scale-90 transition-all cursor-pointer"
+                                            title="پاکسازی میز"
+                                            aria-label="پاکسازی میز"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                clearDice();
+                                                setOpen(false);
+                                            }}
+                                            className="p-2 text-zinc-400 hover:text-rose-400 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
+                                            title="بستن داک"
+                                            aria-label="بستن داک"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -410,6 +426,7 @@ export function DiceOverlay() {
             )}
         </div>
     );
-}
+});
 
+DiceOverlay.displayName = "DiceOverlay";
 export default DiceOverlay;
