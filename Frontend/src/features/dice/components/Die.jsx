@@ -13,8 +13,6 @@ const VELOCITY_THRESHOLD = 0.08;
 const ANGULAR_THRESHOLD = 0.12;
 const REQUIRED_STABLE_FRAMES = 25;
 
-const DRAG_PLANE = new THREE.Plane(new THREE.Vector3(0, 1, 0), -2.6);
-
 export function Die({
                         id,
                         type,
@@ -23,6 +21,7 @@ export function Die({
                         initialRotation,
                         initialLinearVelocity,
                         initialAngularVelocity,
+                        overlayMode = false,
                     }) {
     const rigidBodyRef = useRef(null);
     const { viewport } = useThree();
@@ -33,6 +32,11 @@ export function Die({
     const remoteReThrow = useDiceStore((s) => s.remoteReThrow);
     const settledTransforms = useDiceStore((s) => s.settledTransforms);
 
+    // در اتاق اندازه کوچک محبوب (ضریب ۱.۰) و در لندینگ پیج اندازه بزرگ (ضریب ۱.۳۸)
+    const scaleFactor = overlayMode ? 1.0 : 1.38;
+    const dragY = overlayMode ? 2.6 : 3.4;
+    const dragPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), -dragY), [dragY]);
+
     const stableFrameCounter = useRef(0);
     const isSettledRef = useRef(false);
     const spawnTimeRef = useRef(Date.now());
@@ -40,8 +44,8 @@ export function Die({
     const isDraggingRef = useRef(false);
     const dragHistoryRef = useRef([]);
 
-    const safeLimitX = Math.max((viewport.width / 2) - 1.2, 1.8);
-    const safeLimitZ = Math.max((viewport.height / 2) - 1.2, 1.8);
+    const safeLimitX = Math.max((viewport.width / 2) - (overlayMode ? 1.2 : 1.8), 1.8);
+    const safeLimitZ = Math.max((viewport.height / 2) - (overlayMode ? 1.2 : 1.8), 1.8);
 
     useEffect(() => {
         if (!isRemoteRoll || !settledTransforms?.[id] || !rigidBodyRef.current) return;
@@ -69,6 +73,12 @@ export function Die({
 
     const { geometry, materials } = useMemo(() => {
         const geom = config.createGeometry();
+
+        // مقیاس‌گذاری مستقیم بافر ورتکس‌ها جهت تطابق ۱۰۰٪ کلایدر فیزیک Rapier و مش سه‌بعدی
+        if (scaleFactor !== 1.0) {
+            geom.scale(scaleFactor, scaleFactor, scaleFactor);
+        }
+
         const faceValues = config.faces.map((f) => f.value);
 
         if (type === 'd2') {
@@ -76,7 +86,7 @@ export function Die({
             const matBottom = createMaterialsForType('d2', [2], theme)[0];
             const matRim = new THREE.MeshStandardMaterial({
                 color: theme === 'ivory' ? 0x78350f : 0xeab308,
-                metalness: 0.8,
+                metalness: 0.85,
                 roughness: 0.25,
             });
             return { geometry: geom, materials: [matTop, matBottom, matRim] };
@@ -112,13 +122,15 @@ export function Die({
 
         const mats = createMaterialsForType(type, faceValues, theme);
         return { geometry: geom, materials: mats };
-    }, [type, config, theme]);
+    }, [type, config, theme, scaleFactor]);
 
     useEffect(() => {
         return () => {
             geometry.dispose();
             if (Array.isArray(materials)) {
-                materials.forEach((mat) => mat.dispose());
+                materials.forEach((mat) => {
+                    mat.dispose();
+                });
             }
         };
     }, [geometry, materials]);
@@ -224,12 +236,12 @@ export function Die({
         e.stopPropagation();
 
         const targetPoint = new THREE.Vector3();
-        if (e.ray && e.ray.intersectPlane(DRAG_PLANE, targetPoint)) {
+        if (e.ray && e.ray.intersectPlane(dragPlane, targetPoint)) {
             const clampedX = THREE.MathUtils.clamp(targetPoint.x, -safeLimitX, safeLimitX);
             const clampedZ = THREE.MathUtils.clamp(targetPoint.z, -safeLimitZ, safeLimitZ);
 
             rigidBodyRef.current.setTranslation(
-                { x: clampedX, y: 2.6, z: clampedZ },
+                { x: clampedX, y: dragY, z: clampedZ },
                 true
             );
 
@@ -291,7 +303,7 @@ export function Die({
 
         broadcastReThrow(
             id,
-            { x: lastPos.x, y: 2.6, z: lastPos.z },
+            { x: lastPos.x, y: dragY, z: lastPos.z },
             finalVelocity,
             finalAngvel
         );
