@@ -29,6 +29,7 @@ import { confirmModal } from "../../stores/confirm.store";
 import { Badge } from "../ui/Badge";
 import { cn } from "../../utils/cn";
 import { WS_EVENTS } from "../../constants/wsEvents.js";
+import { RpgAvatar } from "../profile/RpgAvatar";
 
 const HOST_ROLE_PRESETS = Object.freeze([
     "میزبان",
@@ -77,6 +78,15 @@ const MemberCard = memo(
         const targetType = isMemberGM ? "HOST" : "PLAYER";
         const availablePresets = isMemberGM ? HOST_ROLE_PRESETS : PLAYER_ROLE_PRESETS;
 
+        // استخراج آواتار اختصاصی RPG کاربر
+        const memberAvatar =
+            member.avatarUrl ||
+            member.user?.avatarUrl ||
+            member.avatar ||
+            member.user?.avatar ||
+            (isSelf ? currentUser?.avatarUrl : null) ||
+            "cowboy";
+
         return (
             <div
                 className={cn(
@@ -90,17 +100,18 @@ const MemberCard = memo(
             >
                 <div className="flex items-center justify-between p-2.5 sm:p-3">
                     <div className="flex items-center gap-2.5 sm:gap-3">
-                        <div className="relative">
+                        {/* آواتار واقعی RPG بازیکن به جای حروف اختصاری */}
+                        <div className="relative shrink-0">
                             <div
                                 className={cn(
-                                    "w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center font-bold text-xs shadow-inner transition-all duration-150",
-                                    isSpeaking ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-zinc-950 scale-105 shadow-[0_0_12px_rgba(251,191,36,0.3)]" : "",
+                                    "w-9 h-9 sm:w-10 sm:h-10 rounded-2xl overflow-hidden p-0.5 flex items-center justify-center shadow-inner transition-all duration-150",
+                                    isSpeaking ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-zinc-950 scale-105 shadow-[0_0_12px_rgba(251,191,36,0.4)]" : "",
                                     isMemberGM
-                                        ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                                        : "bg-indigo-500/15 text-indigo-400 border border-indigo-500/30"
+                                        ? "bg-gradient-to-tr from-amber-600/40 via-amber-400/30 to-amber-500/40 border border-amber-500/50"
+                                        : "bg-zinc-850 border border-zinc-700/60"
                                 )}
                             >
-                                {member.username ? member.username.slice(0, 2).toUpperCase() : "U"}
+                                <RpgAvatar avatarId={memberAvatar} className="w-full h-full rounded-xl" />
                             </div>
                             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-zinc-950 absolute -bottom-0.5 -right-0.5 animate-pulse shadow-sm shadow-emerald-500/50" />
                         </div>

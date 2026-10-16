@@ -58,7 +58,6 @@ export const DiceSection = memo(() => {
         }
     }, [isAnyCritical, isRolling]);
 
-    // پرتاب خودکار تاس صرفاً یک‌بار در فاز Mount اولیه بدون تکرار حین تعویض تم
     useEffect(() => {
         if (hasInitialRolledRef.current) return;
         hasInitialRolledRef.current = true;
@@ -157,7 +156,6 @@ export const DiceSection = memo(() => {
                         <DiceCanvas overlayMode={false} />
                     </div>
 
-                    {/* بنر نتایج چندستونه */}
                     {results.length > 0 && (
                         <div className="absolute top-4 sm:top-6 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-1 z-20 max-w-[95vw] sm:max-w-xl w-auto animate-fade-in-up">
                             <div
@@ -246,7 +244,6 @@ export const DiceSection = memo(() => {
                         </div>
                     )}
 
-                    {/* داک کنترل کنسولی مجهز به دکمه جمع و باز شدن */}
                     <div className="absolute bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-1.5 z-20 w-full px-2.5 sm:px-4 max-w-xl transition-all duration-300">
                         <button
                             type="button"
@@ -259,7 +256,6 @@ export const DiceSection = memo(() => {
 
                         {isMenuOpen && (
                             <div className="w-full flex flex-col gap-1.5 animate-fade-in-up">
-                                {/* استخر تاس‌های چندرنگ */}
                                 {mode === 'pool' && dicePool.length > 0 && (
                                     <div className="bg-zinc-950/95 border border-amber-500/30 p-2 sm:p-2.5 rounded-2xl shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-3 w-full">
                                         <div className="flex items-center gap-1.5 flex-wrap overflow-x-auto max-h-24 pr-1 custom-scrollbar" dir="ltr">
@@ -288,7 +284,7 @@ export const DiceSection = memo(() => {
                                             <button
                                                 type="button"
                                                 onClick={handleClearPool}
-                                                className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-zinc-900 cursor-pointer"
+                                                className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-zinc-900"
                                                 aria-label="پاکسازی استخر"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -305,8 +301,7 @@ export const DiceSection = memo(() => {
                                     </div>
                                 )}
 
-                                {/* داک دو سطری */}
-                                <div className="w-full bg-zinc-950/95 border border-zinc-800/90 p-2 sm:p-2.5 rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.8)] backdrop-blur-2xl flex flex-col gap-2">
+                                <div className="w-full bg-zinc-950/95 border border-zinc-800/90 p-2 sm:p-2.5 rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.8)] backdrop-blur-2xl flex flex-col gap-2.5">
                                     <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5" dir="ltr">
                                         {ALL_DICE_LANDING.map((d) => {
                                             const inPool = dicePool.filter((item) => item.type === d.type).length;
@@ -322,10 +317,10 @@ export const DiceSection = memo(() => {
                                                             handleAddDieToPool(d.type);
                                                         }
                                                     }}
-                                                    className="relative py-2 px-2.5 sm:px-3 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-amber-500/50 text-amber-300 font-mono text-[11px] sm:text-xs font-bold transition-all active:scale-90 cursor-pointer shadow-sm flex items-center gap-1 shrink-0"
+                                                    className="relative py-2 px-2.5 sm:px-3 rounded-2xl bg-zinc-900/90 hover:bg-zinc-850 border border-zinc-800 hover:border-amber-500/50 text-amber-300 font-mono text-[11px] sm:text-xs font-bold transition-all active:scale-90 cursor-pointer shadow-sm flex items-center gap-1 shrink-0"
                                                 >
                                                     <span>{d.label}</span>
-                                                    {IconComp && <IconComp className="w-3.5 h-3.5 text-amber-400" />}
+                                                    {IconComp && <IconComp className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
                                                     {mode === 'pool' && inPool > 0 && (
                                                         <span className="w-3.5 h-3.5 bg-amber-500 text-zinc-950 text-[9px] font-sans font-black rounded-full flex items-center justify-center -mr-1 shadow-sm">
                                                             {inPool}
@@ -336,7 +331,7 @@ export const DiceSection = memo(() => {
                                         })}
                                     </div>
 
-                                    <div className="flex items-center justify-between pt-1 border-t border-zinc-850 px-1" dir="ltr">
+                                    <div className="flex items-center justify-between pt-0.5 px-1" dir="ltr">
                                         <div className="flex items-center gap-1.5 bg-zinc-900/90 p-1 rounded-2xl border border-zinc-800">
                                             {Object.values(DICE_THEMES).map((t) => (
                                                 <button

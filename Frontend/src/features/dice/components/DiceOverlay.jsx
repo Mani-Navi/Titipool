@@ -130,7 +130,7 @@ export const DiceOverlay = memo(() => {
                 <DiceCanvas overlayMode={true} />
             </div>
 
-            {/* بنر نتایج تفکیک‌شده چندستونه با پایش خطای سرریز */}
+            {/* بنر نتایج تفکیک‌شده */}
             {results.length > 0 && (
                 <div className="absolute top-12 sm:top-14 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-1.5 max-w-[95vw] sm:max-w-2xl w-auto animate-fade-in-up">
                     <div
@@ -198,7 +198,6 @@ export const DiceOverlay = memo(() => {
                             </div>
                         </div>
 
-                        {/* گرید کارت‌های هر تاس با جهت LTR برای حذف تداخل متون و ارقام */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-[38vh] overflow-y-auto pr-1 custom-scrollbar">
                             {results.map((r) => {
                                 const themeCfg = DICE_THEMES[r.theme] || DICE_THEMES.midnight;
@@ -238,10 +237,9 @@ export const DiceOverlay = memo(() => {
                 </div>
             )}
 
-            {/* داک شناور دو سطری مدرن اتاق (مطابق تصویر دقیق ارسالی) */}
+            {/* داک شناور دو سطری مدرن بدون خط سفید مزاحم */}
             {isOpen && !isRemoteRoll && (
                 <div className="absolute bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 sm:left-6 sm:translate-x-0 pointer-events-auto flex flex-col items-center sm:items-start gap-1.5 max-w-[96vw] sm:max-w-xl z-20 animate-fade-in-up">
-                    {/* دکمه جمع‌شونده ارگونومیک */}
                     <button
                         type="button"
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -253,7 +251,6 @@ export const DiceOverlay = memo(() => {
 
                     {isMenuOpen && (
                         <div className="flex flex-col gap-2 w-full animate-fade-in-up">
-                            {/* استخر چندرنگ تاس‌ها */}
                             {mode === 'pool' && dicePool.length > 0 && (
                                 <div className="bg-zinc-950/95 border border-amber-500/30 p-2 sm:p-2.5 rounded-2xl shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-3 w-full animate-fade-in-up">
                                     <div className="flex items-center gap-1.5 flex-wrap overflow-x-auto max-h-24 pr-1 custom-scrollbar" dir="ltr">
@@ -304,9 +301,8 @@ export const DiceOverlay = memo(() => {
                                 </div>
                             )}
 
-                            {/* داک اصلی ۲ سطری (دقیقاً برابر استایل تصویر) */}
-                            <div className="w-full bg-zinc-950/95 border border-zinc-800/90 p-2 sm:p-2.5 rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.85)] backdrop-blur-2xl flex flex-col gap-2">
-                                {/* سطر اول: کپسول‌های دکمه‌های ۱۰گانه تاس */}
+                            {/* داک اصلی ۲ سطری بدون خط سفید اضافه */}
+                            <div className="w-full bg-zinc-950/95 border border-zinc-800/90 p-2 sm:p-2.5 rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.85)] backdrop-blur-2xl flex flex-col gap-2.5">
                                 <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5" dir="ltr">
                                     {ALL_DICE_BUTTONS.map((d) => {
                                         const IconComp = d.icon;
@@ -338,9 +334,8 @@ export const DiceOverlay = memo(() => {
                                     })}
                                 </div>
 
-                                {/* سطر دوم: تم‌ها در یک سمت و حالت پرتاب در سمت دیگر */}
-                                <div className="flex items-center justify-between pt-1 border-t border-zinc-850 px-1" dir="ltr">
-                                    {/* تم‌های ۶گانه سنگ مرمر */}
+                                {/* سطر دوم بدون بوردر سفید */}
+                                <div className="flex items-center justify-between pt-0.5 px-1" dir="ltr">
                                     <div className="flex items-center gap-1.5 bg-zinc-900/90 p-1 rounded-2xl border border-zinc-800/80">
                                         {Object.values(DICE_THEMES).map((t) => (
                                             <button
@@ -363,7 +358,6 @@ export const DiceOverlay = memo(() => {
                                         ))}
                                     </div>
 
-                                    {/* دکمه‌های کنترل حالت پرتاب و سطل آشغال */}
                                     <div className="flex items-center gap-1.5">
                                         <div className="flex items-center bg-zinc-900/90 p-0.5 rounded-xl border border-zinc-800">
                                             <button
