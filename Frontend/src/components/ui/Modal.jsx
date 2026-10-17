@@ -21,21 +21,46 @@ export const Modal = memo(({
                            }) => {
     const modalRef = useRef(null);
     const titleId = useId();
+    const hasInitialFocusedRef = useRef(false);
 
-    // مدیریت Focus Trap و کلید Escape طبق WCAG 2.1 AA
+    // مدیریت Focus Trap و فوکوس اولیه امن طبق WCAG 2.1 AA بدون سرقت فوکوس از اینپوت‌ها
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {
+            hasInitialFocusedRef.current = false;
+            return;
+        }
+
+        // در صورتی که کاربر هم‌اکنون درون مدال در حال تایپ است، فوکوس به هیچ وجه جابجا نشود
+        if (modalRef.current?.contains(document.activeElement)) {
+            return;
+        }
+
+        if (hasInitialFocusedRef.current) return;
+        hasInitialFocusedRef.current = true;
 
         const previousActiveElement = document.activeElement;
 
         const timer = setTimeout(() => {
-            const focusableElements = modalRef.current?.querySelectorAll(
+            if (!modalRef.current) return;
+
+            // اولویت فوکوس اولیه به اولین فیلد ورودی متن به جای دکمه بستن پنجره
+            const firstInput = modalRef.current.querySelector(
+                'input:not([disabled]):not([type="hidden"]), textarea:not([disabled])'
+            );
+
+            if (firstInput) {
+                firstInput.focus();
+                return;
+            }
+
+            const focusableElements = modalRef.current.querySelectorAll(
                 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
             );
+
             if (focusableElements && focusableElements.length > 0) {
                 focusableElements[0].focus();
             }
-        }, 50);
+        }, 60);
 
         const handleGlobalKeyDown = (e) => {
             if (e.key === "Escape") {
@@ -53,7 +78,7 @@ export const Modal = memo(({
                 previousActiveElement.focus();
             }
         };
-    }, [isOpen, onClose]);
+    }, [isOpen]);
 
     const handleKeyDown = (e) => {
         if (e.key !== "Tab" || !modalRef.current) return;
