@@ -63,8 +63,8 @@ export const DiceOverlay = memo(() => {
         let specs = [];
         if (type === 'd100') {
             specs = [
-                { id: `d100-tens-${Date.now()}`, type: 'd100', theme: selectedTheme },
-                { id: `d100-ones-${Date.now()}`, type: 'd10', theme: selectedTheme },
+                { type: 'd100', theme: selectedTheme },
+                { type: 'd10', theme: selectedTheme },
             ];
         } else {
             specs = [{ type, theme: selectedTheme }];
@@ -77,7 +77,7 @@ export const DiceOverlay = memo(() => {
         setDicePool((prev) => [
             ...prev,
             {
-                id: `pool-${Date.now()}-${Math.random()}`,
+                id: `pool-item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
                 type,
                 theme: selectedTheme,
             },
@@ -93,7 +93,6 @@ export const DiceOverlay = memo(() => {
         setDicePool([]);
     }, []);
 
-    // در پرتاب استخر، d100 به صورت خودکار به جفت دهگان و یکان با همان رنگ بسط می‌یابد
     const handleRollPool = useCallback(() => {
         if (dicePool.length === 0) return;
 
@@ -102,11 +101,11 @@ export const DiceOverlay = memo(() => {
             const item = dicePool[i];
             if (item.type === 'd100') {
                 expandedPool.push(
-                    { id: `${item.id}-tens`, type: 'd100', theme: item.theme },
-                    { id: `${item.id}-ones`, type: 'd10', theme: item.theme }
+                    { type: 'd100', theme: item.theme },
+                    { type: 'd10', theme: item.theme }
                 );
             } else {
-                expandedPool.push(item);
+                expandedPool.push({ type: item.type, theme: item.theme });
             }
         }
 
@@ -251,7 +250,6 @@ export const DiceOverlay = memo(() => {
                 </div>
             )}
 
-            {/* داک شناور دو سطری مدرن بدون خط سفید */}
             {isOpen && !isRemoteRoll && (
                 <div className="absolute bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 sm:left-6 sm:translate-x-0 pointer-events-auto flex flex-col items-center sm:items-start gap-1.5 max-w-[96vw] sm:max-w-xl z-20 animate-fade-in-up">
                     <button
@@ -318,8 +316,8 @@ export const DiceOverlay = memo(() => {
                             <div className="w-full bg-zinc-950/95 border border-zinc-800/90 p-2 sm:p-2.5 rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.85)] backdrop-blur-2xl flex flex-col gap-2.5">
                                 <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5" dir="ltr">
                                     {ALL_DICE_BUTTONS.map((d) => {
-                                        const IconComp = d.icon;
                                         const inPoolCount = dicePool.filter((item) => item.type === d.type).length;
+                                        const IconComp = d.icon;
 
                                         return (
                                             <button

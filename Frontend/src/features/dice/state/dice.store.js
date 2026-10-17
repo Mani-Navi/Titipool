@@ -54,10 +54,13 @@ export const useDiceStore = create((set, get) => ({
         const user = getCurrentUser();
         const tabId = getClientTabId();
         const defaultTheme = get().selectedTheme;
+        const rollTimestamp = Date.now();
 
+        // در هر پرتاب برای تمام تاس‌ها شناسه کاملاً جدید تولید می‌شود تا نمونه‌های قبلی Re-mount شوند
         const newDice = diceSpecs.map((item, idx) => {
             const type = typeof item === 'string' ? item : item.type || 'd20';
             const theme = typeof item === 'object' && item.theme ? item.theme : defaultTheme;
+            const freshDieId = `${type}-${rollTimestamp}-${idx}-${Math.random().toString(36).slice(2, 8)}`;
 
             const spreadX = (Math.random() - 0.5) * 1.5;
             const spreadZ = (Math.random() - 0.5) * 1.5;
@@ -103,7 +106,7 @@ export const useDiceStore = create((set, get) => ({
             }
 
             return {
-                id: (typeof item === 'object' && item.id) ? item.id : `${type}-${Date.now()}-${idx}-${Math.random()}`,
+                id: freshDieId,
                 type,
                 theme,
                 settled: false,
