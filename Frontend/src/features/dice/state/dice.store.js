@@ -49,7 +49,6 @@ export const useDiceStore = create((set, get) => ({
 
     setOpen: (isOpen) => set({ isOpen }),
 
-    // triggerRoll اکنون می‌تواند آرایه‌ای از نام تاس‌ها یا اشیائی حاوی type و theme اختصاصی دریافت کند
     triggerRoll: (diceSpecs = ['d20'], customPhysics = null) => {
         diceAudio.playThrow(diceSpecs.length);
         const user = getCurrentUser();
@@ -104,7 +103,7 @@ export const useDiceStore = create((set, get) => ({
             }
 
             return {
-                id: `${type}-${Date.now()}-${idx}-${Math.random()}`,
+                id: (typeof item === 'object' && item.id) ? item.id : `${type}-${Date.now()}-${idx}-${Math.random()}`,
                 type,
                 theme,
                 settled: false,
@@ -215,9 +214,32 @@ export const useDiceStore = create((set, get) => ({
 
         const allSettled = updatedDice.every((d) => d.settled);
 
+        // محاسبه دقیق درصدگان D&D (جفت کردن d100 دهگان با d10 یکان)
         let sum = 0;
-        for (let i = 0; i < newResults.length; i++) {
-            sum += Number(newResults[i].value) || 0;
+        const d100List = newResults.filter((r) => r.type === 'd100');
+        const d10List = newResults.filter((r) => r.type === 'd10');
+
+        if (d100List.length > 0 && d10List.length > 0) {
+            const pairCount = Math.min(d100List.length, d10List.length);
+            const pairedIds = new Set();
+
+            for (let i = 0; i < pairCount; i++) {
+                const tensVal = Number(d100List[i].value) || 0;
+                const onesVal = Number(d10List[i].value) || 0;
+                sum += (tensVal === 0 && onesVal === 0 ? 100 : tensVal + onesVal);
+                pairedIds.add(d100List[i].id);
+                pairedIds.add(d10List[i].id);
+            }
+
+            for (let i = 0; i < newResults.length; i++) {
+                if (!pairedIds.has(newResults[i].id)) {
+                    sum += Number(newResults[i].value) || 0;
+                }
+            }
+        } else {
+            for (let i = 0; i < newResults.length; i++) {
+                sum += Number(newResults[i].value) || 0;
+            }
         }
 
         set({

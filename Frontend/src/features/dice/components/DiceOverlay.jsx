@@ -63,8 +63,8 @@ export const DiceOverlay = memo(() => {
         let specs = [];
         if (type === 'd100') {
             specs = [
-                { type: 'd100', theme: selectedTheme },
-                { type: 'd10', theme: selectedTheme },
+                { id: `d100-tens-${Date.now()}`, type: 'd100', theme: selectedTheme },
+                { id: `d100-ones-${Date.now()}`, type: 'd10', theme: selectedTheme },
             ];
         } else {
             specs = [{ type, theme: selectedTheme }];
@@ -93,10 +93,25 @@ export const DiceOverlay = memo(() => {
         setDicePool([]);
     }, []);
 
+    // در پرتاب استخر، d100 به صورت خودکار به جفت دهگان و یکان با همان رنگ بسط می‌یابد
     const handleRollPool = useCallback(() => {
         if (dicePool.length === 0) return;
-        setLastRollSpecs(dicePool);
-        triggerRoll(dicePool);
+
+        const expandedPool = [];
+        for (let i = 0; i < dicePool.length; i++) {
+            const item = dicePool[i];
+            if (item.type === 'd100') {
+                expandedPool.push(
+                    { id: `${item.id}-tens`, type: 'd100', theme: item.theme },
+                    { id: `${item.id}-ones`, type: 'd10', theme: item.theme }
+                );
+            } else {
+                expandedPool.push(item);
+            }
+        }
+
+        setLastRollSpecs(expandedPool);
+        triggerRoll(expandedPool);
     }, [dicePool, triggerRoll]);
 
     const handleReRoll = useCallback(() => {
@@ -130,7 +145,6 @@ export const DiceOverlay = memo(() => {
                 <DiceCanvas overlayMode={true} />
             </div>
 
-            {/* بنر نتایج تفکیک‌شده */}
             {results.length > 0 && (
                 <div className="absolute top-12 sm:top-14 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-1.5 max-w-[95vw] sm:max-w-2xl w-auto animate-fade-in-up">
                     <div
@@ -237,7 +251,7 @@ export const DiceOverlay = memo(() => {
                 </div>
             )}
 
-            {/* داک شناور دو سطری مدرن بدون خط سفید مزاحم */}
+            {/* داک شناور دو سطری مدرن بدون خط سفید */}
             {isOpen && !isRemoteRoll && (
                 <div className="absolute bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 sm:left-6 sm:translate-x-0 pointer-events-auto flex flex-col items-center sm:items-start gap-1.5 max-w-[96vw] sm:max-w-xl z-20 animate-fade-in-up">
                     <button
@@ -301,7 +315,6 @@ export const DiceOverlay = memo(() => {
                                 </div>
                             )}
 
-                            {/* داک اصلی ۲ سطری بدون خط سفید اضافه */}
                             <div className="w-full bg-zinc-950/95 border border-zinc-800/90 p-2 sm:p-2.5 rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.85)] backdrop-blur-2xl flex flex-col gap-2.5">
                                 <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5" dir="ltr">
                                     {ALL_DICE_BUTTONS.map((d) => {
@@ -334,7 +347,6 @@ export const DiceOverlay = memo(() => {
                                     })}
                                 </div>
 
-                                {/* سطر دوم بدون بوردر سفید */}
                                 <div className="flex items-center justify-between pt-0.5 px-1" dir="ltr">
                                     <div className="flex items-center gap-1.5 bg-zinc-900/90 p-1 rounded-2xl border border-zinc-800/80">
                                         {Object.values(DICE_THEMES).map((t) => (
@@ -380,7 +392,7 @@ export const DiceOverlay = memo(() => {
                                                     "p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer active:scale-95",
                                                     mode === 'pool' ? "bg-amber-500 text-zinc-950 shadow-sm" : "text-zinc-400 hover:text-zinc-200"
                                                 )}
-                                                title="پرتاب استخر چندتایی"
+                                                title="استخر پرتاب همزمان چند تاس"
                                             >
                                                 <Dices className="w-3.5 h-3.5" />
                                             </button>

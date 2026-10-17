@@ -77,8 +77,8 @@ export const DiceSection = memo(() => {
         let specs = [];
         if (type === 'd100') {
             specs = [
-                { type: 'd100', theme: selectedTheme },
-                { type: 'd10', theme: selectedTheme },
+                { id: `d100-landing-tens-${Date.now()}`, type: 'd100', theme: selectedTheme },
+                { id: `d100-landing-ones-${Date.now()}`, type: 'd10', theme: selectedTheme },
             ];
         } else {
             specs = [{ type, theme: selectedTheme }];
@@ -109,8 +109,22 @@ export const DiceSection = memo(() => {
 
     const handleRollPool = useCallback(() => {
         if (dicePool.length === 0) return;
-        setLastRollSpecs(dicePool);
-        triggerRoll(dicePool);
+
+        const expandedPool = [];
+        for (let i = 0; i < dicePool.length; i++) {
+            const item = dicePool[i];
+            if (item.type === 'd100') {
+                expandedPool.push(
+                    { id: `${item.id}-tens`, type: 'd100', theme: item.theme },
+                    { id: `${item.id}-ones`, type: 'd10', theme: item.theme }
+                );
+            } else {
+                expandedPool.push(item);
+            }
+        }
+
+        setLastRollSpecs(expandedPool);
+        triggerRoll(expandedPool);
     }, [dicePool, triggerRoll]);
 
     const handleReRoll = useCallback(() => {
