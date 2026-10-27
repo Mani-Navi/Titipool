@@ -68,6 +68,16 @@ public class UserService {
     @Transactional
     public void changePassword(String userEmail, ChangePasswordRequest request) {
         User user = getByEmail(userEmail);
+
+        // اگر کاربر رمز فعلی را ارسال کرده یا حساب عادی (غیر گوگل) دارد، رمز فعلی بررسی می‌شود
+        if (request.getCurrentPassword() != null && !request.getCurrentPassword().isBlank()) {
+            if (user.getPassword() == null || !passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "رمز عبور فعلی اشتباه است");
+            }
+        } else if (user.getGoogleId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "وارد کردن رمز عبور فعلی الزامی است");
+        }
+
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
@@ -81,6 +91,10 @@ public class UserService {
         }
 
         String targetEmail = request.getNewEmail().trim().toLowerCase();
+        if (targetEmail.equalsIgnoreCase(user.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ایمیل جدید با ایمیل فعلی یکسان است");
+        }
+
         if (userRepository.existsByEmail(targetEmail)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "این ایمیل قبلاً ثبت شده است");
         }
