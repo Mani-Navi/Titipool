@@ -8,7 +8,8 @@ import com.VTT.V10.room.dto.SceneResponse;
 import com.VTT.V10.room.dto.SceneStateResponse;
 import com.VTT.V10.room.dto.TokenResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -40,8 +41,8 @@ public class SceneService {
     private final FogService fogService;
     private final FogRegionRepository fogRegionRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final CacheManager cacheManager;
 
-    @CacheEvict(value = CacheConfig.CACHE_SCENES, key = "#request.roomId")
     @Transactional
     public SceneResponse createScene(CreateSceneRequest request, String userEmail) {
         Room room = roomRepository.findById(request.getRoomId())
@@ -83,6 +84,8 @@ public class SceneService {
                 .build();
 
         sceneRepository.save(scene);
+        evictScenesCache(room.getId());
+
         SceneResponse response = convertToResponse(scene);
 
         broadcastToRoom(room.getId(), "SCENE_CREATED", Map.of("scene", response, "sceneId", scene.getId().toString()));
@@ -98,15 +101,17 @@ public class SceneService {
         Scene scene = sceneRepository.findById(sceneId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "صحنه یافت نشد"));
 
-        validateGMRole(scene.getRoom().getId(), userEmail);
+        UUID roomId = scene.getRoom().getId();
+        validateGMRole(roomId, userEmail);
 
         if (newName != null && !newName.trim().isEmpty()) {
             scene.setName(newName.trim());
             sceneRepository.save(scene);
+            evictScenesCache(roomId);
         }
 
         SceneResponse response = convertToResponse(scene);
-        broadcastToRoom(scene.getRoom().getId(), "SCENE_RENAME", Map.of("sceneId", scene.getId().toString(), "name", scene.getName()));
+        broadcastToRoom(roomId, "SCENE_RENAME", Map.of("sceneId", scene.getId().toString(), "name", scene.getName()));
         return response;
     }
 
@@ -115,7 +120,8 @@ public class SceneService {
         Scene scene = sceneRepository.findById(sceneId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "صحنه یافت نشد"));
 
-        validateGMRole(scene.getRoom().getId(), userEmail);
+        UUID roomId = scene.getRoom().getId();
+        validateGMRole(roomId, userEmail);
 
         if (payload != null) {
             if (payload.containsKey("mapUrl") && payload.get("mapUrl") != null) {
@@ -138,8 +144,10 @@ public class SceneService {
         }
 
         sceneRepository.save(scene);
+        evictScenesCache(roomId);
+
         SceneResponse response = convertToResponse(scene);
-        broadcastToRoom(scene.getRoom().getId(), "SCENE_UPDATED", Map.of("sceneId", scene.getId().toString(), "mapUrl", response.getMapUrl(), "assetUrl", response.getMapUrl()));
+        broadcastToRoom(roomId, "SCENE_UPDATED", Map.of("sceneId", scene.getId().toString(), "mapUrl", response.getMapUrl(), "assetUrl", response.getMapUrl()));
         return response;
     }
 
@@ -148,14 +156,16 @@ public class SceneService {
         Scene scene = sceneRepository.findById(sceneId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "صحنه یافت نشد"));
 
-        validateGMRole(scene.getRoom().getId(), userEmail);
+        UUID roomId = scene.getRoom().getId();
+        validateGMRole(roomId, userEmail);
 
-        sceneRepository.deactivateAllScenesInRoom(scene.getRoom().getId());
+        sceneRepository.deactivateAllScenesInRoom(roomId);
         scene.setIsActive(true);
         sceneRepository.save(scene);
+        evictScenesCache(roomId);
 
         SceneResponse response = convertToResponse(scene);
-        broadcastToRoom(scene.getRoom().getId(), "SCENE_ACTIVATED", Map.of("sceneId", scene.getId().toString()));
+        broadcastToRoom(roomId, "SCENE_ACTIVATED", Map.of("sceneId", scene.getId().toString()));
         return response;
     }
 
@@ -179,13 +189,14 @@ public class SceneService {
         boolean isGM = isUserGM(roomId, userEmail);
 
         List<TokenResponse> tokenResponses = tokenRepository.findBySceneId(sceneId).stream()
+                .filter(t -> isGM || !Boolean.TRUE.equals(t.getIsHidden()))
                 .map(t -> tokenService.convertToResponse(t, isGM))
                 .collect(Collectors.toList());
 
         return SceneStateResponse.builder()
                 .scene(convertToResponse(scene))
                 .tokens(tokenResponses)
-                .drawings(drawingService.getByScene(sceneId))
+                .drawings(drawingService.getByScene(sceneId, isGM))
                 .fogRegions(fogService.getFogByScene(sceneId))
                 .build();
     }
@@ -214,7 +225,16 @@ public class SceneService {
             }
         }
 
+        evictScenesCache(roomId);
         broadcastToRoom(roomId, "SCENE_DELETE", Map.of("sceneId", sceneId.toString(), "activeSceneId", nextActiveId != null ? nextActiveId.toString() : ""));
+    }
+
+    private void evictScenesCache(UUID roomId) {
+        if (cacheManager == null || roomId == null) return;
+        Cache cache = cacheManager.getCache(CacheConfig.CACHE_SCENES);
+        if (cache != null) {
+            cache.evict(roomId);
+        }
     }
 
     private void broadcastToRoom(UUID roomId, String action, Object data) {
