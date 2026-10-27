@@ -41,18 +41,23 @@ public class VoiceService {
      */
     @Async("generalTaskExecutor")
     public CompletableFuture<String> generateTokenAsync(UUID roomId, UUID userId, String username) {
-        return CompletableFuture.completedFuture(generateToken(roomId, userId, username));
+        return CompletableFuture.completedFuture(generateToken(roomId, userId, username, true));
+    }
+
+    public String generateToken(UUID roomId, UUID userId, String username) {
+        return generateToken(roomId, userId, username, true);
     }
 
     /**
      * Generates a signed LiveKit JWT access token compliant with LiveKit SFU claim expectations.
      *
-     * @param roomId   target room UUID
-     * @param userId   authenticated user UUID
-     * @param username user display name in voice channel
+     * @param roomId     target room UUID
+     * @param userId     authenticated user UUID
+     * @param username   user display name in voice channel
+     * @param canPublish whether the user is permitted to publish audio tracks (false if muted by GM)
      * @return signed JWT string
      */
-    public String generateToken(UUID roomId, UUID userId, String username) {
+    public String generateToken(UUID roomId, UUID userId, String username, boolean canPublish) {
         if (roomId == null || userId == null) {
             throw new IllegalArgumentException("roomId and userId cannot be null");
         }
@@ -70,10 +75,10 @@ public class VoiceService {
             // 1. Standard JWT Header
             String headerJson = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
 
-            // 2. LiveKit RFC-7519 Payload
+            // 2. LiveKit RFC-7519 Payload with server-enforced publish permission
             String payloadJson = String.format(
-                    "{\"iss\":\"%s\",\"sub\":\"%s\",\"name\":\"%s\",\"video\":{\"canPublish\":true,\"canSubscribe\":true,\"room\":\"%s\",\"roomJoin\":true},\"iat\":%d,\"nbf\":%d,\"exp\":%d}",
-                    config.getApiKey(), safeUserId, safeUsername, safeRoomId, nowSec, nowSec, expSec
+                    "{\"iss\":\"%s\",\"sub\":\"%s\",\"name\":\"%s\",\"video\":{\"canPublish\":%s,\"canSubscribe\":true,\"room\":\"%s\",\"roomJoin\":true},\"iat\":%d,\"nbf\":%d,\"exp\":%d}",
+                    config.getApiKey(), safeUserId, safeUsername, canPublish, safeRoomId, nowSec, nowSec, expSec
             );
 
             Base64.Encoder b64 = Base64.getUrlEncoder().withoutPadding();
@@ -88,7 +93,7 @@ public class VoiceService {
             String encodedSignature = b64.encodeToString(signatureBytes);
 
             if (log.isDebugEnabled()) {
-                log.debug("LiveKit token issued successfully for user {} in room {}", userId, roomId);
+                log.debug("LiveKit token issued successfully for user {} in room {} (canPublish={})", userId, roomId, canPublish);
             }
 
             return dataToSign + "." + encodedSignature;

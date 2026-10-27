@@ -1,5 +1,7 @@
 package com.VTT.V10.voice;
 
+import com.VTT.V10.room.RoomMember;
+import com.VTT.V10.room.RoomMemberRepository;
 import com.VTT.V10.room.RoomService;
 import com.VTT.V10.user.User;
 import com.VTT.V10.user.UserService;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,6 +33,7 @@ public class VoiceController {
     private final LiveKitConfig config;
     private final UserService userService;
     private final RoomService roomService;
+    private final RoomMemberRepository roomMemberRepository;
 
     // Rate Limiting: Max 10 requests per minute per user
     private static final int MAX_REQUESTS_PER_MINUTE = 10;
@@ -65,8 +69,21 @@ public class VoiceController {
         // 2. Enforce Rate Limiting with automatic eviction
         checkRateLimit(user.getId());
 
-        // 3. Issue Token
-        String token = voiceService.generateToken(roomId, user.getId(), user.getUsername());
+        // 3. Check server-side mute state
+        boolean isGM = roomService.isHostOrAdmin(roomId, user.getEmail());
+        boolean isMuted = false;
+        if (!isGM) {
+            Optional<RoomMember> memberOpt = roomMemberRepository.findByRoomIdAndUserId(roomId, user.getId());
+            if (memberOpt.isPresent()) {
+                if (Boolean.TRUE.equals(memberOpt.get().getIsBanned())) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "شما از این اتاق مسدود شده‌اید");
+                }
+                isMuted = Boolean.TRUE.equals(memberOpt.get().getIsMuted());
+            }
+        }
+
+        // 4. Issue Token
+        String token = voiceService.generateToken(roomId, user.getId(), user.getUsername(), !isMuted);
         return ResponseEntity.ok(new VoiceTokenResponse(token, config.getUrl()));
     }
 
