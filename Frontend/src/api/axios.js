@@ -74,10 +74,10 @@ api.interceptors.response.use(
         const isAuthEndpoint =
             url.includes("/auth/login") ||
             url.includes("/auth/register") ||
+            url.includes("/auth/google") ||
             url.includes("/auth/refresh");
 
         if (error.response?.status === 401 && !isVoiceRequest && !isAuthEndpoint) {
-            // جلوگیری از لوپ بی‌نهایت: اگر این درخواست قبلاً یک‌بار رفرش شده و باز هم ۴۰۱ گرفته، کلاینت هدایت شود
             if (originalRequest._retry) {
                 localStorage.removeItem("vtt_jwt");
                 localStorage.removeItem("vtt_user");
@@ -88,7 +88,6 @@ api.interceptors.response.use(
                 return Promise.reject(error);
             }
 
-            // اگر عملیات رفرش توکن در حال انجام است، درخواست‌های همزمان دیگر در صف بمانند
             if (isRefreshing) {
                 return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject });
@@ -104,11 +103,14 @@ api.interceptors.response.use(
             isRefreshing = true;
 
             try {
-                // ارسال درخواست رفرش توکن با کوکی HttpOnly
+                const existingToken = localStorage.getItem("vtt_jwt");
                 const response = await axios.post(
                     `${API_BASE_URL.replace(/\/+$/, "")}/auth/refresh`,
                     {},
-                    { withCredentials: true }
+                    {
+                        withCredentials: true,
+                        headers: existingToken ? { Authorization: `Bearer ${existingToken}` } : {},
+                    }
                 );
 
                 const newToken = response.data?.accessToken || response.data?.token;
@@ -118,6 +120,10 @@ api.interceptors.response.use(
                 }
 
                 localStorage.setItem("vtt_jwt", newToken);
+                if (response.data?.user) {
+                    localStorage.setItem("vtt_user", JSON.stringify(response.data.user));
+                }
+
                 api.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
                 originalRequest.headers.Authorization = `Bearer ${newToken}`;
 

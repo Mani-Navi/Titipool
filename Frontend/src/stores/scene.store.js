@@ -344,7 +344,7 @@ export const useSceneStore = create((set, get) => ({
                     showHp: cleanSocketData.showHp !== undefined ? Boolean(cleanSocketData.showHp) : oldToken.showHp,
                     showConditions: cleanSocketData.showConditions !== undefined ? Boolean(cleanSocketData.showConditions) : oldToken.showConditions,
                     showAc: cleanSocketData.showAc !== undefined ? Boolean(cleanSocketData.showAc) : oldToken.showAc,
-                    allowPlayerHp: cleanSocketData.allowPlayerHp !== undefined ? Boolean(cleanSocketData.allowPlayerHp) : oldToken.showHp,
+                    allowPlayerHp: cleanSocketData.allowPlayerHp !== undefined ? Boolean(cleanSocketData.allowPlayerHp) : oldToken.allowPlayerHp,
                     allowPlayerConditions: cleanSocketData.allowPlayerConditions !== undefined ? Boolean(cleanSocketData.allowPlayerConditions) : oldToken.allowPlayerConditions,
                     allowPlayerAc: cleanSocketData.allowPlayerAc !== undefined ? Boolean(cleanSocketData.allowPlayerAc) : oldToken.allowPlayerAc,
                     allowPlayerSize: cleanSocketData.allowPlayerSize !== undefined ? Boolean(cleanSocketData.allowPlayerSize) : oldToken.allowPlayerSize,

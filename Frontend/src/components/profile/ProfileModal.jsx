@@ -4,13 +4,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuthStore } from "../../stores/auth.store";
 import { userApi } from "../../api/user.api";
+import { RpgAvatar, AVATAR_LIST } from "./RpgAvatar";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import {
     User as UserIcon,
     Shield,
     Mail,
-    Sparkles,
     Check,
     X,
     CheckCircle2,
@@ -18,56 +18,10 @@ import {
     Eye,
     EyeOff,
     LogOut,
-    Dices,
     Crown,
-    Calendar,
     Layers,
-    Flame,
     Award,
 } from "lucide-react";
-
-const PRESET_AVATARS = Object.freeze([
-    {
-        id: "dm",
-        name: "Dungeon Master",
-        url: "https://api.dicebear.com/7.x/bottts/svg?seed=DM&backgroundColor=b6e3f4,c0aede,d1d4f9",
-    },
-    {
-        id: "wizard",
-        name: "جادوگر (Wizard)",
-        url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Wizard&backgroundColor=ffd5dc,ffdfbf",
-    },
-    {
-        id: "warrior",
-        name: "جنگجو (Warrior)",
-        url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Warrior&backgroundColor=c0aede,b6e3f4",
-    },
-    {
-        id: "rogue",
-        name: "روگ (Rogue)",
-        url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Rogue&backgroundColor=d1d4f9",
-    },
-    {
-        id: "cleric",
-        name: "روحانی (Cleric)",
-        url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Cleric&backgroundColor=ffd5dc",
-    },
-    {
-        id: "paladin",
-        name: "پالادین (Paladin)",
-        url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Paladin&backgroundColor=ffdfbf",
-    },
-    {
-        id: "elf",
-        name: "الف (Elf Ranger)",
-        url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Elf&backgroundColor=b6e3f4",
-    },
-    {
-        id: "dragon",
-        name: "اژدها (Dragon)",
-        url: "https://api.dicebear.com/7.x/bottts/svg?seed=Dragon&backgroundColor=ffdfbf",
-    },
-]);
 
 const passwordSchema = z
     .object({
@@ -85,23 +39,21 @@ const emailSchema = z.object({
     password: z.string().min(1, "رمز عبور را وارد کنید"),
 });
 
-const checkPasswordCriteria = (pass = "") => {
-    return [
-        { label: "حداقل ۸ کاراکتر", valid: pass.length >= 8 },
-        { label: "حروف کوچک و بزرگ (a-Z)", valid: /[a-z]/.test(pass) && /[A-Z]/.test(pass) },
-        { label: "حداقل یک عدد (0-9)", valid: /\d/.test(pass) },
-        { label: "حداقل یک نماد ویژه (!@#$%)", valid: /[^A-Za-z0-9]/.test(pass) },
-    ];
-};
+const checkPasswordCriteria = (pass = "") => [
+    { label: "حداقل ۸ کاراکتر", valid: pass.length >= 8 },
+    { label: "حروف کوچک و بزرگ (a-Z)", valid: /[a-z]/.test(pass) && /[A-Z]/.test(pass) },
+    { label: "حداقل یک عدد (0-9)", valid: /\d/.test(pass) },
+    { label: "حداقل یک نماد ویژه (!@#$%)", valid: /[^A-Za-z0-9]/.test(pass) },
+];
 
 export const ProfileModal = memo(({ isOpen, onClose }) => {
     const user = useAuthStore((state) => state.user);
     const updateUser = useAuthStore((state) => state.updateUser);
+    const setAuth = useAuthStore((state) => state.setAuth);
     const logout = useAuthStore((state) => state.logout);
 
     const [activeTab, setActiveTab] = useState("overview");
     const [statusMsg, setStatusMsg] = useState({ type: "", text: "" });
-    const [selectedAvatar, setSelectedAvatar] = useState(user?.avatarUrl || PRESET_AVATARS[0].url);
     const [isSavingAvatar, setIsSavingAvatar] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
@@ -150,15 +102,17 @@ export const ProfileModal = memo(({ isOpen, onClose }) => {
         timerRef.current = setTimeout(() => setStatusMsg({ type: "", text: "" }), 4000);
     };
 
-    const handleSaveAvatar = async (avatarUrl) => {
+    const getErrorMsg = (err, fallback) =>
+        err?.response?.data?.error || err?.response?.data?.message || fallback;
+
+    const handleSaveAvatar = async (avatarId) => {
         try {
             setIsSavingAvatar(true);
-            setSelectedAvatar(avatarUrl);
-            const updated = await userApi.updateProfile({ avatarUrl });
+            const updated = await userApi.updateProfile({ avatarUrl: avatarId });
             updateUser(updated);
             showFeedback("success", "آواتار کاراکتر شما با موفقیت تغییر کرد.");
-        } catch {
-            showFeedback("error", "خطا در به‌روزرسانی آواتار.");
+        } catch (err) {
+            showFeedback("error", getErrorMsg(err, "خطا در به‌روزرسانی آواتار."));
         } finally {
             setIsSavingAvatar(false);
         }
@@ -181,7 +135,7 @@ export const ProfileModal = memo(({ isOpen, onClose }) => {
             setUsernameInput(cleanUsername);
             showFeedback("success", "نام کاربری با موفقیت به‌روزرسانی شد.");
         } catch (err) {
-            showFeedback("error", err.response?.data?.message || "خطا در تغییر نام کاربری.");
+            showFeedback("error", getErrorMsg(err, "خطا در تغییر نام کاربری."));
         } finally {
             setIsUpdatingUsername(false);
         }
@@ -196,18 +150,18 @@ export const ProfileModal = memo(({ isOpen, onClose }) => {
             resetPassForm();
             showFeedback("success", "رمز عبور با موفقیت تغییر یافت.");
         } catch (err) {
-            showFeedback("error", err.response?.data?.message || "رمز فعلی اشتباه است.");
+            showFeedback("error", getErrorMsg(err, "رمز فعلی اشتباه است."));
         }
     };
 
     const onSubmitEmail = async (data) => {
         try {
-            const updated = await userApi.changeEmail(data);
-            updateUser(updated);
+            const response = await userApi.changeEmail(data);
+            setAuth(response.user, response.token);
             resetEmailForm();
             showFeedback("success", "آدرس ایمیل تغییر کرد.");
         } catch (err) {
-            showFeedback("error", err.response?.data?.message || "خطا در تغییر ایمیل.");
+            showFeedback("error", getErrorMsg(err, "خطا در تغییر ایمیل."));
         }
     };
 
@@ -215,14 +169,14 @@ export const ProfileModal = memo(({ isOpen, onClose }) => {
         try {
             await userApi.sendVerificationCode();
             showFeedback("success", "کد تایید به ایمیل شما ارسال شد.");
-        } catch {
-            showFeedback("error", "خطا در ارسال کد تایید.");
+        } catch (err) {
+            showFeedback("error", getErrorMsg(err, "خطا در ارسال کد تایید."));
         }
     };
 
     if (!isOpen) return null;
 
-    const currentAvatar = user?.avatarUrl || selectedAvatar;
+    const currentAvatarId = user?.avatarUrl || "cowboy";
 
     return (
         <div
@@ -243,13 +197,7 @@ export const ProfileModal = memo(({ isOpen, onClose }) => {
 
                     <div className="relative mb-3 group">
                         <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1.5 bg-gradient-to-tr from-amber-600 via-amber-300 to-amber-500 shadow-xl shadow-amber-500/20 flex items-center justify-center">
-                            <div className="w-full h-full rounded-full bg-zinc-950 overflow-hidden border-2 border-zinc-900 flex items-center justify-center">
-                                <img
-                                    src={currentAvatar}
-                                    alt={user?.username ? `آواتار ${user.username}` : "آواتار کاربر ماجراجو"}
-                                    className="w-full h-full object-cover"
-                                />
-                            </div>
+                            <RpgAvatar avatarId={currentAvatarId} className="w-full h-full border-2 border-zinc-950" />
                         </div>
 
                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-zinc-900 border border-amber-500/60 rounded-full px-2 py-0.5 shadow-md flex items-center gap-1 text-[10px] text-amber-300 font-bold">
@@ -262,57 +210,19 @@ export const ProfileModal = memo(({ isOpen, onClose }) => {
                         {user?.username || "ماجراجو"}
                     </h2>
 
-                    <div className="flex items-center gap-2 mt-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-              Dungeon Master
-            </span>
-                        {user?.isEmailVerified ? (
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" />
-                تایید هویت شده
-              </span>
-                        ) : (
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-800 text-zinc-400 border border-zinc-700">
-                عضو رسمی
-              </span>
-                        )}
-                    </div>
-
-                    <div className="w-full max-w-xs mt-4">
-                        <div className="flex justify-between text-[11px] font-bold text-zinc-400 mb-1">
-              <span className="flex items-center gap-1 text-amber-400">
-                <Sparkles className="w-3 h-3" /> سطح ۱۲ ماجراجویی
-              </span>
-                            <span>78%</span>
-                        </div>
-                        <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
-                            <div className="h-full bg-gradient-to-r from-amber-500 to-amber-300 rounded-full w-[78%] shadow-[0_0_10px_rgba(251,191,36,0.6)]" />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-2xl mt-5 pt-4 border-t border-zinc-800/60">
+                    <div className="grid grid-cols-2 gap-3 w-full max-w-md mt-4 pt-4 border-t border-zinc-800/60">
                         <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-2.5 flex flex-col items-center">
                             <Layers className="w-4 h-4 text-amber-400 mb-1" />
-                            <span className="text-sm font-black text-zinc-100">{user?.roomsCount ?? 8}</span>
-                            <span className="text-[10px] text-zinc-400">اتاق‌های ساخته شده</span>
+                            <span className="text-sm font-black text-zinc-100">{user?.roomsCount ?? 0}</span>
+                            <span className="text-[10px] text-zinc-400">اتاق‌ها</span>
                         </div>
 
                         <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-2.5 flex flex-col items-center">
-                            <Dices className="w-4 h-4 text-cyan-400 mb-1" />
-                            <span className="text-sm font-black text-zinc-100">۱۴۲</span>
-                            <span className="text-[10px] text-zinc-400">تاس‌های انداخته شده</span>
-                        </div>
-
-                        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-2.5 flex flex-col items-center">
-                            <Flame className="w-4 h-4 text-rose-400 mb-1" />
-                            <span className="text-sm font-black text-zinc-100">Nat 20</span>
-                            <span className="text-[10px] text-zinc-400">ضربات کریتیکال</span>
-                        </div>
-
-                        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-2.5 flex flex-col items-center">
-                            <Calendar className="w-4 h-4 text-emerald-400 mb-1" />
-                            <span className="text-sm font-black text-zinc-100">عضو فعال</span>
-                            <span className="text-[10px] text-zinc-400">پلتفرم Titipool</span>
+                            <CheckCircle2 className={`w-4 h-4 mb-1 ${user?.isEmailVerified ? "text-emerald-400" : "text-amber-400"}`} />
+                            <span className="text-sm font-black text-zinc-100">
+                                {user?.isEmailVerified ? "تایید شده" : "تایید نشده"}
+                            </span>
+                            <span className="text-[10px] text-zinc-400">وضعیت ایمیل</span>
                         </div>
                     </div>
                 </div>
@@ -360,7 +270,7 @@ export const ProfileModal = memo(({ isOpen, onClose }) => {
                                 }`}
                             >
                                 <Award className="w-4 h-4" />
-                                انتخاب آواتار آماده
+                                انتخاب آواتار RPG
                             </button>
 
                             <button
@@ -436,18 +346,18 @@ export const ProfileModal = memo(({ isOpen, onClose }) => {
                                 <div>
                                     <h3 className="text-sm font-bold text-zinc-100">انتخاب آواتار آماده فانتزی</h3>
                                     <p className="text-xs text-zinc-400 mt-0.5">
-                                        کاراکتر مورد علاقه خود را انتخاب کنید تا به عنوان نشانگر شما در بازی قرار گیرد:
+                                        کاراکتر مورد علاقه خود را انتخاب کنید:
                                     </p>
                                 </div>
 
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-2">
-                                    {PRESET_AVATARS.map((avatar) => {
-                                        const isSelected = currentAvatar === avatar.url;
+                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
+                                    {AVATAR_LIST.map((avatar) => {
+                                        const isSelected = currentAvatarId === avatar.id;
                                         return (
                                             <button
                                                 key={avatar.id}
                                                 type="button"
-                                                onClick={() => handleSaveAvatar(avatar.url)}
+                                                onClick={() => handleSaveAvatar(avatar.id)}
                                                 disabled={isSavingAvatar}
                                                 className={`p-3 rounded-2xl border flex flex-col items-center gap-2 transition-all cursor-pointer ${
                                                     isSelected
@@ -455,20 +365,14 @@ export const ProfileModal = memo(({ isOpen, onClose }) => {
                                                         : "bg-zinc-900/70 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900"
                                                 }`}
                                             >
-                                                <div className="w-14 h-14 rounded-full bg-zinc-950 overflow-hidden border border-zinc-800 p-1">
-                                                    <img
-                                                        src={avatar.url}
-                                                        alt={avatar.name ? `آواتار ${avatar.name}` : "آواتار آماده"}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                </div>
+                                                <RpgAvatar avatarId={avatar.id} className="w-14 h-14 shadow-md" />
                                                 <span className="text-[11px] font-bold text-zinc-300 truncate w-full text-center">
-                          {avatar.name}
-                        </span>
+                                                    {avatar.name}
+                                                </span>
                                                 {isSelected && (
                                                     <span className="text-[10px] text-amber-400 font-bold flex items-center gap-0.5">
-                            <Check className="w-3 h-3" /> انتخاب شده
-                          </span>
+                                                        <Check className="w-3 h-3" /> فعال
+                                                    </span>
                                                 )}
                                             </button>
                                         );
@@ -533,14 +437,14 @@ export const ProfileModal = memo(({ isOpen, onClose }) => {
                                                                     : "text-emerald-400"
                                                     }`}
                                                 >
-                          {passedCriteriaCount <= 1
-                              ? "ضعیف"
-                              : passedCriteriaCount === 2
-                                  ? "متوسط"
-                                  : passedCriteriaCount === 3
-                                      ? "خوب"
-                                      : "بسیار قوی"}
-                        </span>
+                                                    {passedCriteriaCount <= 1
+                                                        ? "ضعیف"
+                                                        : passedCriteriaCount === 2
+                                                            ? "متوسط"
+                                                            : passedCriteriaCount === 3
+                                                                ? "خوب"
+                                                                : "بسیار قوی"}
+                                                </span>
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-1 pt-1 text-[10px]">
@@ -595,9 +499,9 @@ export const ProfileModal = memo(({ isOpen, onClose }) => {
 
                                     {user?.isEmailVerified ? (
                                         <span className="flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      تایید شده
-                    </span>
+                                            <CheckCircle2 className="w-3.5 h-3.5" />
+                                            تایید شده
+                                        </span>
                                     ) : (
                                         <Button
                                             type="button"
