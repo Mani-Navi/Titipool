@@ -21,9 +21,9 @@ import { roomApi } from "../../api/room.api";
 const createRoomSchema = z.object({
   name: z
       .string()
-      .min(3, "نام اتاق باید حداقل ۳ حرف باشد")
-      .max(40, "نام اتاق نمی‌تواند بیشتر از ۴۰ حرف باشد"),
-  description: z.string().max(200, "توضیحات اتاق نمی‌تواند بیشتر از ۲۰۰ حرف باشد").optional(),
+      .min(2, "نام اتاق باید حداقل ۲ حرف باشد")
+      .max(100, "نام اتاق نمی‌تواند بیشتر از ۱۰۰ حرف باشد"),
+  description: z.string().max(500, "توضیحات اتاق نمی‌تواند بیشتر از ۵۰۰ حرف باشد").optional(),
   password: z.string().max(30, "رمز عبور حداکثر ۳۰ کاراکتر است").optional(),
 });
 
@@ -165,8 +165,8 @@ export const CreateRoomModal = memo(({ isOpen, onClose, onCreate }) => {
                   <span className="text-xs font-bold text-amber-400">یک سناریو را انتخاب کنید:</span>
                   {selectedTemplate && (
                       <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1 truncate max-w-[180px]">
-                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> {selectedTemplate.title}
-                </span>
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> {selectedTemplate.title}
+                      </span>
                   )}
                 </div>
 
@@ -248,13 +248,13 @@ export const CreateRoomModal = memo(({ isOpen, onClose, onCreate }) => {
                     <label className="text-xs font-semibold text-zinc-300">
                       نام اتاق یا کمپین <span className="text-amber-400">*</span>
                     </label>
-                    <span className="text-[10px] text-zinc-500 font-mono">{nameValue.length}/40</span>
+                    <span className="text-[10px] text-zinc-500 font-mono">{nameValue.length}/100</span>
                   </div>
                   <Input
                       placeholder="مثلا: دخمه اشباح سرخ"
                       error={errors.name?.message}
                       disabled={isSubmitting}
-                      maxLength={40}
+                      maxLength={100}
                       className="h-10 text-sm"
                       {...register("name")}
                   />
@@ -265,17 +265,17 @@ export const CreateRoomModal = memo(({ isOpen, onClose, onCreate }) => {
                     <label className="text-xs font-semibold text-zinc-300">
                       توضیحات و خلاصه ماجرا (اختیاری)
                     </label>
-                    <span className="text-[10px] text-zinc-500 font-mono">{descValue.length}/200</span>
+                    <span className="text-[10px] text-zinc-500 font-mono">{descValue.length}/500</span>
                   </div>
                   <div className="relative">
-                <textarea
-                    rows={2}
-                    placeholder="توضیحات کوتاه درباره سناریو، اهداف یا قوانین..."
-                    maxLength={200}
-                    className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-3.5 py-2 pl-9 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/30 transition-all resize-none"
-                    disabled={isSubmitting}
-                    {...register("description")}
-                />
+                    <textarea
+                        rows={2}
+                        placeholder="توضیحات کوتاه درباره سناریو، اهداف یا قوانین..."
+                        maxLength={500}
+                        className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-3.5 py-2 pl-9 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/30 transition-all resize-none"
+                        disabled={isSubmitting}
+                        {...register("description")}
+                    />
                     <FileText className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500 pointer-events-none" />
                   </div>
                   {errors.description && (

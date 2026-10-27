@@ -10,9 +10,9 @@ import { Eye, EyeOff, FileText, Check } from "lucide-react";
 const editRoomSchema = z.object({
     name: z
         .string()
-        .min(3, "نام اتاق باید حداقل ۳ حرف باشد")
-        .max(40, "نام اتاق حداکثر ۴۰ حرف است"),
-    description: z.string().max(200, "توضیحات حداکثر ۲۰۰ حرف است").optional(),
+        .min(2, "نام اتاق باید حداقل ۲ حرف باشد")
+        .max(100, "نام اتاق حداکثر ۱۰۰ حرف است"),
+    description: z.string().max(500, "توضیحات حداکثر ۵۰۰ حرف است").optional(),
     password: z.string().max(30, "رمز عبور حداکثر ۳۰ کاراکتر است").optional(),
 });
 
@@ -84,13 +84,13 @@ export const EditRoomModal = memo(({ isOpen, onClose, onUpdate, room }) => {
                         <label className="text-xs font-semibold text-zinc-300">
                             نام ماجرا <span className="text-amber-400">*</span>
                         </label>
-                        <span className="text-[10px] text-zinc-500 font-mono">{nameValue.length}/40</span>
+                        <span className="text-[10px] text-zinc-500 font-mono">{nameValue.length}/100</span>
                     </div>
                     <Input
                         placeholder="نام ماجرا..."
                         error={errors.name?.message}
                         disabled={isSubmitting}
-                        maxLength={40}
+                        maxLength={100}
                         className="h-10 text-sm"
                         {...register("name")}
                     />
@@ -101,17 +101,17 @@ export const EditRoomModal = memo(({ isOpen, onClose, onUpdate, room }) => {
                         <label className="text-xs font-semibold text-zinc-300">
                             توضیحات و خلاصه ماجرا (اختیاری)
                         </label>
-                        <span className="text-[10px] text-zinc-500 font-mono">{descValue.length}/200</span>
+                        <span className="text-[10px] text-zinc-500 font-mono">{descValue.length}/500</span>
                     </div>
                     <div className="relative">
-            <textarea
-                rows={2}
-                placeholder="توضیحات..."
-                maxLength={200}
-                className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-3.5 py-2 pl-9 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/30 transition-all resize-none"
-                disabled={isSubmitting}
-                {...register("description")}
-            />
+                        <textarea
+                            rows={2}
+                            placeholder="توضیحات..."
+                            maxLength={500}
+                            className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-3.5 py-2 pl-9 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/30 transition-all resize-none"
+                            disabled={isSubmitting}
+                            {...register("description")}
+                        />
                         <FileText className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500 pointer-events-none" />
                     </div>
                     {errors.description && (

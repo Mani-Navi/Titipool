@@ -22,6 +22,7 @@ import { useCanvasStore } from "../../stores/canvas.store";
 import { useSceneStore } from "../../stores/scene.store";
 import { useAuthStore } from "../../stores/auth.store";
 import { useRoomStore } from "../../stores/room.store";
+import { toast } from "../../stores/toast.store";
 import { usePermissions } from "../../hooks/usePermissions";
 import { wsService } from "../../services/websocket.service";
 import { assetApi } from "../../api/asset.api";
@@ -89,7 +90,7 @@ export const TokenEditorModal = memo(({ roomData }) => {
 
   const storeRoom = useRoomStore((state) => state.currentRoom || state.room || state.activeRoom);
   const currentRoom = roomData || storeRoom;
-  const { isGM, canMoveToken } = usePermissions(currentRoom);
+  const { isGM, canMoveToken, canEditToken } = usePermissions(currentRoom);
   const currentUser = useAuthStore((state) => state.user);
 
   const fileInputRef = useRef(null);
@@ -119,7 +120,7 @@ export const TokenEditorModal = memo(({ roomData }) => {
       (token?.controlledBy && canMoveToken(token.controlledBy))
   );
 
-  const canEditBasic = Boolean(isGM || isOwner);
+  const canEditBasic = Boolean(isGM || isOwner || canEditToken);
 
   const [name, setName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -249,10 +250,10 @@ export const TokenEditorModal = memo(({ roomData }) => {
       label: finalName,
       avatarUrl: finalAvatar,
       assetUrl: finalAvatar,
-      ...(isGM || allowPlayerHp ? { hp: finalHp, maxHp } : {}),
-      ...(isGM || allowPlayerAc ? { ac } : {}),
-      ...(isGM || allowPlayerSize ? { size } : {}),
-      ...(isGM || allowPlayerConditions ? { conditions: selectedConditions } : {}),
+      ...(isGM || allowPlayerHp || canEditToken ? { hp: finalHp, maxHp } : {}),
+      ...(isGM || allowPlayerAc || canEditToken ? { ac } : {}),
+      ...(isGM || allowPlayerSize || canEditToken ? { size } : {}),
+      ...(isGM || allowPlayerConditions || canEditToken ? { conditions: selectedConditions } : {}),
       showHp: isGM ? showHp : token.showHp,
       showConditions: isGM ? showConditions : token.showConditions,
       showAc: isGM ? showAc : token.showAc,
@@ -309,7 +310,7 @@ export const TokenEditorModal = memo(({ roomData }) => {
       setSelectedConditions(selectedConditions.filter((c) => c !== condId));
     } else {
       if (selectedConditions.length >= 3) {
-        alert("حداکثر می‌توانید ۳ وضعیت فعال را به صورت همزمان برای هر توکن انتخاب کنید.");
+        toast.warning("حداکثر می‌توانید ۳ وضعیت فعال را به صورت همزمان برای هر توکن انتخاب کنید.", "محدودیت وضعیت");
         return;
       }
       setSelectedConditions([...selectedConditions, condId]);
@@ -453,8 +454,8 @@ export const TokenEditorModal = memo(({ roomData }) => {
                               loading="lazy"
                           />
                           <span className="text-[10px] text-zinc-300 truncate w-full text-center font-medium">
-                      {preset.label}
-                    </span>
+                            {preset.label}
+                          </span>
                         </button>
                     ))}
                   </div>
@@ -474,7 +475,7 @@ export const TokenEditorModal = memo(({ roomData }) => {
             </div>
           </div>
 
-          {!isProp && (isGM || allowPlayerHp) && (
+          {!isProp && (isGM || allowPlayerHp || canEditToken) && (
               <div className="p-4 bg-zinc-950/80 rounded-2xl border border-zinc-800/90 shadow-lg space-y-3.5">
                 <div className="flex items-center justify-between gap-2 border-b border-zinc-900 pb-2.5">
                   <div className="flex items-center gap-2 text-xs font-bold text-zinc-100">
@@ -581,7 +582,7 @@ export const TokenEditorModal = memo(({ roomData }) => {
               </div>
           )}
 
-          {!isProp && (isGM || allowPlayerConditions) && (
+          {!isProp && (isGM || allowPlayerConditions || canEditToken) && (
               <div className="p-4 bg-zinc-950/80 rounded-2xl border border-zinc-800/90 shadow-lg space-y-3.5">
                 <div className="flex flex-col gap-2.5 border-b border-zinc-900 pb-3">
                   <div className="flex items-center justify-between">
@@ -709,8 +710,8 @@ export const TokenEditorModal = memo(({ roomData }) => {
                                   <span className="text-xs truncate font-medium">{condDef.nameFa}</span>
                                   {condDef.nameEn && (
                                       <span className="text-[10px] text-zinc-500 font-mono truncate">
-                              {condDef.nameEn}
-                            </span>
+                                        {condDef.nameEn}
+                                      </span>
                                   )}
                                 </div>
                               </div>
@@ -718,8 +719,8 @@ export const TokenEditorModal = memo(({ roomData }) => {
                               <div className="flex items-center gap-2 shrink-0">
                                 {isSelected && (
                                     <span className="w-5 h-5 rounded-full bg-amber-500 text-zinc-950 flex items-center justify-center text-[10px] shadow">
-                            <Check className="w-3.5 h-3.5 stroke-[3]" />
-                          </span>
+                                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                    </span>
                                 )}
                                 {isGM && (
                                     <button
@@ -741,7 +742,7 @@ export const TokenEditorModal = memo(({ roomData }) => {
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            {!isProp && (isGM || allowPlayerAc) && (
+            {!isProp && (isGM || allowPlayerAc || canEditToken) && (
                 <div className="p-4 bg-zinc-950/80 rounded-2xl border border-zinc-800/90 shadow-lg space-y-2.5">
                   <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
                     <label className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
@@ -786,10 +787,10 @@ export const TokenEditorModal = memo(({ roomData }) => {
                 </div>
             )}
 
-            {(isGM || allowPlayerSize) && (
+            {(isGM || allowPlayerSize || canEditToken) && (
                 <div
                     className={`p-4 bg-zinc-950/80 rounded-2xl border border-zinc-800/90 shadow-lg space-y-2.5 ${
-                        isProp || (!allowPlayerAc && !isGM) ? "col-span-2" : ""
+                        isProp || (!allowPlayerAc && !isGM && !canEditToken) ? "col-span-2" : ""
                     }`}
                 >
                   <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
