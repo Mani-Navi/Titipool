@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -31,6 +31,7 @@ import {
 
 const passwordSchema = z
     .object({
+        currentPassword: z.string().min(1, "رمز عبور فعلی را وارد کنید"),
         newPassword: z.string().min(8, "حداقل ۸ کاراکتر").max(72, "حداکثر ۷۲ کاراکتر"),
         confirmPassword: z.string(),
     })
@@ -53,7 +54,6 @@ const checkPasswordCriteria = (pass = "") => [
 
 export const ProfilePage = () => {
     usePageTitle("پروفایل کاربری");
-    const navigate = useNavigate();
 
     const user = useAuthStore((state) => state.user);
     const updateUser = useAuthStore((state) => state.updateUser);
@@ -63,6 +63,7 @@ export const ProfilePage = () => {
     const [activeTab, setActiveTab] = useState("overview");
     const [statusMsg, setStatusMsg] = useState({ type: "", text: "" });
 
+    const [showCurrentPass, setShowCurrentPass] = useState(false);
     const [showNewPass, setShowNewPass] = useState(false);
     const [showConfirmPass, setShowConfirmPass] = useState(false);
     const [showEmailPass, setShowEmailPass] = useState(false);
@@ -141,13 +142,16 @@ export const ProfilePage = () => {
         }, 4000);
     };
 
+    const getErrorMsg = (err, fallback) =>
+        err?.response?.data?.error || err?.response?.data?.message || fallback;
+
     const handleAvatarSelect = async (avatarId) => {
         try {
             const updated = await userApi.updateProfile({ avatarUrl: avatarId });
             updateUser(updated);
             showFeedback("success", "آواتار شما با موفقیت تغییر کرد.");
-        } catch {
-            showFeedback("error", "خطا در تغییر آواتار.");
+        } catch (err) {
+            showFeedback("error", getErrorMsg(err, "خطا در تغییر آواتار."));
         }
     };
 
@@ -168,7 +172,7 @@ export const ProfilePage = () => {
             setUsernameInput(cleanUsername);
             showFeedback("success", "نام کاربری به‌روزرسانی شد.");
         } catch (err) {
-            showFeedback("error", err.response?.data?.message || "این نام کاربری قبلاً انتخاب شده است.");
+            showFeedback("error", getErrorMsg(err, "این نام کاربری قبلاً انتخاب شده است."));
         } finally {
             setIsUpdatingUsername(false);
         }
@@ -176,11 +180,14 @@ export const ProfilePage = () => {
 
     const onSubmitPassword = async (data) => {
         try {
-            await userApi.changePassword({ newPassword: data.newPassword });
+            await userApi.changePassword({
+                currentPassword: data.currentPassword,
+                newPassword: data.newPassword,
+            });
             resetPassForm();
             showFeedback("success", "رمز عبور با موفقیت تغییر کرد.");
         } catch (err) {
-            showFeedback("error", err.response?.data?.message || "خطا در تغییر رمز عبور.");
+            showFeedback("error", getErrorMsg(err, "رمز عبور فعلی اشتباه است."));
         }
     };
 
@@ -194,7 +201,7 @@ export const ProfilePage = () => {
             setTimer(0);
             showFeedback("success", "ایمیل با موفقیت تغییر یافت. اکنون می‌توانید کد تایید را برای ایمیل جدید دریافت کنید.");
         } catch (err) {
-            showFeedback("error", err.response?.data?.message || "خطا در تغییر ایمیل.");
+            showFeedback("error", getErrorMsg(err, "خطا در تغییر ایمیل."));
         }
     };
 
@@ -203,10 +210,10 @@ export const ProfilePage = () => {
             setIsSendingCode(true);
             await userApi.sendVerificationCode();
             setCodeSent(true);
-            setTimer(45);
+            setTimer(60);
             showFeedback("success", "کد تایید ۶ رقمی به ایمیل شما ارسال شد.");
-        } catch {
-            showFeedback("error", "خطا در ارسال کد تایید.");
+        } catch (err) {
+            showFeedback("error", getErrorMsg(err, "خطا در ارسال کد تایید."));
         } finally {
             setIsSendingCode(false);
         }
@@ -228,7 +235,7 @@ export const ProfilePage = () => {
             setTimer(0);
             showFeedback("success", "ایمیل شما با موفقیت تایید هویت شد.");
         } catch (err) {
-            showFeedback("error", err.response?.data?.message || "کد وارد شده اشتباه یا منقضی است.");
+            showFeedback("error", getErrorMsg(err, "کد وارد شده اشتباه یا منقضی است."));
         } finally {
             setIsVerifyingCode(false);
         }
@@ -269,7 +276,6 @@ export const ProfilePage = () => {
 
             <div className="flex-1 w-full">
                 <main className="max-w-4xl mx-auto px-3.5 sm:px-6 py-5 sm:py-8 space-y-4 sm:space-y-6 pb-20 animate-fade-in-up">
-                    {/* کارت مشخصات بالا */}
                     <div className="relative glass-card border border-zinc-800/80 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl overflow-hidden flex flex-col items-center text-center">
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-32 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -296,16 +302,16 @@ export const ProfilePage = () => {
                             <div className="bg-zinc-900/60 border border-zinc-800/70 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 flex flex-col items-center transition-all hover:border-zinc-700">
                                 <Crown className="w-4 h-4 text-amber-400 mb-1" />
                                 <span className="text-xs sm:text-sm font-black text-zinc-100 truncate max-w-full">
-                  {user?.isPremium ? "پرمیوم" : "استاندارد"}
-                </span>
+                                    {user?.isPremium ? "پرمیوم" : "استاندارد"}
+                                </span>
                                 <span className="text-[10px] sm:text-[11px] text-zinc-400">اشتراک</span>
                             </div>
 
                             <div className="bg-zinc-900/60 border border-zinc-800/70 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 flex flex-col items-center transition-all hover:border-zinc-700">
                                 <CheckCircle2 className={`w-4 h-4 mb-1 ${isVerified ? "text-emerald-400" : "text-amber-400"}`} />
                                 <span className="text-xs sm:text-sm font-black text-zinc-100">
-                  {isVerified ? "تایید شده" : "تایید نشده"}
-                </span>
+                                    {isVerified ? "تایید شده" : "تایید نشده"}
+                                </span>
                                 <span className="text-[10px] sm:text-[11px] text-zinc-400">ایمیل</span>
                             </div>
                         </div>
@@ -324,7 +330,6 @@ export const ProfilePage = () => {
                         </div>
                     )}
 
-                    {/* تب‌ها و محتوا به سبک Linear */}
                     <div className="glass-card border border-zinc-800/80 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-2xl space-y-5">
                         <div className="flex items-center gap-1.5 border-b border-zinc-800 pb-3 overflow-x-auto no-scrollbar scroll-smooth">
                             <button
@@ -433,12 +438,12 @@ export const ProfilePage = () => {
                                             >
                                                 <RpgAvatar avatarId={avatar.id} className="w-14 h-14 sm:w-16 sm:h-16 shadow-md transition-transform duration-200 group-hover:scale-105" />
                                                 <span className="text-[11px] font-bold text-zinc-300 truncate w-full text-center">
-                          {avatar.name}
-                        </span>
+                                                    {avatar.name}
+                                                </span>
                                                 {isSelected && (
                                                     <span className="text-[10px] text-amber-400 font-bold flex items-center gap-0.5">
-                            <Check className="w-3 h-3" /> فعال
-                          </span>
+                                                        <Check className="w-3 h-3" /> فعال
+                                                    </span>
                                                 )}
                                             </button>
                                         );
@@ -451,7 +456,28 @@ export const ProfilePage = () => {
                             <form onSubmit={handlePassSubmit(onSubmitPassword)} className="space-y-3.5 max-w-md animate-fade-in-up">
                                 <div>
                                     <h3 className="text-sm font-bold text-zinc-100">تغییر رمز عبور</h3>
-                                    <p className="text-xs text-zinc-400 mt-0.5">رمز عبور جدید را وارد کنید</p>
+                                    <p className="text-xs text-zinc-400 mt-0.5">رمز عبور فعلی و رمز جدید را وارد کنید</p>
+                                </div>
+
+                                <div className="relative">
+                                    <Input
+                                        label="رمز عبور فعلی"
+                                        type={showCurrentPass ? "text" : "password"}
+                                        placeholder="••••••••"
+                                        error={passErrors.currentPassword?.message}
+                                        disabled={isPassSubmitting}
+                                        className="h-10 text-sm pl-11"
+                                        {...registerPass("currentPassword")}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCurrentPass(!showCurrentPass)}
+                                        className="absolute left-2.5 top-[38px] -translate-y-1/2 text-zinc-400 hover:text-zinc-200 active:text-amber-400 p-1.5 cursor-pointer rounded-lg active:scale-90 transition-all flex items-center justify-center focus-visible:outline-none"
+                                        tabIndex={-1}
+                                        aria-label="تغییر وضعیت نمایش رمز فعلی"
+                                    >
+                                        {showCurrentPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
                                 </div>
 
                                 <div className="space-y-1.5">
@@ -470,7 +496,7 @@ export const ProfilePage = () => {
                                             onClick={() => setShowNewPass(!showNewPass)}
                                             className="absolute left-2.5 top-[38px] -translate-y-1/2 text-zinc-400 hover:text-zinc-200 active:text-amber-400 p-1.5 cursor-pointer rounded-lg active:scale-90 transition-all flex items-center justify-center focus-visible:outline-none"
                                             tabIndex={-1}
-                                            aria-label="تغییر وضعیت نمایش رمز"
+                                            aria-label="تغییر وضعیت نمایش رمز جدید"
                                         >
                                             {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
@@ -491,14 +517,14 @@ export const ProfilePage = () => {
                                                                     : "text-emerald-400"
                                                     }`}
                                                 >
-                          {passedCriteriaCount <= 1
-                              ? "ضعیف"
-                              : passedCriteriaCount === 2
-                                  ? "متوسط"
-                                  : passedCriteriaCount === 3
-                                      ? "خوب"
-                                      : "بسیار قوی"}
-                        </span>
+                                                    {passedCriteriaCount <= 1
+                                                        ? "ضعیف"
+                                                        : passedCriteriaCount === 2
+                                                            ? "متوسط"
+                                                            : passedCriteriaCount === 3
+                                                                ? "خوب"
+                                                                : "بسیار قوی"}
+                                                </span>
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-1.5 pt-0.5">
@@ -568,13 +594,13 @@ export const ProfilePage = () => {
 
                                         {isVerified ? (
                                             <span className="flex items-center gap-1 text-[11px] sm:text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full shadow-sm">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        تایید شده
-                      </span>
+                                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                                تایید شده
+                                            </span>
                                         ) : (
                                             <span className="text-[11px] sm:text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full">
-                        تایید نشده
-                      </span>
+                                                تایید نشده
+                                            </span>
                                         )}
                                     </div>
 
@@ -622,8 +648,8 @@ export const ProfilePage = () => {
                                                     <div className="flex items-center justify-between text-[11px] text-zinc-400 px-1">
                                                         {timer > 0 ? (
                                                             <span className="flex items-center gap-1 text-amber-400 font-mono">
-                                <Timer className="w-3.5 h-3.5" /> {timer} ثانیه تا ارسال مجدد
-                              </span>
+                                                                <Timer className="w-3.5 h-3.5" /> {timer} ثانیه تا ارسال مجدد
+                                                            </span>
                                                         ) : (
                                                             <button
                                                                 type="button"

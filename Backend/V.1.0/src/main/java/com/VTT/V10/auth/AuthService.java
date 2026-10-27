@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Authentication service handling credentials validation, Google OAuth verification, and account creation.
+ * Authentication service handling credentials validation, Google OAuth verification, token refresh, and account creation.
  */
 @Slf4j
 @Service
@@ -112,6 +112,46 @@ public class AuthService {
                 .email(user.getEmail())
                 .user(userDto)
                 .build();
+    }
+
+    /**
+     * Validates a refresh token and issues a fresh access token.
+     */
+    @Transactional(readOnly = true)
+    public AuthResponse refreshAccessToken(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank() || !jwtService.validateToken(refreshToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "نشست کاربری منقضی شده است، لطفاً مجدداً وارد شوید");
+        }
+
+        String email = jwtService.extractEmail(refreshToken);
+        if (email == null || email.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "توکن بازیابی نامعتبر است");
+        }
+
+        User user = userRepository.findByEmail(email.trim().toLowerCase())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "کاربر یافت نشد"));
+
+        String newAccessToken = jwtService.generateToken(user);
+        UserDto userDto = buildUserDto(user);
+
+        return AuthResponse.builder()
+                .token(newAccessToken)
+                .userId(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .user(userDto)
+                .build();
+    }
+
+    public String createRefreshTokenForEmail(String email) {
+        if (email == null || email.isBlank()) return "";
+        return userRepository.findByEmail(email.trim().toLowerCase())
+                .map(jwtService::generateRefreshToken)
+                .orElse("");
+    }
+
+    public long getRefreshMaxAgeSeconds() {
+        return jwtService.getRefreshExpirationSeconds();
     }
 
     /**

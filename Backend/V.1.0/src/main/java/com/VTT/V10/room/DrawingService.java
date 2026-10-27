@@ -29,7 +29,7 @@ public class DrawingService {
     private final PlayerPermissionRepository permissionRepository;
     private final ObjectMapper objectMapper;
 
-    @Async
+    @Async("wsTaskExecutor")
     @Transactional
     public void asyncSaveOrUpdateDrawing(UUID roomId, DrawingEvent event) {
         try {
@@ -53,7 +53,7 @@ public class DrawingService {
         }
     }
 
-    @Async
+    @Async("wsTaskExecutor")
     @Transactional
     public void asyncDeleteDrawing(UUID roomId, DrawingEvent event) {
         try {
@@ -236,7 +236,11 @@ public class DrawingService {
         validateRoomMembership(roomId, userEmail);
 
         boolean isGM = isUserGM(roomId, userEmail);
+        return getByScene(sceneId, isGM);
+    }
 
+    @Transactional(readOnly = true)
+    public List<DrawingResponse> getByScene(UUID sceneId, boolean isGM) {
         return drawingRepository.findBySceneId(sceneId).stream()
                 .filter(d -> isGM || !Boolean.TRUE.equals(d.getIsGMLayer()))
                 .map(this::convertToResponse)
@@ -245,9 +249,7 @@ public class DrawingService {
 
     @Transactional(readOnly = true)
     public List<DrawingResponse> getByScene(UUID sceneId) {
-        return drawingRepository.findBySceneId(sceneId).stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
+        return getByScene(sceneId, false);
     }
 
     private void validateRoomMembership(UUID roomId, String email) {

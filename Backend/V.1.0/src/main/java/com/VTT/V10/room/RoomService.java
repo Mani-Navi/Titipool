@@ -1,5 +1,6 @@
 package com.VTT.V10.room;
 
+import com.VTT.V10.config.CacheConfig;
 import com.VTT.V10.room.dto.*;
 import com.VTT.V10.user.User;
 import com.VTT.V10.user.UserRepository;
@@ -8,6 +9,8 @@ import com.VTT.V10.websocket.WsConstants;
 import com.VTT.V10.websocket.dto.SocketEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -43,11 +46,13 @@ public class RoomService {
     private final PasswordEncoder passwordEncoder;
     private final SimpMessagingTemplate messagingTemplate;
     private final RoomSessionManager sessionManager;
+    private final CacheManager cacheManager;
 
     private static final int GM_INACTIVITY_TIMEOUT_MINUTES = 15;
 
     /**
-     * Scheduled job running every 30 seconds to automatically deactivate rooms where the GM has been inactive.
+     * Scheduled job running every 30 seconds to automatically deactivate rooms where the GM has been offline beyond timeout.
+     * Avoids redundant DB writes when GM is actively connected in memory.
      */
     @Scheduled(fixedRate = 30000)
     @Transactional
@@ -62,11 +67,7 @@ public class RoomService {
             Set<UUID> onlineUserIds = sessionManager.getOnlineUserIds(room.getId());
             boolean isGmOnline = onlineUserIds.contains(owner.getId());
 
-            if (isGmOnline) {
-                room.setGmLastSeenAt(now);
-                room.setLastActive(now);
-                roomRepository.save(room);
-            } else {
+            if (!isGmOnline) {
                 LocalDateTime lastSeen = room.getGmLastSeenAt() != null ? room.getGmLastSeenAt() : room.getLastActive();
                 if (lastSeen == null) {
                     lastSeen = room.getCreatedAt() != null ? room.getCreatedAt() : now;
@@ -170,7 +171,10 @@ public class RoomService {
 
     @Transactional
     public void handleUserLeavePresence(UUID roomId, String userEmail) {
-        userRepository.findByEmail(userEmail).ifPresent(user -> sessionManager.removeUser(roomId, user.getId()));
+        userRepository.findByEmail(userEmail).ifPresent(user -> {
+            updateGmLastSeenOnDisconnect(roomId, user.getId());
+            sessionManager.removeUser(roomId, user.getId());
+        });
     }
 
     @Transactional
@@ -186,6 +190,7 @@ public class RoomService {
             scene.setAvailableConditions(conditions);
             sceneRepository.save(scene);
         });
+        evictCache(CacheConfig.CACHE_SCENES, roomId);
     }
 
     @Transactional
@@ -361,6 +366,7 @@ public class RoomService {
                 .canDrawing(true)
                 .canScene(true)
                 .canRuler(true)
+                .canEditToken(true)
                 .build();
         permissionRepository.save(adminPermission);
 
@@ -473,6 +479,7 @@ public class RoomService {
                         .canDrawing(true)
                         .canScene(true)
                         .canRuler(true)
+                        .canEditToken(true)
                         .build();
                 permissionRepository.save(adminPerm);
             } else {
@@ -632,6 +639,7 @@ public class RoomService {
                     .canDrawing(true)
                     .canScene(true)
                     .canRuler(true)
+                    .canEditToken(true)
                     .build();
             permissionRepository.save(adminPermission);
         }
@@ -658,6 +666,7 @@ public class RoomService {
 
         permissionRepository.deleteByMemberId(memberId);
         memberRepository.delete(target);
+        evictCache(CacheConfig.CACHE_PERMISSIONS, memberId);
         sessionManager.removeUser(roomId, targetUserId);
 
         messagingTemplate.convertAndSend(
@@ -692,6 +701,7 @@ public class RoomService {
 
         target.setIsBanned(true);
         memberRepository.save(target);
+        evictCache(CacheConfig.CACHE_PERMISSIONS, memberId);
         sessionManager.removeUser(roomId, target.getUser().getId());
 
         UUID targetUserId = target.getUser().getId();
@@ -723,7 +733,8 @@ public class RoomService {
         RoomMember target = memberRepository.findById(memberId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "عضو یافت نشد"));
 
-        target.setIsMuted(!Boolean.TRUE.equals(target.getIsMuted()));
+        boolean nextMuted = !Boolean.TRUE.equals(target.getIsMuted());
+        target.setIsMuted(nextMuted);
         memberRepository.save(target);
 
         RoomMemberResponse response = RoomMemberResponse.builder()
@@ -732,9 +743,23 @@ public class RoomService {
                 .username(target.getUser().getUsername())
                 .role((target.getRole() == RoomMember.Role.ADMIN || target.getRole() == RoomMember.Role.GM) ? "GM" : "Player")
                 .roleTitle(target.getRoleTitle())
-                .isMuted(target.getIsMuted())
+                .isMuted(nextMuted)
                 .isBanned(target.getIsBanned())
                 .build();
+
+        messagingTemplate.convertAndSend(
+                WsConstants.TOPIC_ROOM_PREFIX + roomId,
+                SocketEvent.<Map<String, Object>>builder()
+                        .roomId(roomId)
+                        .action("MEMBER_MUTE_TOGGLED")
+                        .data(Map.of(
+                                "memberId", target.getId().toString(),
+                                "userId", target.getUser().getId().toString(),
+                                "username", target.getUser().getUsername(),
+                                "isMuted", nextMuted
+                        ))
+                        .build()
+        );
 
         sessionManager.broadcastOnlineMembers(roomId);
         return response;
@@ -755,6 +780,7 @@ public class RoomService {
         RoomMember.Role role = "GM".equalsIgnoreCase(newRole) ? RoomMember.Role.ADMIN : RoomMember.Role.PLAYER;
         target.setRole(role);
         memberRepository.save(target);
+        evictCache(CacheConfig.CACHE_PERMISSIONS, memberId);
 
         RoomMemberResponse response = RoomMemberResponse.builder()
                 .id(target.getId())
@@ -784,6 +810,7 @@ public class RoomService {
         member.ifPresent(m -> {
             permissionRepository.deleteByMemberId(m.getId());
             memberRepository.delete(m);
+            evictCache(CacheConfig.CACHE_PERMISSIONS, m.getId());
             sessionManager.removeUser(roomId, user.getId());
         });
     }
@@ -807,6 +834,14 @@ public class RoomService {
         );
 
         sessionManager.clearRoom(roomId);
+
+        List<RoomMember> members = memberRepository.findAllByRoomId(roomId);
+        for (RoomMember m : members) {
+            evictCache(CacheConfig.CACHE_PERMISSIONS, m.getId());
+        }
+        evictCache(CacheConfig.CACHE_SCENES, roomId);
+        evictCache(CacheConfig.CACHE_ROOM_SETTINGS, roomId);
+        evictCache(CacheConfig.CACHE_MEMBERS, roomId);
 
         List<Scene> scenes = sceneRepository.findByRoomId(roomId);
         for (Scene scene : scenes) {
@@ -844,6 +879,14 @@ public class RoomService {
         });
     }
 
+    private void evictCache(String cacheName, Object key) {
+        if (cacheManager == null || key == null) return;
+        Cache cache = cacheManager.getCache(cacheName);
+        if (cache != null) {
+            cache.evict(key);
+        }
+    }
+
     private String generateRandomCode() {
         return UUID.randomUUID().toString().substring(0, 6).toUpperCase();
     }
@@ -856,9 +899,13 @@ public class RoomService {
     }
 
     private RoomResponse convertToResponseFast(Room room, User currentUser, RoomMember member, PlayerPermission permissions, int playerCount) {
-        LocalDateTime createdAt = room.getCreatedAt() != null ? room.getCreatedAt() : LocalDateTime.now();
+        LocalDateTime baseActiveTime = room.getLastActive() != null
+                ? room.getLastActive()
+                : (room.getCreatedAt() != null ? room.getCreatedAt() : LocalDateTime.now());
         int expireDays = room.getExpireDays() != null ? room.getExpireDays() : 30;
-        LocalDateTime expiresAt = createdAt.plusDays(expireDays);
+        LocalDateTime expiresAt = room.getExpiresAt() != null
+                ? room.getExpiresAt()
+                : baseActiveTime.plusDays(expireDays);
 
         boolean isOwner = room.getOwner() != null && (
                 room.getOwner().getId().equals(currentUser.getId()) ||
@@ -883,6 +930,7 @@ public class RoomService {
                     .canDrawing(true)
                     .canScene(true)
                     .canRuler(true)
+                    .canEditToken(true)
                     .build();
         } else if (permissions != null) {
             permissionsDto = RoomResponse.UserPermissionDto.builder()
@@ -892,6 +940,7 @@ public class RoomService {
                     .canDrawing(Boolean.TRUE.equals(permissions.getCanDrawing()))
                     .canScene(Boolean.TRUE.equals(permissions.getCanScene()))
                     .canRuler(Boolean.TRUE.equals(permissions.getCanRuler()))
+                    .canEditToken(Boolean.TRUE.equals(permissions.getCanEditToken()))
                     .build();
         } else {
             permissionsDto = RoomResponse.UserPermissionDto.builder()
@@ -901,6 +950,7 @@ public class RoomService {
                     .canDrawing(false)
                     .canScene(false)
                     .canRuler(true)
+                    .canEditToken(false)
                     .build();
         }
 

@@ -133,6 +133,62 @@ public class TokenService {
     }
 
     @Transactional
+    public void deleteTokenWithAuth(UUID tokenId, String userEmail) {
+        Token token = tokenRepository.findById(tokenId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "توکن یافت نشد"));
+
+        Room room = token.getScene() != null ? token.getScene().getRoom() : null;
+        if (room == null) {
+            tokenRepository.delete(token);
+            return;
+        }
+
+        boolean isGM = room.getOwner() != null && room.getOwner().getEmail().equalsIgnoreCase(userEmail);
+        boolean isOwner = false;
+
+        if (!isGM && userEmail != null) {
+            var memberOpt = roomMemberRepository.findByRoomIdAndUserEmail(room.getId(), userEmail);
+            if (memberOpt.isPresent()) {
+                RoomMember member = memberOpt.get();
+                isGM = member.getRole() == RoomMember.Role.ADMIN || member.getRole() == RoomMember.Role.GM;
+                String uid = member.getUser() != null ? member.getUser().getId().toString() : "";
+                String uName = member.getUser() != null ? member.getUser().getUsername() : "";
+
+                isOwner = (!uid.isEmpty() && uid.equalsIgnoreCase(token.getControlledBy())) ||
+                        (!uName.isEmpty() && uName.equalsIgnoreCase(token.getControlledBy())) ||
+                        userEmail.equalsIgnoreCase(token.getControlledBy());
+            }
+        }
+
+        if (!isGM && !isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "اجازه حذف این توکن را ندارید");
+        }
+
+        tokenRepository.delete(token);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TokenResponse> getTokensBySceneWithAuth(UUID sceneId, String userEmail) {
+        Scene scene = sceneRepository.findById(sceneId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "صحنه یافت نشد"));
+
+        Room room = scene.getRoom();
+        boolean isGM = room.getOwner() != null && room.getOwner().getEmail().equalsIgnoreCase(userEmail);
+
+        if (!isGM) {
+            RoomMember member = roomMemberRepository.findByRoomIdAndUserEmail(room.getId(), userEmail)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "شما عضو این اتاق نیستید"));
+            isGM = member.getRole() == RoomMember.Role.ADMIN || member.getRole() == RoomMember.Role.GM;
+        }
+
+        final boolean finalIsGM = isGM;
+        return tokenRepository.findBySceneId(sceneId).stream()
+                .filter(t -> finalIsGM || !Boolean.TRUE.equals(t.getIsHidden()))
+                .map(t -> convertToResponse(t, finalIsGM))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
     public void updateTokenFromEvent(TokenMoveEvent data, String userEmail, UUID roomId) {
         if (data == null || data.getTokenId() == null) return;
 
@@ -177,8 +233,8 @@ public class TokenService {
                 }
             }
 
-            if (!isGM && !isOwner) {
-                log.warn("Token update rejected: User {} is not GM or Owner of token {}", userEmail, tokenId);
+            if (!isGM && !isOwner && !hasEditTokenPermission) {
+                log.warn("Token update rejected: User {} lacks permission on token {}", userEmail, tokenId);
                 return;
             }
 

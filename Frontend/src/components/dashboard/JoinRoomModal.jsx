@@ -9,6 +9,45 @@ import { Button } from "../ui/Button.jsx";
 import { Input } from "../ui/Input.jsx";
 import { roomApi } from "../../api/room.api";
 
+const PERSIAN_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
+const ARABIC_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+
+// نگاشت هوشمند کلیدهای کیبورد فارسی به حروف انگلیسی متناظر (در صورت فراموشی تغییر زبان)
+const FA_TO_EN_KEYBOARD_MAP = Object.freeze({
+  'ض': 'Q', 'ص': 'W', 'ث': 'E', 'ق': 'R', 'ف': 'T', 'غ': 'Y', 'ع': 'U', 'ه': 'I', 'خ': 'O', 'ح': 'P',
+  'ش': 'A', 'س': 'S', 'ی': 'D', 'ب': 'F', 'ل': 'G', 'ا': 'H', 'ت': 'J', 'ن': 'K', 'م': 'L',
+  'ظ': 'Z', 'ط': 'X', 'ز': 'C', 'ر': 'V', 'ذ': 'B', 'د': 'N', 'پ': 'M', 'ک': 'K', 'گ': 'G',
+  'و': 'V', 'ژ': 'C', 'آ': 'H', 'ي': 'D', 'ك': 'K',
+});
+
+// تبدیل درلحظه هرگونه ورودی فارسی/عربی به کد انگلیسی استاندارد
+const normalizeRoomCode = (rawInput = "") => {
+  let result = "";
+  for (const char of String(rawInput || "")) {
+    const faIndex = PERSIAN_DIGITS.indexOf(char);
+    if (faIndex !== -1) {
+      result += faIndex;
+      continue;
+    }
+
+    const arIndex = ARABIC_DIGITS.indexOf(char);
+    if (arIndex !== -1) {
+      result += arIndex;
+      continue;
+    }
+
+    if (FA_TO_EN_KEYBOARD_MAP[char]) {
+      result += FA_TO_EN_KEYBOARD_MAP[char];
+      continue;
+    }
+
+    if (/[a-zA-Z0-9]/.test(char)) {
+      result += char.toUpperCase();
+    }
+  }
+  return result.slice(0, 6);
+};
+
 const joinRoomSchema = z.object({
   code: z.string().length(6, "کد اتاق باید دقیقاً ۶ کاراکتر باشد").toUpperCase(),
   password: z.string().optional(),
@@ -42,8 +81,9 @@ export const JoinRoomModal = memo(({ isOpen, onClose }) => {
 
   const onSubmit = async (data) => {
     setServerError("");
+    const cleanedCode = normalizeRoomCode(data.code);
     try {
-      const res = await roomApi.joinRoom(data.code, data.password || null);
+      const res = await roomApi.joinRoom(cleanedCode, data.password || null);
       handleClose();
       navigate(`/room/${res.roomId || res.id}`);
     } catch (err) {
@@ -67,15 +107,16 @@ export const JoinRoomModal = memo(({ isOpen, onClose }) => {
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5 font-fa" dir="rtl">
           <Input
-              label="کد ۶ حرفی اتاق بازی"
-              placeholder="مثلا: OWL772"
+              label="کد ۶ حرفی اتاق بازی (پشتیبانی از اعداد فارسی و انگلیسی)"
+              placeholder="مثلا: OWL772 یا ۷۵B4EE"
               error={errors.code?.message}
               disabled={isSubmitting}
+              dir="ltr"
               className="uppercase font-mono text-center tracking-widest text-base font-bold h-11"
               {...register("code", {
                 onChange: (e) => {
-                  const cleaned = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
-                  setValue("code", cleaned);
+                  const cleaned = normalizeRoomCode(e.target.value);
+                  setValue("code", cleaned, { shouldValidate: true });
                 },
               })}
           />

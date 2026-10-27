@@ -30,8 +30,13 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    @Value("${jwt.expiration:900000}")
+    // پیش‌فرض: ۲۴ ساعت (برای جلوگیری از قطع شدن نشست در کمپین‌های طولانی)
+    @Value("${jwt.expiration:86400000}")
     private long jwtExpirationMs;
+
+    // پیش‌فرض رفرش توکن: ۳۰ روز
+    @Value("${jwt.refresh-expiration:2592000000}")
+    private long refreshExpirationMs;
 
     private SecretKey cachedSignInKey;
 
@@ -56,9 +61,20 @@ public class JwtService {
     }
 
     /**
-     * Issues signed JWT containing standard audience, issuer, and claim properties.
+     * Issues signed access JWT containing standard audience, issuer, and claim properties.
      */
     public String generateToken(User user) {
+        return buildToken(user, jwtExpirationMs, "ACCESS");
+    }
+
+    /**
+     * Issues signed long-lived refresh JWT for seamless token rotation.
+     */
+    public String generateRefreshToken(User user) {
+        return buildToken(user, refreshExpirationMs, "REFRESH");
+    }
+
+    private String buildToken(User user, long expirationMs, String tokenType) {
         String userIdStr = user.getId() != null ? user.getId().toString() : "";
         long now = System.currentTimeMillis();
 
@@ -70,11 +86,16 @@ public class JwtService {
                 .claim("username", user.getUsername())
                 .claim("email", user.getEmail())
                 .claim("avatarUrl", user.getAvatarUrl() != null ? user.getAvatarUrl() : "")
+                .claim("type", tokenType)
                 .issuedAt(new Date(now))
                 .notBefore(new Date(now - 1000))
-                .expiration(new Date(now + jwtExpirationMs))
+                .expiration(new Date(now + expirationMs))
                 .signWith(getSignInKey(), Jwts.SIG.HS256)
                 .compact();
+    }
+
+    public long getRefreshExpirationSeconds() {
+        return refreshExpirationMs / 1000L;
     }
 
     public String extractEmail(String token) {

@@ -21,14 +21,23 @@ export const useAuthStore = create((set) => ({
 
   setAuth: (user, token) => {
     if (token) localStorage.setItem("vtt_jwt", token);
-    if (user) localStorage.setItem("vtt_user", JSON.stringify(user));
+    if (user) {
+      // ادغام داده‌ها تا فیلدهای آواتار اختصاصی RPG در صورت ارسال کلیم‌های جزئی حفظ شوند
+      const existing = getInitialUser();
+      const mergedUser = existing ? { ...existing, ...user } : user;
+      localStorage.setItem("vtt_user", JSON.stringify(mergedUser));
+      set({ user: mergedUser, token, isAuthenticated: true });
+      return;
+    }
     set({ user, token, isAuthenticated: true });
   },
 
   updateUser: (updatedFields) => {
     set((state) => {
       const nextUser = state.user ? { ...state.user, ...updatedFields } : updatedFields;
-      if (nextUser) localStorage.setItem("vtt_user", JSON.stringify(nextUser));
+      if (nextUser) {
+        localStorage.setItem("vtt_user", JSON.stringify(nextUser));
+      }
       return { user: nextUser };
     });
   },
@@ -37,7 +46,7 @@ export const useAuthStore = create((set) => ({
     try {
       await authApi.logout();
     } catch {
-      // در صورت خطا یا قطعی شبکه، کلاینت در هر صورت باید وضعیت محلی را باطل کند
+      // در صورت قطعی شبکه کلاینت در هر صورت وضعیت محلی را پاک می‌کند
     } finally {
       localStorage.removeItem("vtt_jwt");
       localStorage.removeItem("vtt_user");

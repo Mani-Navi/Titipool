@@ -1,22 +1,25 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { DiceCanvas } from './DiceCanvas';
 import { useDiceStore } from '../state/dice.store';
 import { DICE_THEMES } from '../engine/textureGenerator';
 import { diceAudio } from '../engine/diceAudio';
-import { RotateCcw, X, Trash2, Dices, Zap, User, Sparkles } from 'lucide-react';
+import { RotateCcw, X, Trash2, Dices, Zap, User, Sparkles, Coins, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 
-const DICE_TYPES = Object.freeze([
+const ALL_DICE_BUTTONS = Object.freeze([
+    { type: 'd2', label: 'D2 سکه', maxVal: 2, icon: Coins },
     { type: 'd4', label: 'D4', maxVal: 4 },
     { type: 'd6', label: 'D6', maxVal: 6 },
+    { type: 'fudge', label: 'Fudge', maxVal: 1 },
     { type: 'd8', label: 'D8', maxVal: 8 },
     { type: 'd10', label: 'D10', maxVal: 9 },
     { type: 'd12', label: 'D12', maxVal: 12 },
     { type: 'd20', label: 'D20', maxVal: 20 },
     { type: 'd100', label: 'D100', maxVal: 100 },
+    { type: 'd1000', label: 'D1000', maxVal: 900 },
 ]);
 
-export function DiceOverlay() {
+export const DiceOverlay = memo(() => {
     const isOpen = useDiceStore((s) => s.isOpen);
     const isRolling = useDiceStore((s) => s.isRolling);
     const results = useDiceStore((s) => s.results);
@@ -31,14 +34,15 @@ export function DiceOverlay() {
     const setSelectedTheme = useDiceStore((s) => s.setSelectedTheme);
 
     const [mode, setMode] = useState('quick');
-    const [poolCounts, setPoolCounts] = useState({});
-    const [lastRollTypes, setLastRollTypes] = useState(['d20']);
+    const [dicePool, setDicePool] = useState([]);
+    const [lastRollSpecs, setLastRollSpecs] = useState([{ type: 'd20', theme: selectedTheme }]);
+    const [isMenuOpen, setIsMenuOpen] = useState(true);
     const playedCritAudioRef = useRef(false);
 
     const isAnyCritical = useMemo(() => {
         if (results.length === 0 || isRolling) return false;
         return results.some((r) => {
-            const config = DICE_TYPES.find((d) => d.type === r.type);
+            const config = ALL_DICE_BUTTONS.find((d) => d.type === r.type);
             if (!config) return false;
             if (r.type === 'd10') return r.value === 0 || r.value === 9;
             return r.value === config.maxVal;
@@ -56,64 +60,81 @@ export function DiceOverlay() {
     }, [isAnyCritical, isRolling]);
 
     const handleQuickRoll = useCallback((type) => {
-        const diceToRoll = type === 'd100' ? ['d100', 'd10'] : [type];
-        setLastRollTypes(diceToRoll);
-        triggerRoll(diceToRoll);
-    }, [triggerRoll]);
+        let specs = [];
+        if (type === 'd100') {
+            specs = [
+                { type: 'd100', theme: selectedTheme },
+                { type: 'd10', theme: selectedTheme },
+            ];
+        } else {
+            specs = [{ type, theme: selectedTheme }];
+        }
+        setLastRollSpecs(specs);
+        triggerRoll(specs);
+    }, [selectedTheme, triggerRoll]);
 
-    const handleAddToPool = useCallback((type) => {
-        setPoolCounts((prev) => ({
+    const handleAddDieToPool = useCallback((type) => {
+        setDicePool((prev) => [
             ...prev,
-            [type]: (prev[type] || 0) + 1,
-        }));
-    }, []);
+            {
+                id: `pool-item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                type,
+                theme: selectedTheme,
+            },
+        ]);
+    }, [selectedTheme]);
 
-    const handleRemoveFromPool = useCallback((type, e) => {
+    const handleRemoveDieFromPool = useCallback((index, e) => {
         e.stopPropagation();
-        setPoolCounts((prev) => {
-            const current = prev[type] || 0;
-            if (current <= 1) {
-                const next = { ...prev };
-                delete next[type];
-                return next;
-            }
-            return { ...prev, [type]: current - 1 };
-        });
+        setDicePool((prev) => prev.filter((_, i) => i !== index));
     }, []);
 
     const handleClearPool = useCallback(() => {
-        setPoolCounts({});
+        setDicePool([]);
     }, []);
 
     const handleRollPool = useCallback(() => {
-        const diceToRoll = [];
-        Object.entries(poolCounts).forEach(([type, count]) => {
-            for (let i = 0; i < count; i++) {
-                if (type === 'd100') {
-                    diceToRoll.push('d100', 'd10');
-                } else {
-                    diceToRoll.push(type);
-                }
+        if (dicePool.length === 0) return;
+
+        const expandedPool = [];
+        for (let i = 0; i < dicePool.length; i++) {
+            const item = dicePool[i];
+            if (item.type === 'd100') {
+                expandedPool.push(
+                    { type: 'd100', theme: item.theme },
+                    { type: 'd10', theme: item.theme }
+                );
+            } else {
+                expandedPool.push({ type: item.type, theme: item.theme });
             }
-        });
+        }
 
-        if (diceToRoll.length === 0) return;
-
-        setLastRollTypes(diceToRoll);
-        triggerRoll(diceToRoll);
-    }, [poolCounts, triggerRoll]);
-
-    const totalPoolDiceCount = useMemo(() => {
-        return Object.values(poolCounts).reduce((a, b) => a + b, 0);
-    }, [poolCounts]);
+        setLastRollSpecs(expandedPool);
+        triggerRoll(expandedPool);
+    }, [dicePool, triggerRoll]);
 
     const handleReRoll = useCallback(() => {
-        if (lastRollTypes.length > 0) {
-            triggerRoll(lastRollTypes);
+        if (lastRollSpecs.length > 0) {
+            triggerRoll(lastRollSpecs);
         } else {
-            triggerRoll(['d20']);
+            triggerRoll([{ type: 'd20', theme: selectedTheme }]);
         }
-    }, [lastRollTypes, triggerRoll]);
+    }, [lastRollSpecs, selectedTheme, triggerRoll]);
+
+    const formatDieDisplayValue = (r) => {
+        if (r.type === 'd2') {
+            return r.value === 1 ? '1' : '2';
+        }
+        if (r.type === 'fudge') {
+            if (r.value > 0) return '+';
+            if (r.value < 0) return '−';
+            return '0';
+        }
+        if (r.type === 'd1000') {
+            return String(r.value).padStart(3, '0');
+        }
+        return r.value;
+    };
 
     if (!isOpen && activeDiceLength === 0) return null;
 
@@ -124,230 +145,292 @@ export function DiceOverlay() {
             </div>
 
             {results.length > 0 && (
-                <div className="absolute top-14 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-1.5 animate-fade-in-up">
+                <div className="absolute top-12 sm:top-14 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-1.5 max-w-[95vw] sm:max-w-2xl w-auto animate-fade-in-up">
                     <div
                         className={cn(
-                            "flex items-center gap-3.5 px-5 py-2.5 rounded-2xl backdrop-blur-2xl transition-all duration-300 shadow-2xl",
+                            "flex flex-col gap-2.5 p-3.5 sm:p-4 rounded-3xl backdrop-blur-2xl transition-all duration-300 shadow-2xl w-full border",
                             isAnyCritical
-                                ? "bg-gradient-to-r from-amber-950/90 via-zinc-950/95 to-amber-950/90 border-2 border-amber-400 shadow-[0_0_35px_rgba(245,158,11,0.45)] scale-105"
-                                : "bg-zinc-950/90 border border-amber-500/30 shadow-[0_10px_35px_rgba(0,0,0,0.7)]"
+                                ? "bg-gradient-to-b from-amber-950/95 via-zinc-950/95 to-zinc-950/95 border-amber-400 shadow-[0_0_35px_rgba(245,158,11,0.45)]"
+                                : "bg-zinc-950/95 border-zinc-800 shadow-[0_12px_45px_rgba(0,0,0,0.8)]"
                         )}
                     >
-                        {isAnyCritical && (
-                            <div className="flex items-center gap-1 text-amber-300 text-xs font-black px-2.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400/50 animate-pulse shadow-sm">
-                                <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-spin" />
-                                <span>کریتیکال!</span>
+                        <div className="flex items-center justify-between gap-3 border-b border-zinc-800/80 pb-2">
+                            <div className="flex items-center gap-2">
+                                {isAnyCritical && (
+                                    <div className="flex items-center gap-1 text-amber-300 text-[11px] font-black px-2.5 py-0.5 rounded-lg bg-amber-500/20 border border-amber-400/50 animate-pulse">
+                                        <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-spin" />
+                                        <span>کریتیکال!</span>
+                                    </div>
+                                )}
+
+                                {isRemoteRoll && rollerName ? (
+                                    <div className="flex items-center gap-1 text-amber-300 text-xs font-bold">
+                                        <User className="w-3.5 h-3.5 text-amber-400" />
+                                        <span>{rollerName}:</span>
+                                    </div>
+                                ) : (
+                                    <span className="text-zinc-400 text-xs font-semibold">مجموع امتیاز:</span>
+                                )}
+
+                                <span
+                                    className={cn(
+                                        "text-2xl sm:text-3xl font-black font-mono tracking-tight",
+                                        isRolling
+                                            ? "text-zinc-500 animate-pulse"
+                                            : isAnyCritical
+                                                ? "text-amber-300 drop-shadow-[0_0_15px_rgba(252,211,77,0.85)]"
+                                                : "text-amber-400"
+                                    )}
+                                >
+                                    {totalSum}
+                                </span>
                             </div>
-                        )}
 
-                        {isRemoteRoll && rollerName ? (
-                            <div className="flex items-center gap-1.5 pl-3 border-l border-zinc-800 text-amber-300 text-xs font-bold">
-                                <User className="w-3.5 h-3.5 text-amber-400" />
-                                <span>{rollerName}:</span>
+                            <div className="flex items-center gap-1.5">
+                                {!isRemoteRoll && (
+                                    <button
+                                        type="button"
+                                        onClick={handleReRoll}
+                                        className="p-1.5 text-zinc-400 hover:text-amber-300 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
+                                        title="پرتاب مجدد"
+                                        aria-label="پرتاب مجدد"
+                                    >
+                                        <RotateCcw className="w-4 h-4" />
+                                    </button>
+                                )}
+
+                                <button
+                                    type="button"
+                                    onClick={() => clearDice()}
+                                    className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
+                                    title="بستن"
+                                    aria-label="بستن نتایج"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
                             </div>
-                        ) : (
-                            <span className="text-zinc-400 text-xs font-semibold">مجموع:</span>
-                        )}
+                        </div>
 
-                        <span
-                            className={cn(
-                                "text-3xl font-black font-mono tracking-tight transition-all",
-                                isRolling
-                                    ? "text-zinc-500 animate-pulse"
-                                    : isAnyCritical
-                                        ? "text-amber-300 text-4xl drop-shadow-[0_0_18px_rgba(252,211,77,0.85)] animate-bounce"
-                                        : "text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.35)]"
-                            )}
-                        >
-                            {totalSum}
-                        </span>
-
-                        <div className="flex items-center gap-1.5 border-r border-zinc-800/80 pr-3.5 mr-1">
-                            {results.map((r, i) => {
-                                const cfg = DICE_TYPES.find((d) => d.type === r.type);
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-[38vh] overflow-y-auto pr-1 custom-scrollbar">
+                            {results.map((r) => {
+                                const themeCfg = DICE_THEMES[r.theme] || DICE_THEMES.midnight;
+                                const cfg = ALL_DICE_BUTTONS.find((d) => d.type === r.type);
                                 const isCritDie = cfg && (r.value === cfg.maxVal || (r.type === 'd10' && r.value === 0));
 
                                 return (
-                                    <span
-                                        key={i}
+                                    <div
+                                        key={r.id}
+                                        dir="ltr"
                                         className={cn(
-                                            "text-xs px-2.5 py-1 rounded-xl font-mono font-bold shadow-inner transition-all",
+                                            "flex items-center justify-between px-3 py-2 rounded-2xl border transition-all select-none gap-2.5",
                                             isCritDie
-                                                ? "bg-amber-400 text-zinc-950 font-black border border-amber-200 shadow-[0_0_12px_rgba(251,191,36,0.8)] scale-110"
-                                                : "bg-zinc-900 border border-zinc-700/80 text-amber-200/90"
+                                                ? "bg-amber-500/20 border-amber-400 text-amber-200 shadow-[0_0_12px_rgba(251,191,36,0.3)] ring-1 ring-amber-400/40"
+                                                : "bg-zinc-900/90 border-zinc-800 text-zinc-200"
                                         )}
                                     >
-                                        {r.value}
-                                    </span>
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            <span
+                                                className="w-3 h-3 rounded-full border border-white/20 shrink-0 shadow-sm"
+                                                style={{ background: themeCfg.bgCenter }}
+                                                title={`تم: ${themeCfg.name}`}
+                                            />
+                                            <span className="font-mono font-bold text-[11px] text-zinc-400 uppercase tracking-wider bg-zinc-950/70 px-2 py-0.5 rounded-lg border border-zinc-800/80">
+                                                {r.type}
+                                            </span>
+                                        </div>
+
+                                        <span className="font-mono font-black text-base text-amber-400 shrink-0">
+                                            {formatDieDisplayValue(r)}
+                                        </span>
+                                    </div>
                                 );
                             })}
                         </div>
-
-                        {!isRemoteRoll && (
-                            <button
-                                type="button"
-                                onClick={handleReRoll}
-                                className="p-1.5 text-zinc-400 hover:text-amber-300 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
-                                title="پرتاب مجدد"
-                            >
-                                <RotateCcw className="w-4 h-4" />
-                            </button>
-                        )}
-
-                        {isRemoteRoll && (
-                            <button
-                                type="button"
-                                onClick={() => clearDice()}
-                                className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
-                                title="بستن"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        )}
                     </div>
                 </div>
             )}
 
             {isOpen && !isRemoteRoll && (
-                <div className="absolute bottom-20 sm:bottom-6 left-3 sm:left-6 pointer-events-auto flex flex-col gap-2 animate-fade-in-up">
-                    {mode === 'pool' && totalPoolDiceCount > 0 && (
-                        <div className="bg-zinc-950/95 border border-amber-500/30 p-2 rounded-2xl shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-3 animate-fade-in-up">
-                            <div className="flex items-center gap-1.5 flex-wrap max-w-xs">
-                                {Object.entries(poolCounts).map(([type, count]) => (
-                                    <button
-                                        key={type}
-                                        type="button"
-                                        onClick={(e) => handleRemoveFromPool(type, e)}
-                                        title="برای حذف کلیک کنید"
-                                        className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-zinc-900 border border-zinc-700 text-amber-300 text-xs font-mono font-bold hover:bg-rose-950/60 hover:border-rose-500/50 hover:text-rose-200 transition-all duration-150 active:scale-95 group cursor-pointer"
-                                    >
-                                        <span>{count}×</span>
-                                        <span className="uppercase">{type}</span>
-                                        <span className="text-[10px] text-zinc-500 group-hover:text-rose-300 mr-0.5">×</span>
-                                    </button>
-                                ))}
-                            </div>
+                <div className="absolute bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 sm:left-6 sm:translate-x-0 pointer-events-auto flex flex-col items-center sm:items-start gap-1.5 max-w-[96vw] sm:max-w-xl z-20 animate-fade-in-up">
+                    <button
+                        type="button"
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        className="px-3.5 py-1 rounded-full bg-zinc-950/90 hover:bg-zinc-900 border border-zinc-800 hover:border-amber-500/50 text-zinc-300 hover:text-amber-400 text-[10px] font-bold flex items-center gap-1.5 shadow-lg backdrop-blur-md active:scale-95 transition-all cursor-pointer"
+                    >
+                        <span>{isMenuOpen ? 'بستن منو' : 'باز کردن منوی تاس'}</span>
+                        {isMenuOpen ? <ChevronDown className="w-3.5 h-3.5 text-amber-400" /> : <ChevronUp className="w-3.5 h-3.5 text-amber-400" />}
+                    </button>
 
-                            <div className="flex items-center gap-1.5">
-                                <button
-                                    type="button"
-                                    onClick={handleClearPool}
-                                    className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
-                                    title="پاکسازی استخر"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                    {isMenuOpen && (
+                        <div className="flex flex-col gap-2 w-full animate-fade-in-up">
+                            {mode === 'pool' && dicePool.length > 0 && (
+                                <div className="bg-zinc-950/95 border border-amber-500/30 p-2 sm:p-2.5 rounded-2xl shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-3 w-full animate-fade-in-up">
+                                    <div className="flex items-center gap-1.5 flex-wrap overflow-x-auto max-h-24 pr-1 custom-scrollbar" dir="ltr">
+                                        {dicePool.map((item, idx) => {
+                                            const tCfg = DICE_THEMES[item.theme] || DICE_THEMES.midnight;
+                                            return (
+                                                <button
+                                                    key={item.id}
+                                                    type="button"
+                                                    dir="ltr"
+                                                    onClick={(e) => handleRemoveDieFromPool(idx, e)}
+                                                    title="کلیک برای حذف از استخر"
+                                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-rose-500 text-zinc-200 hover:text-rose-300 text-xs font-mono font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                                >
+                                                    <span
+                                                        className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
+                                                        style={{ background: tCfg.bgCenter }}
+                                                    />
+                                                    <span className="uppercase text-[11px] tracking-wide text-zinc-300">
+                                                        {item.type}
+                                                    </span>
+                                                    <span className="text-[10px] text-zinc-500 font-sans ml-0.5">×</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
 
-                                <button
-                                    type="button"
-                                    onClick={handleRollPool}
-                                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black text-xs shadow-md shadow-amber-500/20 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
-                                >
-                                    <Dices className="w-3.5 h-3.5" />
-                                    <span>پرتاب ({totalPoolDiceCount})</span>
-                                </button>
+                                    <div className="flex items-center gap-2 shrink-0 border-r border-zinc-800/80 pr-2.5 mr-0.5">
+                                        <button
+                                            type="button"
+                                            onClick={handleClearPool}
+                                            className="p-2 text-zinc-400 hover:text-rose-400 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
+                                            title="پاکسازی تمام استخر"
+                                            aria-label="پاکسازی تمام استخر"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleRollPool}
+                                            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 text-zinc-950 font-black text-xs shadow-lg shadow-amber-500/25 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer border border-amber-300"
+                                        >
+                                            <Dices className="w-4 h-4" />
+                                            <span>پرتاب ({dicePool.length})</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="w-full bg-zinc-950/95 border border-zinc-800/90 p-2 sm:p-2.5 rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.85)] backdrop-blur-2xl flex flex-col gap-2.5">
+                                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5" dir="ltr">
+                                    {ALL_DICE_BUTTONS.map((d) => {
+                                        const inPoolCount = dicePool.filter((item) => item.type === d.type).length;
+                                        const IconComp = d.icon;
+
+                                        return (
+                                            <button
+                                                key={d.type}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (mode === 'quick') {
+                                                        handleQuickRoll(d.type);
+                                                    } else {
+                                                        handleAddDieToPool(d.type);
+                                                    }
+                                                }}
+                                                aria-label={`تاس ${d.label}`}
+                                                className="relative py-2 px-2.5 sm:px-3 rounded-2xl bg-zinc-900/90 hover:bg-zinc-850 border border-zinc-800 hover:border-amber-500/50 text-amber-300 font-mono text-[11px] sm:text-xs font-bold transition-all shrink-0 active:scale-90 cursor-pointer flex items-center gap-1 shadow-sm"
+                                            >
+                                                <span>{d.label}</span>
+                                                {IconComp && <IconComp className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                                                {mode === 'pool' && inPoolCount > 0 && (
+                                                    <span className="w-3.5 h-3.5 bg-amber-500 text-zinc-950 text-[9px] font-sans font-black rounded-full flex items-center justify-center -mr-1 shadow-sm">
+                                                        {inPoolCount}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="flex items-center justify-between pt-0.5 px-1" dir="ltr">
+                                    <div className="flex items-center gap-1.5 bg-zinc-900/90 p-1 rounded-2xl border border-zinc-800/80">
+                                        {Object.values(DICE_THEMES).map((t) => (
+                                            <button
+                                                key={t.id}
+                                                type="button"
+                                                onClick={() => setSelectedTheme(t.id)}
+                                                title={`تم ${t.name}`}
+                                                aria-label={`انتخاب تم ${t.name}`}
+                                                className={cn(
+                                                    "w-5 h-5 rounded-full transition-all duration-150 relative cursor-pointer active:scale-75",
+                                                    selectedTheme === t.id
+                                                        ? "ring-2 ring-amber-400 scale-110 shadow-[0_0_10px_rgba(251,191,36,0.6)] z-10"
+                                                        : "opacity-60 hover:opacity-100"
+                                                )}
+                                                style={{
+                                                    background: `linear-gradient(135deg, ${t.bgCenter} 0%, ${t.bgEdge} 100%)`,
+                                                    border: `1.5px solid ${t.borderColor || '#ca8a04'}`,
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="flex items-center bg-zinc-900/90 p-0.5 rounded-xl border border-zinc-800">
+                                            <button
+                                                type="button"
+                                                onClick={() => setMode('quick')}
+                                                aria-label="پرتاب سریع تکی"
+                                                className={cn(
+                                                    "p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer active:scale-95",
+                                                    mode === 'quick' ? "bg-amber-500 text-zinc-950 shadow-sm" : "text-zinc-400 hover:text-zinc-200"
+                                                )}
+                                                title="پرتاب سریع تکی"
+                                            >
+                                                <Zap className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setMode('pool')}
+                                                aria-label="پرتاب استخر چندتایی"
+                                                className={cn(
+                                                    "p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer active:scale-95",
+                                                    mode === 'pool' ? "bg-amber-500 text-zinc-950 shadow-sm" : "text-zinc-400 hover:text-zinc-200"
+                                                )}
+                                                title="استخر پرتاب همزمان چند تاس"
+                                            >
+                                                <Dices className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                clearDice();
+                                                setDicePool([]);
+                                            }}
+                                            className="p-2 text-zinc-400 hover:text-rose-400 rounded-xl bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700 active:scale-90 transition-all cursor-pointer"
+                                            title="پاکسازی میز"
+                                            aria-label="پاکسازی میز"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                clearDice();
+                                                setOpen(false);
+                                            }}
+                                            className="p-2 text-zinc-400 hover:text-rose-400 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
+                                            title="بستن داک"
+                                            aria-label="بستن داک"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
-
-                    <div className="flex items-center gap-1.5 bg-zinc-950/90 border border-zinc-800/80 p-1.5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.7)] backdrop-blur-2xl">
-                        <div className="flex items-center gap-1 bg-zinc-900/80 p-1 rounded-xl border border-zinc-800/80 ml-1">
-                            {Object.values(DICE_THEMES).map((t) => (
-                                <button
-                                    key={t.id}
-                                    type="button"
-                                    onClick={() => setSelectedTheme(t.id)}
-                                    title={t.name}
-                                    className={cn(
-                                        "w-5 h-5 rounded-full transition-all duration-150 relative cursor-pointer active:scale-90",
-                                        selectedTheme === t.id
-                                            ? "ring-2 ring-amber-400 scale-110 shadow-[0_0_8px_rgba(251,191,36,0.6)] z-10"
-                                            : "opacity-70 hover:opacity-100 hover:scale-105"
-                                    )}
-                                    style={{
-                                        background: `linear-gradient(135deg, ${t.bgCenter} 0%, ${t.bgEdge} 100%)`,
-                                        border: `1.5px solid ${t.borderColor || '#ca8a04'}`,
-                                    }}
-                                />
-                            ))}
-                        </div>
-
-                        <div className="w-px h-5 bg-zinc-800/80 mx-0.5" />
-
-                        <div className="flex items-center bg-zinc-900/80 p-0.5 rounded-xl border border-zinc-800/80 ml-1">
-                            <button
-                                type="button"
-                                onClick={() => setMode('quick')}
-                                className={cn(
-                                    "p-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95",
-                                    mode === 'quick'
-                                        ? "bg-amber-500 text-zinc-950 shadow-sm"
-                                        : "text-zinc-400 hover:text-zinc-200"
-                                )}
-                                title="پرتاب سریع (تکی)"
-                            >
-                                <Zap className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setMode('pool')}
-                                className={cn(
-                                    "p-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95",
-                                    mode === 'pool'
-                                        ? "bg-amber-500 text-zinc-950 shadow-sm"
-                                        : "text-zinc-400 hover:text-zinc-200"
-                                )}
-                                title="حالت استخر (چندتایی)"
-                            >
-                                <Dices className="w-3.5 h-3.5" />
-                            </button>
-                        </div>
-
-                        <div className="w-px h-5 bg-zinc-800/80 mx-0.5" />
-
-                        {DICE_TYPES.map((d) => {
-                            const inPoolCount = poolCounts[d.type] || 0;
-                            return (
-                                <button
-                                    key={d.type}
-                                    type="button"
-                                    onClick={() => {
-                                        if (mode === 'quick') {
-                                            handleQuickRoll(d.type);
-                                        } else {
-                                            handleAddToPool(d.type);
-                                        }
-                                    }}
-                                    className="relative px-2.5 py-1.5 rounded-xl bg-zinc-900/60 hover:bg-zinc-800/90 border border-zinc-800 hover:border-amber-500/50 text-amber-200/90 font-mono text-xs font-bold transition-all duration-150 active:scale-95 cursor-pointer shadow-sm"
-                                >
-                                    <span>{d.label}</span>
-                                    {mode === 'pool' && inPoolCount > 0 && (
-                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-zinc-950 text-[10px] font-sans font-black rounded-full flex items-center justify-center shadow-md animate-fade-in-up">
-                                            {inPoolCount}
-                                        </span>
-                                    )}
-                                </button>
-                            );
-                        })}
-
-                        <div className="w-px h-5 bg-zinc-800/80 mx-0.5" />
-
-                        <button
-                            type="button"
-                            onClick={() => {
-                                clearDice();
-                                setOpen(false);
-                            }}
-                            className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
-                            title="بستن منو و پاکسازی تاس‌ها"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
-                    </div>
                 </div>
             )}
         </div>
     );
-}
+});
 
+DiceOverlay.displayName = "DiceOverlay";
 export default DiceOverlay;

@@ -13,8 +13,6 @@ const VELOCITY_THRESHOLD = 0.08;
 const ANGULAR_THRESHOLD = 0.12;
 const REQUIRED_STABLE_FRAMES = 25;
 
-const DRAG_PLANE = new THREE.Plane(new THREE.Vector3(0, 1, 0), -2.6);
-
 export function Die({
                         id,
                         type,
@@ -23,6 +21,7 @@ export function Die({
                         initialRotation,
                         initialLinearVelocity,
                         initialAngularVelocity,
+                        overlayMode = false,
                     }) {
     const rigidBodyRef = useRef(null);
     const { viewport } = useThree();
@@ -33,6 +32,11 @@ export function Die({
     const remoteReThrow = useDiceStore((s) => s.remoteReThrow);
     const settledTransforms = useDiceStore((s) => s.settledTransforms);
 
+    // در اتاق اندازه کوچک محبوب (ضریب ۱.۰) و در لندینگ پیج اندازه بزرگ (ضریب ۱.۳۸)
+    const scaleFactor = overlayMode ? 1.0 : 1.38;
+    const dragY = overlayMode ? 2.6 : 3.4;
+    const dragPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), -dragY), [dragY]);
+
     const stableFrameCounter = useRef(0);
     const isSettledRef = useRef(false);
     const spawnTimeRef = useRef(Date.now());
@@ -40,11 +44,9 @@ export function Die({
     const isDraggingRef = useRef(false);
     const dragHistoryRef = useRef([]);
 
-    // محدوده امن حرکتی ماوس برای تاس‌های جدید کوچک‌تر
-    const safeLimitX = Math.max((viewport.width / 2) - 1.2, 1.8);
-    const safeLimitZ = Math.max((viewport.height / 2) - 1.2, 1.8);
+    const safeLimitX = Math.max((viewport.width / 2) - (overlayMode ? 1.2 : 1.8), 1.8);
+    const safeLimitZ = Math.max((viewport.height / 2) - (overlayMode ? 1.2 : 1.8), 1.8);
 
-    // همگام‌سازی دوران و موقعیت قطعی دریافتی از پرتاب‌کننده
     useEffect(() => {
         if (!isRemoteRoll || !settledTransforms?.[id] || !rigidBodyRef.current) return;
 
@@ -56,7 +58,6 @@ export function Die({
         isSettledRef.current = true;
     }, [settledTransforms, id, isRemoteRoll]);
 
-    // پرتاب مجدد دست
     useEffect(() => {
         if (!remoteReThrow || remoteReThrow.dieId !== id || !rigidBodyRef.current) return;
 
@@ -72,11 +73,28 @@ export function Die({
 
     const { geometry, materials } = useMemo(() => {
         const geom = config.createGeometry();
+
+        // مقیاس‌گذاری مستقیم بافر ورتکس‌ها جهت تطابق ۱۰۰٪ کلایدر فیزیک Rapier و مش سه‌بعدی
+        if (scaleFactor !== 1.0) {
+            geom.scale(scaleFactor, scaleFactor, scaleFactor);
+        }
+
         const faceValues = config.faces.map((f) => f.value);
 
-        if (type === 'd6') {
-            const d6Order = [3, 4, 6, 1, 5, 2];
-            const mats = createMaterialsForType('d6', d6Order, theme);
+        if (type === 'd2') {
+            const matTop = createMaterialsForType('d2', [1], theme)[0];
+            const matBottom = createMaterialsForType('d2', [2], theme)[0];
+            const matRim = new THREE.MeshStandardMaterial({
+                color: theme === 'ivory' ? 0x78350f : 0xeab308,
+                metalness: 0.85,
+                roughness: 0.25,
+            });
+            return { geometry: geom, materials: [matTop, matBottom, matRim] };
+        }
+
+        if (type === 'd6' || type === 'fudge') {
+            const d6Order = type === 'fudge' ? [1, -1, 1, -1, 0, 0] : [3, 4, 6, 1, 5, 2];
+            const mats = createMaterialsForType(type, d6Order, theme);
             return { geometry: geom, materials: mats };
         }
 
@@ -84,7 +102,7 @@ export function Die({
         geom.clearGroups();
 
         const trianglesPerFace =
-            type === 'd10' || type === 'd100' ? 2 : type === 'd12' ? 3 : 1;
+            type === 'd10' || type === 'd100' || type === 'd1000' ? 2 : type === 'd12' ? 3 : 1;
 
         for (let i = 0; i < faceCount; i++) {
             geom.addGroup(i * trianglesPerFace * 3, trianglesPerFace * 3, i);
@@ -104,9 +122,8 @@ export function Die({
 
         const mats = createMaterialsForType(type, faceValues, theme);
         return { geometry: geom, materials: mats };
-    }, [type, config, theme]);
+    }, [type, config, theme, scaleFactor]);
 
-    // پاکسازی کامل ژئومتری و متریال در هنگام خروج تاس از صحنه جهت دفع نشت حافظه وب‌جی‌ال
     useEffect(() => {
         return () => {
             geometry.dispose();
@@ -137,7 +154,7 @@ export function Die({
         const targetVector = type === 'd4' ? DOWN_VECTOR : UP_VECTOR;
 
         let maxDot = -Infinity;
-        let winningValue = null;
+        let winningFace = null;
 
         for (const face of config.faces) {
             const worldNormal = face.normal.clone().applyQuaternion(quat);
@@ -145,7 +162,7 @@ export function Die({
 
             if (dot > maxDot) {
                 maxDot = dot;
-                winningValue = face.value;
+                winningFace = face;
             }
         }
 
@@ -161,7 +178,7 @@ export function Die({
         if (!isRemoteRoll) {
             const pos = rigidBodyRef.current.translation();
             const rot = rigidBodyRef.current.rotation();
-            setDieResult(id, winningValue, {
+            setDieResult(id, winningFace.value, {
                 position: { x: pos.x, y: pos.y, z: pos.z },
                 rotation: { x: rot.x, y: rot.y, z: rot.z, w: rot.w },
             });
@@ -219,12 +236,12 @@ export function Die({
         e.stopPropagation();
 
         const targetPoint = new THREE.Vector3();
-        if (e.ray && e.ray.intersectPlane(DRAG_PLANE, targetPoint)) {
+        if (e.ray && e.ray.intersectPlane(dragPlane, targetPoint)) {
             const clampedX = THREE.MathUtils.clamp(targetPoint.x, -safeLimitX, safeLimitX);
             const clampedZ = THREE.MathUtils.clamp(targetPoint.z, -safeLimitZ, safeLimitZ);
 
             rigidBodyRef.current.setTranslation(
-                { x: clampedX, y: 2.6, z: clampedZ },
+                { x: clampedX, y: dragY, z: clampedZ },
                 true
             );
 
@@ -286,7 +303,7 @@ export function Die({
 
         broadcastReThrow(
             id,
-            { x: lastPos.x, y: 2.6, z: lastPos.z },
+            { x: lastPos.x, y: dragY, z: lastPos.z },
             finalVelocity,
             finalAngvel
         );

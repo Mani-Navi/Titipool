@@ -91,7 +91,8 @@ google:
 
 jwt:
   secret: ${JWT_SECRET:vtt-persian-platform-super-secret-key-must-be-32-chars-minimum!}
-  expiration: ${JWT_EXPIRATION:900000}
+  expiration: ${JWT_EXPIRATION:86400000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:2592000000}
 
 livekit:
   url: ${LIVEKIT_URL:ws://localhost:7880}
