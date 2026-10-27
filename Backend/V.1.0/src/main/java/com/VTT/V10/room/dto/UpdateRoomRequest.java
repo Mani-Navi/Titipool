@@ -14,10 +14,10 @@ import lombok.NoArgsConstructor;
 public class UpdateRoomRequest {
 
     @NotBlank(message = "نام اتاق الزامی است")
-    @Size(min = 3, max = 40, message = "نام اتاق باید بین ۳ تا ۴۰ کاراکتر باشد")
+    @Size(min = 2, max = 100, message = "نام اتاق باید بین ۲ تا ۱۰۰ کاراکتر باشد")
     private String name;
 
-    @Size(max = 200, message = "توضیحات اتاق حداکثر ۲۰۰ کاراکتر است")
+    @Size(max = 500, message = "توضیحات اتاق حداکثر ۵۰۰ کاراکتر است")
     private String description;
 
     private String password;

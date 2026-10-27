@@ -71,5 +71,6 @@ public class RoomResponse {
         }
 
         private Boolean canRuler;
+        private Boolean canEditToken;
     }
 }
