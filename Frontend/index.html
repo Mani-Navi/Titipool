@@ -12,10 +12,10 @@
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 
   <!-- Canonical & Localization -->
-  <link rel="canonical" href="https://titipool.ir/" />
-  <link rel="alternate" hreflang="fa" href="https://titipool.ir/" />
-  <link rel="alternate" hreflang="fa-IR" href="https://titipool.ir/" />
-  <link rel="alternate" hreflang="x-default" href="https://titipool.ir/" />
+  <link rel="canonical" href="https://titipoolgames.ir/" />
+  <link rel="alternate" hreflang="fa" href="https://titipoolgames.ir/" />
+  <link rel="alternate" hreflang="fa-IR" href="https://titipoolgames.ir/" />
+  <link rel="alternate" hreflang="x-default" href="https://titipoolgames.ir/" />
 
   <!-- Favicon Set & PWA Manifest -->
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -30,13 +30,13 @@
 
   <!-- Open Graph / Telegram / Discord / LinkedIn (Absolute URLs) -->
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://titipool.ir/" />
+  <meta property="og:url" content="https://titipoolgames.ir/" />
   <meta property="og:site_name" content="Titipool — Persian VTT" />
   <meta property="og:locale" content="fa_IR" />
   <meta property="og:title" content="Titipool (تیتی‌پول) — میز بازی مجازی فارسی D&amp;D" />
   <meta property="og:description" content="سریع‌ترین Virtual Tabletop برای D&amp;D فارسی. اتاق بساز، توکن بچین، تاس سه‌بعدی بینداز و با چت صوتی زنده آنلاین بازی کن." />
-  <meta property="og:image" content="https://titipool.ir/og-image.jpg" />
-  <meta property="og:image:secure_url" content="https://titipool.ir/og-image.jpg" />
+  <meta property="og:image" content="https://titipoolgames.ir/og-image.jpg" />
+  <meta property="og:image:secure_url" content="https://titipoolgames.ir/og-image.jpg" />
   <meta property="og:image:type" content="image/jpeg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -44,19 +44,27 @@
 
   <!-- Twitter / X Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:url" content="https://titipool.ir/" />
+  <meta name="twitter:url" content="https://titipoolgames.ir/" />
   <meta name="twitter:title" content="Titipool (تیتی‌پول) — میز بازی مجازی فارسی D&amp;D" />
   <meta name="twitter:description" content="سریع‌ترین Virtual Tabletop برای D&amp;D فارسی با تاس ۳بعدی فیزیکی، مه جنگ و چت صوتی زنده." />
-  <meta name="twitter:image" content="https://titipool.ir/og-image.jpg" />
+  <meta name="twitter:image" content="https://titipoolgames.ir/og-image.jpg" />
   <meta name="twitter:image:alt" content="پیش‌نمایش میز بازی مجازی فارسی Titipool" />
 
-  <!-- Font Preconnect & Stylesheet for Fast LCP -->
+  <!-- Non-blocking Google Font (Vazirmatn only) — 0ms Render Blocking -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Vazirmatn:wght@400;600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;800&display=swap"
+          media="print"
+          onload="this.media='all'"
   />
+  <noscript>
+    <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;800&display=swap"
+    />
+  </noscript>
 
   <!-- Structured Data (JSON-LD) for Google Rich Snippets & GEO AI Engines -->
   <script type="application/ld+json">
@@ -65,39 +73,39 @@
       "@graph": [
         {
           "@type": "Organization",
-          "@id": "https://titipool.ir/#organization",
+          "@id": "https://titipoolgames.ir/#organization",
           "name": "Titipool",
           "alternateName": ["تیتی‌پول", "Persian VTT", "میز مجازی تیتی‌پول"],
-          "url": "https://titipool.ir/",
+          "url": "https://titipoolgames.ir/",
           "logo": {
             "@type": "ImageObject",
-            "url": "https://titipool.ir/apple-touch-icon.png",
+            "url": "https://titipoolgames.ir/apple-touch-icon.png",
             "width": 180,
             "height": 180
           },
           "contactPoint": {
             "@type": "ContactPoint",
-            "email": "support@titipool.ir",
+            "email": "support@titipoolgames.ir",
             "contactType": "customer support",
             "availableLanguage": ["Persian", "English"]
           }
         },
         {
           "@type": "WebSite",
-          "@id": "https://titipool.ir/#website",
-          "url": "https://titipool.ir/",
+          "@id": "https://titipoolgames.ir/#website",
+          "url": "https://titipoolgames.ir/",
           "name": "Titipool — میز مجازی بازی‌های رومیزی و D&D فارسی",
           "inLanguage": "fa-IR",
           "publisher": {
-            "@id": "https://titipool.ir/#organization"
+            "@id": "https://titipoolgames.ir/#organization"
           }
         },
         {
           "@type": "WebApplication",
-          "@id": "https://titipool.ir/#webapp",
+          "@id": "https://titipoolgames.ir/#webapp",
           "name": "Titipool VTT",
           "alternateName": "Persian VTT",
-          "url": "https://titipool.ir/",
+          "url": "https://titipoolgames.ir/",
           "applicationCategory": "GameApplication",
           "applicationSubCategory": "Virtual Tabletop (VTT)",
           "operatingSystem": "Web Browser (Windows, macOS, Linux, Android, iOS)",
@@ -120,7 +128,7 @@
         },
         {
           "@type": "FAQPage",
-          "@id": "https://titipool.ir/#faq",
+          "@id": "https://titipoolgames.ir/#faq",
           "mainEntity": [
             {
               "@type": "Question",
@@ -176,10 +184,10 @@
       <li>چت صوتی بلادرنگ داخلی با کلید Space و مدیریت دسترسی بازیکنان توسط GM</li>
     </ul>
     <nav>
-      <a href="https://titipool.ir/login">ورود به حساب کاربری</a> |
-      <a href="https://titipool.ir/register">ثبت‌نام رایگان</a> |
-      <a href="https://titipool.ir/terms-of-service">قوانین و شرایط استفاده</a> |
-      <a href="https://titipool.ir/privacy-policy">حریم خصوصی</a>
+      <a href="https://titipoolgames.ir/login">ورود به حساب کاربری</a> |
+      <a href="https://titipoolgames.ir/register">ثبت‌نام رایگان</a> |
+      <a href="https://titipoolgames.ir/terms-of-service">قوانین و شرایط استفاده</a> |
+      <a href="https://titipoolgames.ir/privacy-policy">حریم خصوصی</a>
     </nav>
   </main>
 </noscript>

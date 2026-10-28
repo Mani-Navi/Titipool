@@ -12,7 +12,7 @@ export function usePageTitle(title, customDescription = null) {
         // ۱. به‌روزرسانی پویای Canonical URL بر اساس مسیر فعلی (بدون پارامترهای اضافی)
         if (typeof window !== "undefined") {
             const cleanPath = window.location.pathname === "/" ? "" : window.location.pathname.replace(/\/+$/, "");
-            const canonicalUrl = `https://titipool.ir${cleanPath || "/"}`;
+            const canonicalUrl = `https://titipoolgames.ir${cleanPath || "/"}`;
 
             let canonicalLink = document.querySelector('link[rel="canonical"]');
             if (!canonicalLink) {

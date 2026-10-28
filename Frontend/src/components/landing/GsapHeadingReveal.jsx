@@ -5,7 +5,7 @@ export const GsapHeadingReveal = memo(({
                                            lines = [],
                                            eyebrow,
                                            subtitle,
-                                           eyebrowColor = 'text-[#ea580c]',
+                                           eyebrowColor = 'text-[#c2410c]',
                                            align = 'center',
                                            headingTag: HeadingTag = 'h2',
                                            headingClassName = 'text-3xl sm:text-5xl md:text-6xl font-black text-neutral-950 mt-2 tracking-tight leading-tight',

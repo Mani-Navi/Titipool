@@ -4,16 +4,16 @@
 
     <!-- صفحه اصلی لندینگ پیج -->
     <url>
-        <loc>https://titipool.ir/</loc>
+        <loc>https://titipoolgames.ir/</loc>
         <lastmod>2026-10-14</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
-        <xhtml:link rel="alternate" hreflang="fa" href="https://titipool.ir/"/>
+        <xhtml:link rel="alternate" hreflang="fa" href="https://titipoolgames.ir/"/>
     </url>
 
     <!-- صفحه ورود -->
     <url>
-        <loc>https://titipool.ir/login</loc>
+        <loc>https://titipoolgames.ir/login</loc>
         <lastmod>2026-10-14</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
@@ -21,7 +21,7 @@
 
     <!-- صفحه ثبت‌نام -->
     <url>
-        <loc>https://titipool.ir/register</loc>
+        <loc>https://titipoolgames.ir/register</loc>
         <lastmod>2026-10-14</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
@@ -29,28 +29,28 @@
 
     <!-- صفحات قوانین و حقوقی -->
     <url>
-        <loc>https://titipool.ir/privacy-policy</loc>
+        <loc>https://titipoolgames.ir/privacy-policy</loc>
         <lastmod>2026-10-14</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.3</priority>
     </url>
 
     <url>
-        <loc>https://titipool.ir/terms-of-service</loc>
+        <loc>https://titipoolgames.ir/terms-of-service</loc>
         <lastmod>2026-10-14</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.3</priority>
     </url>
 
     <url>
-        <loc>https://titipool.ir/cookie-policy</loc>
+        <loc>https://titipoolgames.ir/cookie-policy</loc>
         <lastmod>2026-10-14</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.3</priority>
     </url>
 
     <url>
-        <loc>https://titipool.ir/refund-policy</loc>
+        <loc>https://titipoolgames.ir/refund-policy</loc>
         <lastmod>2026-10-14</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.3</priority>

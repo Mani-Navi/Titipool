@@ -62,10 +62,10 @@ export const Footer = memo(() => {
                     <Mail className="w-3 h-3 text-amber-500/70" aria-hidden="true" />
                     <span>پشتیبانی:</span>
                     <a
-                        href="mailto:support@titipool.ir"
+                        href="mailto:support@titipoolgames.ir"
                         className="text-zinc-300 hover:text-amber-400 transition-colors duration-150"
                     >
-                        support@titipool.ir
+                        support@titipoolgames.ir
                     </a>
                 </div>
             </div>

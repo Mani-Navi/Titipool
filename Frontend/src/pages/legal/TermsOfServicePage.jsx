@@ -70,11 +70,11 @@ export const TermsOfServicePage = () => {
                     </p>
                     <div className="pt-1">
                         <a
-                            href="mailto:legal@titipool.ir"
+                            href="mailto:legal@titipoolgames.ir"
                             className="text-amber-400 hover:text-amber-300 font-mono font-bold text-xs inline-flex items-center gap-1.5"
                             dir="ltr"
                         >
-                            <span>legal@titipool.ir</span>
+                            <span>legal@titipoolgames.ir</span>
                         </a>
                     </div>
                 </section>

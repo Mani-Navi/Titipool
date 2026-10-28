@@ -35,4 +35,4 @@ User-agent: Google-Extended
 Allow: /
 Allow: /llms.txt
 
-Sitemap: https://titipool.ir/sitemap.xml
+Sitemap: https://titipoolgames.ir/sitemap.xml
