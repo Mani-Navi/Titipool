@@ -11,9 +11,22 @@ import { useRoomStore } from "../../stores/room.store";
 import { snapToGrid } from "../../utils/grid";
 import { WS_EVENTS } from "../../constants/wsEvents.js";
 
+const MAX_TOKEN_CACHE_ENTRIES = 150;
 const tokenImageCache = new Map();
+
+const setCachedTokenImage = (url, img) => {
+    if (tokenImageCache.has(url)) {
+        tokenImageCache.delete(url);
+    } else if (tokenImageCache.size >= MAX_TOKEN_CACHE_ENTRIES) {
+        const oldestKey = tokenImageCache.keys().next().value;
+        if (oldestKey) tokenImageCache.delete(oldestKey);
+    }
+    tokenImageCache.set(url, img);
+};
+
 const TOKEN_SELECTION_DASH = Object.freeze([6, 4]);
 const DEFAULT_CLUSTER_OFFSET = Object.freeze({ x: 0, y: 0 });
+const DEFAULT_CLUSTER_PARAM = Object.freeze({ offset: DEFAULT_CLUSTER_OFFSET, scale: 1 });
 const EMPTY_TOKENS = Object.freeze([]);
 
 const DND_CONDITION_EMOJIS = Object.freeze({
@@ -81,7 +94,7 @@ const SingleToken = memo(
             img.src = fullUrl;
 
             img.onload = () => {
-                tokenImageCache.set(fullUrl, img);
+                setCachedTokenImage(fullUrl, img);
                 if (isMounted) setImageObj(img);
             };
             img.onerror = () => {
@@ -538,68 +551,66 @@ export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
         propIsGM || hookIsGM || isRoomHost || currentUser?.role === "GM" || currentUser?.role === "ADMIN"
     );
 
-    const cellGroups = useMemo(() => {
-        const groups = {};
+    // پیش‌محاسبه O(N) پارامترهای خوشه‌بندی با رفرنس پایدار جهت جلوگیری از رندر مجدد توکن‌های ثابت
+    const clusterParamsMap = useMemo(() => {
+        const groups = new Map();
         for (let i = 0; i < userTokens.length; i++) {
             const t = userTokens[i];
             const cellKey = `${Math.round(t.x || 0)}_${Math.round(t.y || 0)}`;
-            if (!groups[cellKey]) {
-                groups[cellKey] = [];
+            let list = groups.get(cellKey);
+            if (!list) {
+                list = [];
+                groups.set(cellKey, list);
             }
-            groups[cellKey].push(t);
+            list.push(t);
         }
-        return groups;
-    }, [userTokens]);
 
-    const getClusterParams = useCallback(
-        (token) => {
-            const cellKey = `${Math.round(token.x || 0)}_${Math.round(token.y || 0)}`;
-            const group = cellGroups[cellKey] || [token];
+        const resultMap = new Map();
+        const distance = gridSize * 0.22;
+
+        groups.forEach((group) => {
             const count = group.length;
-            const idx = group.findIndex((t) => String(t.id) === String(token.id));
-
-            if (count <= 1 || idx === -1) {
-                return { offset: DEFAULT_CLUSTER_OFFSET, scale: 1 };
+            if (count <= 1) {
+                resultMap.set(String(group[0].id), DEFAULT_CLUSTER_PARAM);
+                return;
             }
 
-            const distance = gridSize * 0.22;
-
-            if (count === 2) {
-                const offsetX = idx === 0 ? -distance : distance;
-                return { offset: { x: offsetX, y: 0 }, scale: 0.72 };
+            for (let idx = 0; idx < count; idx++) {
+                const tokenId = String(group[idx].id);
+                if (count === 2) {
+                    const offsetX = idx === 0 ? -distance : distance;
+                    resultMap.set(tokenId, { offset: { x: offsetX, y: 0 }, scale: 0.72 });
+                } else if (count === 3) {
+                    const offsets = [
+                        { x: 0, y: -distance },
+                        { x: -distance, y: distance * 0.8 },
+                        { x: distance, y: distance * 0.8 },
+                    ];
+                    resultMap.set(tokenId, { offset: offsets[idx] || DEFAULT_CLUSTER_OFFSET, scale: 0.65 });
+                } else if (count === 4) {
+                    const offsets = [
+                        { x: -distance, y: -distance },
+                        { x: distance, y: -distance },
+                        { x: -distance, y: distance },
+                        { x: distance, y: distance },
+                    ];
+                    resultMap.set(tokenId, { offset: offsets[idx] || DEFAULT_CLUSTER_OFFSET, scale: 0.6 });
+                } else {
+                    const angle = (idx / count) * 2 * Math.PI;
+                    const ringDist = gridSize * 0.26;
+                    resultMap.set(tokenId, {
+                        offset: {
+                            x: Math.cos(angle) * ringDist,
+                            y: Math.sin(angle) * ringDist,
+                        },
+                        scale: 0.5,
+                    });
+                }
             }
+        });
 
-            if (count === 3) {
-                const offsets = [
-                    { x: 0, y: -distance },
-                    { x: -distance, y: distance * 0.8 },
-                    { x: distance, y: distance * 0.8 },
-                ];
-                return { offset: offsets[idx] || DEFAULT_CLUSTER_OFFSET, scale: 0.65 };
-            }
-
-            if (count === 4) {
-                const offsets = [
-                    { x: -distance, y: -distance },
-                    { x: distance, y: -distance },
-                    { x: -distance, y: distance },
-                    { x: distance, y: distance },
-                ];
-                return { offset: offsets[idx] || DEFAULT_CLUSTER_OFFSET, scale: 0.6 };
-            }
-
-            const angle = (idx / count) * 2 * Math.PI;
-            const ringDist = gridSize * 0.26;
-            return {
-                offset: {
-                    x: Math.cos(angle) * ringDist,
-                    y: Math.sin(angle) * ringDist,
-                },
-                scale: 0.5,
-            };
-        },
-        [cellGroups, gridSize]
-    );
+        return resultMap;
+    }, [userTokens, gridSize]);
 
     const handleSelectToken = useCallback(
         (tokenId, isMulti) => {
@@ -645,7 +656,7 @@ export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
                 const canControl = Boolean(isGM || isOwner);
                 const canEdit = Boolean(isGM || isOwner || permissions?.canEditToken);
 
-                const { offset, scale } = getClusterParams(token);
+                const clusterParam = clusterParamsMap.get(String(token.id)) || DEFAULT_CLUSTER_PARAM;
 
                 const isSelected = selectedTokenIds.some(
                     (id) => String(id).toLowerCase() === String(token.id).toLowerCase()
@@ -663,8 +674,8 @@ export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
                         canEdit={canEdit}
                         isGM={isGM}
                         fallbackUsername={currentUser?.username || "بازیکن"}
-                        clusterOffset={offset}
-                        clusterScale={scale}
+                        clusterOffset={clusterParam.offset}
+                        clusterScale={clusterParam.scale}
                         onSelect={handleSelectToken}
                         onOpenEditor={handleOpenEditor}
                     />
@@ -675,3 +686,4 @@ export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
 });
 
 TokenLayer.displayName = "TokenLayer";
+export default TokenLayer;

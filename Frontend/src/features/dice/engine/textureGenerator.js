@@ -94,6 +94,8 @@ export const DICE_THEMES = {
 };
 
 const textureCache = new Map();
+const materialCache = new Map();
+const rimMaterialCache = new Map();
 
 export function createThemedMarbleTexture(text, type = 'd20', themeName = 'amethyst', size = 256) {
     const cacheKey = `${type}-${themeName}-${text}-${size}`;
@@ -140,7 +142,7 @@ export function createThemedMarbleTexture(text, type = 'd20', themeName = 'ameth
     ctx.stroke();
     ctx.restore();
 
-    // ۳. کادر هندسی دقیق (روی D20 خطوط اضافه کشیده نمی‌شود تا وجه‌ها کاملاً تمیز باشند)
+    // ۳. کادر هندسی دقیق
     ctx.save();
     ctx.strokeStyle = theme.borderColor;
     ctx.lineWidth = 3.5;
@@ -249,8 +251,13 @@ export function createThemedMarbleTexture(text, type = 'd20', themeName = 'ameth
 }
 
 export function createMaterialsForType(type, values, themeName = 'amethyst') {
+    const cacheKey = `${type}-${themeName}-${values.join('_')}`;
+    if (materialCache.has(cacheKey)) {
+        return materialCache.get(cacheKey);
+    }
+
     const isIvory = themeName === 'ivory';
-    return values.map((val) => {
+    const materials = values.map((val) => {
         const isCrit = type === 'd20' && val === 20;
         const tex = createThemedMarbleTexture(val, type, themeName);
 
@@ -262,4 +269,20 @@ export function createMaterialsForType(type, values, themeName = 'amethyst') {
             side: THREE.DoubleSide,
         });
     });
+
+    materialCache.set(cacheKey, materials);
+    return materials;
+}
+
+export function getCoinRimMaterial(themeName = 'amethyst') {
+    if (rimMaterialCache.has(themeName)) {
+        return rimMaterialCache.get(themeName);
+    }
+    const matRim = new THREE.MeshStandardMaterial({
+        color: themeName === 'ivory' ? 0x78350f : 0xeab308,
+        metalness: 0.85,
+        roughness: 0.25,
+    });
+    rimMaterialCache.set(themeName, matRim);
+    return matRim;
 }

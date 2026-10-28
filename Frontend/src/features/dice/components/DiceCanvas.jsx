@@ -1,5 +1,5 @@
 // src/features/dice/components/DiceCanvas.jsx
-import React, { Suspense, useEffect, useRef } from 'react';
+import React, { Suspense, useEffect, useRef, memo } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import * as THREE from 'three';
@@ -11,11 +11,16 @@ function ClickThroughManager() {
     const { camera, scene, gl } = useThree();
     const activeDice = useDiceStore((s) => s.activeDice);
     const diceMeshesRef = useRef([]);
+    const raycasterRef = useRef(new THREE.Raycaster());
+    const mouseRef = useRef(new THREE.Vector2());
+    const rectRef = useRef(null);
 
     useEffect(() => {
         if (activeDice.length === 0) {
             diceMeshesRef.current = [];
-            gl.domElement.style.pointerEvents = 'none';
+            if (gl.domElement) {
+                gl.domElement.style.pointerEvents = 'none';
+            }
             return;
         }
 
@@ -26,18 +31,33 @@ function ClickThroughManager() {
             }
         });
         diceMeshesRef.current = meshes;
+        if (gl.domElement) {
+            rectRef.current = gl.domElement.getBoundingClientRect();
+        }
     }, [activeDice, scene, gl]);
 
     useEffect(() => {
         if (activeDice.length === 0) return;
 
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
         let isHoveredOnDie = false;
+        let rafId = null;
+        let lastClientX = 0;
+        let lastClientY = 0;
 
-        const handlePointerMove = (e) => {
+        const updateRect = () => {
+            if (gl.domElement) {
+                rectRef.current = gl.domElement.getBoundingClientRect();
+            }
+        };
+
+        const processRaycast = () => {
+            rafId = null;
+            if (!gl.domElement) return;
+
             if (document.body.style.cursor === 'grabbing') {
-                gl.domElement.style.pointerEvents = 'auto';
+                if (gl.domElement.style.pointerEvents !== 'auto') {
+                    gl.domElement.style.pointerEvents = 'auto';
+                }
                 return;
             }
 
@@ -49,12 +69,15 @@ function ClickThroughManager() {
                 return;
             }
 
-            const rect = gl.domElement.getBoundingClientRect();
-            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            const rect = rectRef.current || gl.domElement.getBoundingClientRect();
+            if (!rectRef.current) rectRef.current = rect;
+            if (rect.width === 0 || rect.height === 0) return;
 
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(meshes, false);
+            mouseRef.current.x = ((lastClientX - rect.left) / rect.width) * 2 - 1;
+            mouseRef.current.y = -((lastClientY - rect.top) / rect.height) * 2 + 1;
+
+            raycasterRef.current.setFromCamera(mouseRef.current, camera);
+            const intersects = raycasterRef.current.intersectObjects(meshes, false);
             const hitsDie = intersects.length > 0;
 
             if (hitsDie) {
@@ -62,19 +85,33 @@ function ClickThroughManager() {
                     isHoveredOnDie = true;
                     gl.domElement.style.pointerEvents = 'auto';
                 }
-            } else {
-                if (isHoveredOnDie) {
-                    isHoveredOnDie = false;
-                    gl.domElement.style.pointerEvents = 'none';
-                }
+            } else if (isHoveredOnDie) {
+                isHoveredOnDie = false;
+                gl.domElement.style.pointerEvents = 'none';
+            }
+        };
+
+        const handlePointerMove = (e) => {
+            lastClientX = e.clientX;
+            lastClientY = e.clientY;
+            if (rafId === null) {
+                rafId = window.requestAnimationFrame(processRaycast);
             }
         };
 
         gl.domElement.style.pointerEvents = 'none';
 
         window.addEventListener('pointermove', handlePointerMove, { passive: true });
+        window.addEventListener('resize', updateRect, { passive: true });
+        window.addEventListener('scroll', updateRect, { passive: true });
+
         return () => {
+            if (rafId !== null) {
+                window.cancelAnimationFrame(rafId);
+            }
             window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('resize', updateRect);
+            window.removeEventListener('scroll', updateRect);
             if (gl.domElement) {
                 gl.domElement.style.pointerEvents = 'none';
             }
@@ -84,7 +121,20 @@ function ClickThroughManager() {
     return null;
 }
 
-export function DiceCanvas({ overlayMode = false }) {
+const ActiveDiceRenderer = memo(({ overlayMode }) => {
+    const activeDice = useDiceStore((s) => s.activeDice);
+    return (
+        <>
+            {activeDice.map((die) => (
+                <Die key={die.id} {...die} overlayMode={overlayMode} />
+            ))}
+        </>
+    );
+});
+
+ActiveDiceRenderer.displayName = 'ActiveDiceRenderer';
+
+export const DiceCanvas = memo(({ overlayMode = false }) => {
     const activeDiceCount = useDiceStore((s) => s.activeDice.length);
 
     return (
@@ -128,15 +178,7 @@ export function DiceCanvas({ overlayMode = false }) {
             </Suspense>
         </Canvas>
     );
-}
+});
 
-function ActiveDiceRenderer({ overlayMode }) {
-    const activeDice = useDiceStore((s) => s.activeDice);
-    return (
-        <>
-            {activeDice.map((die) => (
-                <Die key={die.id} {...die} overlayMode={overlayMode} />
-            ))}
-        </>
-    );
-}
+DiceCanvas.displayName = 'DiceCanvas';
+export default DiceCanvas;

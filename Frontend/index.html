@@ -4,10 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Persian VTT — میز مجازی بازی‌های رومیزی و D&D</title>
-  <meta name="description" content="سریع‌ترین Virtual Tabletop برای D&D فارسی. اتاق بساز، توکن بچین، تاس سه‌بعدی بینداز و آنلاین با دوستانت بازی کن." />
+  <!-- Primary SEO Meta Tags -->
+  <title>Titipool (تیتی‌پول) | میز مجازی فارسی D&amp;D و بازی‌های رومیزی — Persian VTT</title>
+  <meta name="description" content="تیتی‌پول (Titipool)؛ اولین و سریع‌ترین میز بازی مجازی فارسی (Persian VTT) برای D&amp;D 5e و بازی‌های نقش‌آفرینی. ساخت اتاق رایگان، نقشه و توکن، مه جنگ، تاس سه‌بعدی فیزیکی و چت صوتی زنده بدون نیاز به نصب." />
+  <meta name="keywords" content="تیتی پول, Titipool, میز مجازی D&amp;D, Persian VTT, دی اند دی آنلاین, بازی نقش آفرینی فارسی, تاس سه بعدی D20, میز بازی مجازی, D&amp;D 5e فارسی, Owlbear Rodeo فارسی" />
+  <meta name="author" content="Titipool Studio (Mani Mardazad Navi)" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 
-  <!-- Favicon Set & Icons -->
+  <!-- Canonical & Localization -->
+  <link rel="canonical" href="https://titipool.ir/" />
+  <link rel="alternate" hreflang="fa" href="https://titipool.ir/" />
+  <link rel="alternate" hreflang="fa-IR" href="https://titipool.ir/" />
+  <link rel="alternate" hreflang="x-default" href="https://titipool.ir/" />
+
+  <!-- Favicon Set & PWA Manifest -->
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="alternate icon" href="/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
@@ -16,34 +26,164 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="application-name" content="Titipool VTT" />
 
-  <!-- Open Graph -->
+  <!-- Open Graph / Telegram / Discord / LinkedIn (Absolute URLs) -->
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Persian VTT" />
+  <meta property="og:url" content="https://titipool.ir/" />
+  <meta property="og:site_name" content="Titipool — Persian VTT" />
   <meta property="og:locale" content="fa_IR" />
-  <meta property="og:title" content="Persian VTT — میز بازی مجازی فارسی" />
-  <meta property="og:description" content="سریع‌ترین Virtual Tabletop برای D&D فارسی. اتاق بساز، توکن بچین، تاس ۳بعدی بینداز و آنلاین بازی کن." />
-  <meta property="og:image" content="/og-image.jpg" />
-  <meta property="og:image:secure_url" content="/og-image.jpg" />
+  <meta property="og:title" content="Titipool (تیتی‌پول) — میز بازی مجازی فارسی D&amp;D" />
+  <meta property="og:description" content="سریع‌ترین Virtual Tabletop برای D&amp;D فارسی. اتاق بساز، توکن بچین، تاس سه‌بعدی بینداز و با چت صوتی زنده آنلاین بازی کن." />
+  <meta property="og:image" content="https://titipool.ir/og-image.jpg" />
+  <meta property="og:image:secure_url" content="https://titipool.ir/og-image.jpg" />
   <meta property="og:image:type" content="image/jpeg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="پیش‌نمایش میز بازی مجازی Persian VTT" />
+  <meta property="og:image:alt" content="پیش‌نمایش محیط میز بازی مجازی فارسی تیتی‌پول (Titipool Persian VTT)" />
 
+  <!-- Twitter / X Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Persian VTT — میز بازی مجازی فارسی" />
-  <meta name="twitter:description" content="سریع‌ترین Virtual Tabletop برای D&D فارسی با تاس ۳بعدی، مه جنگ و چت صوتی زنده." />
-  <meta name="twitter:image" content="/og-image.jpg" />
-  <meta name="twitter:image:alt" content="پیش‌نمایش میز بازی مجازی Persian VTT" />
+  <meta name="twitter:url" content="https://titipool.ir/" />
+  <meta name="twitter:title" content="Titipool (تیتی‌پول) — میز بازی مجازی فارسی D&amp;D" />
+  <meta name="twitter:description" content="سریع‌ترین Virtual Tabletop برای D&amp;D فارسی با تاس ۳بعدی فیزیکی، مه جنگ و چت صوتی زنده." />
+  <meta name="twitter:image" content="https://titipool.ir/og-image.jpg" />
+  <meta name="twitter:image:alt" content="پیش‌نمایش میز بازی مجازی فارسی Titipool" />
 
-  <!-- فونت با اتصال هدفمند و بدون preconnect بلااستفاده -->
+  <!-- Font Preconnect & Stylesheet for Fast LCP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Vazirmatn:wght@400;600;700;800&display=swap"
   />
+
+  <!-- Structured Data (JSON-LD) for Google Rich Snippets & GEO AI Engines -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://titipool.ir/#organization",
+          "name": "Titipool",
+          "alternateName": ["تیتی‌پول", "Persian VTT", "میز مجازی تیتی‌پول"],
+          "url": "https://titipool.ir/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://titipool.ir/apple-touch-icon.png",
+            "width": 180,
+            "height": 180
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "email": "support@titipool.ir",
+            "contactType": "customer support",
+            "availableLanguage": ["Persian", "English"]
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://titipool.ir/#website",
+          "url": "https://titipool.ir/",
+          "name": "Titipool — میز مجازی بازی‌های رومیزی و D&D فارسی",
+          "inLanguage": "fa-IR",
+          "publisher": {
+            "@id": "https://titipool.ir/#organization"
+          }
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://titipool.ir/#webapp",
+          "name": "Titipool VTT",
+          "alternateName": "Persian VTT",
+          "url": "https://titipool.ir/",
+          "applicationCategory": "GameApplication",
+          "applicationSubCategory": "Virtual Tabletop (VTT)",
+          "operatingSystem": "Web Browser (Windows, macOS, Linux, Android, iOS)",
+          "inLanguage": "fa-IR",
+          "browserRequirements": "Requires JavaScript and HTML5 Canvas / WebGL",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "IRR",
+            "availability": "https://schema.org/InStock"
+          },
+          "featureList": [
+            "بوم تعاملی ۶۰ فریم بر ثانیه با پشتیبانی از گریدهای مربعی، شش‌ضلعی و ایزومتریک",
+            "پرتاب تاس سه‌بعدی با موتور فیزیک واقعی Rapier (از D2 تا D1000 و تاس Fudge)",
+            "سیستم مه جنگ (Fog of War) با ابزارهای برش، پوشاندن و آشکارساز سراسری",
+            "چت صوتی بلادرنگ یکپارچه با کدک Opus و کلید Space (بدون نیاز به دیسکورد)",
+            "مدیریت توکن‌ها، نوار سلامتی (HP)، کلاس زره (AC) و ۱۶ وضعیت استاندارد D&D 5e",
+            "رابط کاربری کاملاً فارسی (RTL) و ورود سریع به اتاق با کد دعوت ۶ کاراکتری"
+          ]
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://titipool.ir/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "تیتی‌پول (Titipool) چیست و چه کاربردی دارد؟",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "تیتی‌پول (Titipool) اولین پلتفرم میز بازی مجازی فارسی (Persian VTT) برای اجرای آنلاین بازی‌های نقش‌آفرینی رومیزی مانند Dungeons & Dragons (D&D 5e) است که ابزارهای نقشه، توکن، مه جنگ، خط‌کش، تاس سه‌بعدی فیزیکی و چت صوتی زنده را به صورت یکپارچه و بدون نیاز به نصب در مرورگر ارائه می‌دهد."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "آیا استفاده از میز مجازی تیتی‌پول رایگان است؟",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "بله، ساخت اتاق بازی، آپلود نقشه و توکن، استفاده از تاس‌های سه‌بعدی و چت صوتی زنده در تیتی‌پول کاملاً رایگان است و نیازی به نصب هیچ نرم‌افزار جانبی ندارد."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "چگونه دوستانم را به اتاق بازی D&D دعوت کنم؟",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "پس از ساخت اتاق در داشبورد، یک کد دعوت ۶ کاراکتری یکتا (مانند 75B4EE) و یک لینک مستقیم دریافت می‌کنید. بازیکنان با وارد کردن این کد در بخش «ورود با کد» در کمتر از چند ثانیه وارد میز بازی می‌شوند."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "آیا برای صحبت کردن در حین بازی نیاز به دیسکورد است؟",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "خیر؛ تیتی‌پول مجهز به سرور صوتی داخلی با کدک کم‌مصرف Opus و قابلیت Push-to-Talk با کلید Space است که ارتباط صوتی شفاف و بدون تاخیر را روی سرورهای داخلی فراهم می‌کند."
+              }
+            }
+          ]
+        }
+      ]
+    }
+  </script>
 </head>
 <body class="bg-[#090a0f] text-zinc-100 antialiased overflow-hidden select-none">
 <div id="root"></div>
+
+<!-- محتوای معنایی برای خزنده‌های بدون جاوااسکریپت و بات‌های هوش مصنوعی (GEO Fallback) -->
+<noscript>
+  <main dir="rtl" style="font-family: Tahoma, sans-serif; padding: 2rem; max-width: 800px; margin: auto; color: #f3f4f6; background: #090a0f;">
+    <h1>Titipool (تیتی‌پول) — میز بازی مجازی فارسی برای D&amp;D و بازی‌های نقش‌آفرینی (Persian VTT)</h1>
+    <p>تیتی‌پول یک پلتفرم تحت وب (Virtual Tabletop) طراحی‌شده برای جامعه فارسی‌زبان بازی‌های نقش‌آفرینی رومیزی (TTRPG) و Dungeons &amp; Dragons است.</p>
+    <h2>امکانات کلیدی پلتفرم Titipool</h2>
+    <ul>
+      <li>بوم نقشه تاکتیکال ۶۰ فریم بر ثانیه با گریدهای مربعی، شش‌ضلعی و ایزومتریک و خط‌کش استاندارد ۵-۱۰-۵ فوت D&amp;D 5e</li>
+      <li>موتور پرتاب تاس سه‌بعدی فیزیکی (D4, D6, D8, D10, D12, D20, D100, Fudge) با بافت سنگ مرمر</li>
+      <li>لایه مه جنگ (Fog of War) برای دانجن‌مستر با قابلیت پوشاندن، برش و آشکارسازی لحظه‌ای</li>
+      <li>چت صوتی بلادرنگ داخلی با کلید Space و مدیریت دسترسی بازیکنان توسط GM</li>
+    </ul>
+    <nav>
+      <a href="https://titipool.ir/login">ورود به حساب کاربری</a> |
+      <a href="https://titipool.ir/register">ثبت‌نام رایگان</a> |
+      <a href="https://titipool.ir/terms-of-service">قوانین و شرایط استفاده</a> |
+      <a href="https://titipool.ir/privacy-policy">حریم خصوصی</a>
+    </nav>
+  </main>
+</noscript>
+
 <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

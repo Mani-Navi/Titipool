@@ -1,9 +1,38 @@
 User-agent: *
 Allow: /
-
-# مسدودسازی صفحات خصوصی برای موتورهای جستجو
+Allow: /llms.txt
 Disallow: /api/
+Disallow: /ws/
 Disallow: /room/
 Disallow: /dashboard
+Disallow: /profile
+Disallow: /welcome
+
+# مجوز صریح به خزنده‌های موتورهای جستجوی هوش مصنوعی (GEO Optimization)
+User-agent: GPTBot
+Allow: /
+Allow: /llms.txt
+Disallow: /room/
+Disallow: /dashboard
+
+User-agent: OAI-SearchBot
+Allow: /
+Allow: /llms.txt
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /llms.txt
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /llms.txt
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /llms.txt
+
+User-agent: Google-Extended
+Allow: /
+Allow: /llms.txt
 
 Sitemap: https://titipool.ir/sitemap.xml

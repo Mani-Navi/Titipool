@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { DICE_CONFIGS } from '../engine/diceDefinitions';
-import { createMaterialsForType } from '../engine/textureGenerator';
+import { createMaterialsForType, getCoinRimMaterial } from '../engine/textureGenerator';
 import { useDiceStore } from '../state/dice.store';
 import { diceAudio } from '../engine/diceAudio';
 
@@ -32,7 +32,6 @@ export function Die({
     const remoteReThrow = useDiceStore((s) => s.remoteReThrow);
     const settledTransforms = useDiceStore((s) => s.settledTransforms);
 
-    // در اتاق اندازه کوچک محبوب (ضریب ۱.۰) و در لندینگ پیج اندازه بزرگ (ضریب ۱.۳۸)
     const scaleFactor = overlayMode ? 1.0 : 1.38;
     const dragY = overlayMode ? 2.6 : 3.4;
     const dragPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), -dragY), [dragY]);
@@ -74,7 +73,6 @@ export function Die({
     const { geometry, materials } = useMemo(() => {
         const geom = config.createGeometry();
 
-        // مقیاس‌گذاری مستقیم بافر ورتکس‌ها جهت تطابق ۱۰۰٪ کلایدر فیزیک Rapier و مش سه‌بعدی
         if (scaleFactor !== 1.0) {
             geom.scale(scaleFactor, scaleFactor, scaleFactor);
         }
@@ -82,13 +80,8 @@ export function Die({
         const faceValues = config.faces.map((f) => f.value);
 
         if (type === 'd2') {
-            const matTop = createMaterialsForType('d2', [1], theme)[0];
-            const matBottom = createMaterialsForType('d2', [2], theme)[0];
-            const matRim = new THREE.MeshStandardMaterial({
-                color: theme === 'ivory' ? 0x78350f : 0xeab308,
-                metalness: 0.85,
-                roughness: 0.25,
-            });
+            const [matTop, matBottom] = createMaterialsForType('d2', [1, 2], theme);
+            const matRim = getCoinRimMaterial(theme);
             return { geometry: geom, materials: [matTop, matBottom, matRim] };
         }
 
@@ -124,16 +117,12 @@ export function Die({
         return { geometry: geom, materials: mats };
     }, [type, config, theme, scaleFactor]);
 
+    // فقط هندسه کلون‌شده آزاد می‌شود؛ متریال‌ها و بافت‌ها در کش سراسری بازمصرف می‌شوند
     useEffect(() => {
         return () => {
             geometry.dispose();
-            if (Array.isArray(materials)) {
-                materials.forEach((mat) => {
-                    mat.dispose();
-                });
-            }
         };
-    }, [geometry, materials]);
+    }, [geometry]);
 
     const handleCollision = () => {
         if (!rigidBodyRef.current || isDraggingRef.current) return;
