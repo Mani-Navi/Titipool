@@ -4,6 +4,7 @@ import com.VTT.V10.user.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -18,7 +19,9 @@ import java.util.Date;
 import java.util.function.Function;
 
 /**
- * High-speed stateless JWT generation and parsing service with cached cryptographic signing keys.
+ * High-speed stateless JWT generation and single-pass parsing service.
+ * Pre-builds and caches the immutable {@link JwtParser} instance to eliminate per-request builder allocation
+ * and performs single-pass cryptographic verification.
  */
 @Slf4j
 @Service
@@ -30,15 +33,14 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    // پیش‌فرض: ۲۴ ساعت (برای جلوگیری از قطع شدن نشست در کمپین‌های طولانی)
     @Value("${jwt.expiration:86400000}")
     private long jwtExpirationMs;
 
-    // پیش‌فرض رفرش توکن: ۳۰ روز
     @Value("${jwt.refresh-expiration:2592000000}")
     private long refreshExpirationMs;
 
     private SecretKey cachedSignInKey;
+    private JwtParser cachedJwtParser;
 
     @PostConstruct
     public void initKey() {
@@ -46,18 +48,27 @@ public class JwtService {
             throw new IllegalStateException("تنظیمات امنیتی بحرانی: طول کلید jwt.secret باید حداقل ۳۲ کاراکتر باشد");
         }
 
+        SecretKey resolvedKey = null;
         try {
             byte[] keyBytes = Decoders.BASE64.decode(secretKey);
             if (keyBytes.length >= 32) {
-                this.cachedSignInKey = Keys.hmacShaKeyFor(keyBytes);
-                return;
+                resolvedKey = Keys.hmacShaKeyFor(keyBytes);
             }
         } catch (Exception ignored) {
-            // Not a valid base64, fallback to UTF-8
+            // Not base64 encoded, fallback to UTF-8 bytes
         }
 
-        byte[] utf8Bytes = secretKey.getBytes(StandardCharsets.UTF_8);
-        this.cachedSignInKey = Keys.hmacShaKeyFor(utf8Bytes);
+        if (resolvedKey == null) {
+            byte[] utf8Bytes = secretKey.getBytes(StandardCharsets.UTF_8);
+            resolvedKey = Keys.hmacShaKeyFor(utf8Bytes);
+        }
+
+        this.cachedSignInKey = resolvedKey;
+        this.cachedJwtParser = Jwts.parser()
+                .verifyWith(this.cachedSignInKey)
+                .requireIssuer(ISSUER)
+                .requireAudience(AUDIENCE)
+                .build();
     }
 
     /**
@@ -90,7 +101,7 @@ public class JwtService {
                 .issuedAt(new Date(now))
                 .notBefore(new Date(now - 1000))
                 .expiration(new Date(now + expirationMs))
-                .signWith(getSignInKey(), Jwts.SIG.HS256)
+                .signWith(cachedSignInKey, Jwts.SIG.HS256)
                 .compact();
     }
 
@@ -98,8 +109,36 @@ public class JwtService {
         return refreshExpirationMs / 1000L;
     }
 
+    /**
+     * Validates signature, expiration, issuer, and audience in a single pass and returns the subject email.
+     * Eliminates redundant 4x HMAC-SHA256 recalculations on every HTTP/WebSocket request.
+     *
+     * @param token raw JWT string
+     * @return authenticated user email if valid, or {@code null} if invalid/expired
+     */
+    public String validateAndExtractEmail(String token) {
+        if (token == null || token.isBlank()) {
+            return null;
+        }
+        try {
+            Claims claims = cachedJwtParser.parseSignedClaims(token).getPayload();
+            String email = claims.getSubject();
+            return (email != null && !email.isBlank()) ? email : null;
+        } catch (ExpiredJwtException e) {
+            if (log.isDebugEnabled()) {
+                log.debug("JWT token expired: {}", e.getMessage());
+            }
+            return null;
+        } catch (JwtException | IllegalArgumentException e) {
+            if (log.isDebugEnabled()) {
+                log.debug("Invalid JWT token: {}", e.getMessage());
+            }
+            return null;
+        }
+    }
+
     public String extractEmail(String token) {
-        return extractClaim(token, Claims::getSubject);
+        return validateAndExtractEmail(token);
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -108,59 +147,15 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, String userEmail) {
-        try {
-            final Claims claims = extractAllClaims(token);
-            final String email = claims.getSubject();
-            boolean isAudienceValid = claims.getAudience() != null && claims.getAudience().contains(AUDIENCE);
-            boolean isIssuerValid = ISSUER.equals(claims.getIssuer());
-
-            return (email != null
-                    && email.equalsIgnoreCase(userEmail)
-                    && !isTokenExpired(token)
-                    && isAudienceValid
-                    && isIssuerValid);
-        } catch (JwtException | IllegalArgumentException e) {
-            return false;
-        }
+        String extracted = validateAndExtractEmail(token);
+        return extracted != null && extracted.equalsIgnoreCase(userEmail);
     }
 
     public boolean validateToken(String token) {
-        try {
-            Jwts.parser()
-                    .verifyWith(getSignInKey())
-                    .requireIssuer(ISSUER)
-                    .requireAudience(AUDIENCE)
-                    .build()
-                    .parseSignedClaims(token);
-            return true;
-        } catch (ExpiredJwtException e) {
-            if (log.isDebugEnabled()) {
-                log.debug("JWT token expired: {}", e.getMessage());
-            }
-            return false;
-        } catch (JwtException | IllegalArgumentException e) {
-            if (log.isDebugEnabled()) {
-                log.debug("Invalid JWT signature/token format: {}", e.getMessage());
-            }
-            return false;
-        }
-    }
-
-    private boolean isTokenExpired(String token) {
-        return extractClaim(token, Claims::getExpiration).before(new Date());
+        return validateAndExtractEmail(token) != null;
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getSignInKey())
-                .requireIssuer(ISSUER)
-                .requireAudience(AUDIENCE)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-    }
-
-    private SecretKey getSignInKey() {
-        return this.cachedSignInKey;
+        return cachedJwtParser.parseSignedClaims(token).getPayload();
     }
 }

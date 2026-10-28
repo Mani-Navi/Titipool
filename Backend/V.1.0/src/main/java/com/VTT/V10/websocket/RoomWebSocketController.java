@@ -26,7 +26,8 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Inbound STOMP controller with zero-blocking immediate broadcasts and decoupled asynchronous persistence.
+ * Inbound STOMP WebSocket controller engineered for zero-blocking immediate broadcasts,
+ * O(1) in-memory membership verification, and decoupled asynchronous persistence.
  */
 @Slf4j
 @Controller
@@ -39,7 +40,6 @@ public class RoomWebSocketController {
     private final FogService fogService;
     private final RoomService roomService;
     private final RoomSettingsService roomSettingsService;
-    private final RoomSessionManager sessionManager;
 
     @MessageMapping("/room/{roomId}/presence/join")
     public void handlePresenceJoin(
@@ -90,8 +90,8 @@ public class RoomWebSocketController {
         if (event == null || principal == null || event.getData() == null) return;
 
         if (roomService.isHostOrAdmin(roomId, principal.getName())) {
-            roomService.updateSceneConditions(roomId, event.getData().getAvailableConditions());
             messagingTemplate.convertAndSend(WsConstants.TOPIC_ROOM_PREFIX + roomId, event);
+            roomService.updateSceneConditions(roomId, event.getData().getAvailableConditions());
         } else {
             log.warn("Unauthorized condition pool update attempt by {}", principal.getName());
         }
@@ -106,8 +106,8 @@ public class RoomWebSocketController {
         if (event == null || principal == null || event.getData() == null) return;
 
         if (roomService.isHostOrAdmin(roomId, principal.getName())) {
-            roomService.updateRoleTitle(roomId, principal.getName(), event.getData());
             messagingTemplate.convertAndSend(WsConstants.TOPIC_ROOM_PREFIX + roomId, event);
+            roomService.updateRoleTitle(roomId, principal.getName(), event.getData());
         }
     }
 
@@ -123,8 +123,8 @@ public class RoomWebSocketController {
             return;
         }
 
-        roomService.updateLastActive(roomId, principal.getName());
         messagingTemplate.convertAndSend(WsConstants.TOPIC_ROOM_PREFIX + roomId, event);
+        roomService.updateLastActive(roomId, principal.getName());
     }
 
     @MessageMapping("/room/{roomId}/drawing")
@@ -193,8 +193,8 @@ public class RoomWebSocketController {
             return;
         }
 
-        roomService.updateLastActive(roomId, principal.getName());
         messagingTemplate.convertAndSend(WsConstants.TOPIC_ROOM_PREFIX + roomId, event);
+        roomService.updateLastActive(roomId, principal.getName());
     }
 
     @MessageMapping("/room/{roomId}/settings")
@@ -221,8 +221,8 @@ public class RoomWebSocketController {
         if (principal == null || event == null || event.getData() == null) return;
 
         if (roomService.hasPermission(roomId, principal.getName(), WsConstants.PERM_FOG)) {
-            fogService.updateGlobalReveal(roomId, event.getData());
             messagingTemplate.convertAndSend(WsConstants.TOPIC_ROOM_PREFIX + roomId, event);
+            fogService.updateGlobalReveal(roomId, event.getData());
         }
     }
 }

@@ -14,10 +14,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+/**
+ * Service managing Fog of War regions with per-scene concurrency locks and zero-memory native JSONB queries.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -30,10 +34,13 @@ public class FogService {
     private final PlayerPermissionRepository permissionRepository;
     private final ObjectMapper objectMapper;
 
-    // قفل همگام‌سازی در سطح صحنه برای جلوگیری از Race Condition بین دستورات متوالی CLEAR_ALL و HIDE/REVEAL
+    private static final int MAX_LOCK_ENTRIES = 5000;
     private final ConcurrentHashMap<UUID, Object> sceneLocks = new ConcurrentHashMap<>();
 
     private Object getSceneLock(UUID sceneId) {
+        if (sceneLocks.size() > MAX_LOCK_ENTRIES) {
+            sceneLocks.clear();
+        }
         return sceneLocks.computeIfAbsent(sceneId, k -> new Object());
     }
 
@@ -130,36 +137,13 @@ public class FogService {
         }
     }
 
+    /**
+     * Deletes a fog region directly in PostgreSQL via indexed native query without loading entities into JVM heap.
+     */
     @Transactional
     public void deleteFogRegion(UUID sceneId, String targetId) {
         if (targetId == null || targetId.isBlank()) return;
-
-        List<FogRegion> existing = sceneId != null
-                ? fogRepository.findBySceneId(sceneId)
-                : fogRepository.findAll();
-
-        for (FogRegion r : existing) {
-            boolean match = false;
-            if (r.getId() != null && r.getId().toString().equalsIgnoreCase(targetId)) {
-                match = true;
-            } else if (r.getPoints() != null && r.getPoints().has("id")) {
-                if (r.getPoints().get("id").asText().equalsIgnoreCase(targetId)) {
-                    match = true;
-                }
-            }
-
-            if (match) {
-                fogRepository.delete(r);
-                fogRepository.flush();
-                return;
-            }
-        }
-
-        try {
-            UUID uuid = UUID.fromString(targetId);
-            fogRepository.deleteById(uuid);
-            fogRepository.flush();
-        } catch (IllegalArgumentException ignored) {}
+        fogRepository.deleteByTargetIdNative(sceneId, targetId.trim());
     }
 
     @Transactional
@@ -178,7 +162,7 @@ public class FogService {
             return;
         }
 
-        if ("FILL_ALL".equalsIgnoreCase(eventType) || "fill_all".equalsIgnoreCase(eventType)) {
+        if ("FILL_ALL".equalsIgnoreCase(eventType)) {
             fogRepository.deleteBySceneId(event.getSceneId());
             scene.setFogFilled(true);
             sceneRepository.saveAndFlush(scene);
@@ -217,30 +201,18 @@ public class FogService {
             fogType = FogRegion.FogType.HIDE;
         }
 
-        List<FogRegion> existingRegions = fogRepository.findBySceneId(event.getSceneId());
-        FogRegion matchedRegion = null;
-
         if (incomingId != null && !incomingId.isBlank()) {
-            for (FogRegion r : existingRegions) {
-                if (r.getId() != null && r.getId().toString().equalsIgnoreCase(incomingId)) {
-                    matchedRegion = r;
-                    break;
-                }
-                if (r.getPoints() != null && r.getPoints().has("id")) {
-                    String storedId = r.getPoints().get("id").asText();
-                    if (storedId.equalsIgnoreCase(incomingId)) {
-                        matchedRegion = r;
-                        break;
-                    }
-                }
+            Optional<FogRegion> matchedOpt = fogRepository.findBySceneIdAndTargetIdNative(
+                    event.getSceneId(),
+                    incomingId.trim()
+            );
+            if (matchedOpt.isPresent()) {
+                FogRegion matchedRegion = matchedOpt.get();
+                matchedRegion.setPoints(pointsNode);
+                matchedRegion.setType(fogType);
+                fogRepository.saveAndFlush(matchedRegion);
+                return;
             }
-        }
-
-        if (matchedRegion != null) {
-            matchedRegion.setPoints(pointsNode);
-            matchedRegion.setType(fogType);
-            fogRepository.saveAndFlush(matchedRegion);
-            return;
         }
 
         FogRegion newRegion = FogRegion.builder()

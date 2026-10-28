@@ -12,7 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * High-performance, lock-free in-memory registry for tracking online user sessions and room presence.
- * Designed with O(1) lookups to scale to millions of concurrent user sessions without coarse lock contention.
+ * Designed with O(1) lookups by both UUID and email to scale to millions of concurrent WebSocket frames
+ * without database round-trips or coarse lock contention.
  */
 @Slf4j
 @Component
@@ -23,6 +24,9 @@ public class RoomSessionManager {
 
     // RoomId -> Map<UserId, Set<SessionId>> (Supports multi-tab while preserving single-room logic)
     private final ConcurrentHashMap<UUID, ConcurrentHashMap<UUID, Set<String>>> roomOnlineUsers = new ConcurrentHashMap<>();
+
+    // RoomId -> Set<LowercaseEmail> (O(1) fast-path membership verification for STOMP frames)
+    private final ConcurrentHashMap<UUID, Set<String>> roomOnlineEmails = new ConcurrentHashMap<>();
 
     // SessionId -> UserSessionDetails (O(1) session resolution)
     private final ConcurrentHashMap<String, UserSessionDetails> sessions = new ConcurrentHashMap<>();
@@ -41,17 +45,18 @@ public class RoomSessionManager {
     /**
      * Registers an incoming user session and re-allocates active room context if switched.
      *
-     * @param roomId   target room identifier
+     * @param roomId    target room identifier
      * @param sessionId active STOMP session identifier
-     * @param userId   authenticated user UUID
-     * @param username user display name
-     * @param email    user principal email
+     * @param userId    authenticated user UUID
+     * @param username  user display name
+     * @param email     user principal email
      */
     public void addUser(UUID roomId, String sessionId, UUID userId, String username, String email) {
-        if (roomId == null || sessionId == null || userId == null) {
+        if (roomId == null || sessionId == null || userId == null || email == null) {
             return;
         }
 
+        String normalizedEmail = email.trim().toLowerCase();
         UUID previousRoomIdToNotify = null;
 
         UUID previousRoomId = userActiveRoom.put(userId, roomId);
@@ -61,6 +66,14 @@ public class RoomSessionManager {
                 prevRoomUsers.remove(userId);
                 if (prevRoomUsers.isEmpty()) {
                     roomOnlineUsers.remove(previousRoomId);
+                }
+            }
+
+            Set<String> prevEmails = roomOnlineEmails.get(previousRoomId);
+            if (prevEmails != null) {
+                prevEmails.remove(normalizedEmail);
+                if (prevEmails.isEmpty()) {
+                    roomOnlineEmails.remove(previousRoomId);
                 }
             }
 
@@ -78,13 +91,16 @@ public class RoomSessionManager {
             previousRoomIdToNotify = previousRoomId;
         }
 
-        UserSessionDetails details = new UserSessionDetails(sessionId, roomId, userId, username, email);
+        UserSessionDetails details = new UserSessionDetails(sessionId, roomId, userId, username, normalizedEmail);
         sessions.put(sessionId, details);
         userSessionIndex.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet()).add(sessionId);
 
         roomOnlineUsers.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>())
                 .computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet())
                 .add(sessionId);
+
+        roomOnlineEmails.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet())
+                .add(normalizedEmail);
 
         if (previousRoomIdToNotify != null) {
             broadcastOnlineMembers(previousRoomIdToNotify);
@@ -113,6 +129,7 @@ public class RoomSessionManager {
 
         UUID userId = details.userId();
         UUID roomId = details.roomId();
+        String normalizedEmail = details.email();
         UUID roomIdToNotify = null;
 
         Set<String> userSessions = userSessionIndex.get(userId);
@@ -132,10 +149,19 @@ public class RoomSessionManager {
                     roomUsers.remove(userId);
                     userActiveRoom.remove(userId, roomId);
                     roomIdToNotify = roomId;
+
+                    Set<String> emails = roomOnlineEmails.get(roomId);
+                    if (emails != null && normalizedEmail != null) {
+                        emails.remove(normalizedEmail);
+                        if (emails.isEmpty()) {
+                            roomOnlineEmails.remove(roomId);
+                        }
+                    }
                 }
             }
             if (roomUsers.isEmpty()) {
                 roomOnlineUsers.remove(roomId);
+                roomOnlineEmails.remove(roomId);
             }
         }
 
@@ -163,11 +189,18 @@ public class RoomSessionManager {
             Set<String> userSessions = roomUsers.remove(userId);
             if (userSessions != null) {
                 for (String sid : userSessions) {
-                    sessions.remove(sid);
+                    UserSessionDetails removed = sessions.remove(sid);
+                    if (removed != null && removed.email() != null) {
+                        Set<String> emails = roomOnlineEmails.get(roomId);
+                        if (emails != null) {
+                            emails.remove(removed.email());
+                        }
+                    }
                 }
             }
             if (roomUsers.isEmpty()) {
                 roomOnlineUsers.remove(roomId);
+                roomOnlineEmails.remove(roomId);
             }
         }
 
@@ -194,6 +227,7 @@ public class RoomSessionManager {
             return;
         }
 
+        roomOnlineEmails.remove(roomId);
         ConcurrentHashMap<UUID, Set<String>> users = roomOnlineUsers.remove(roomId);
         if (users != null) {
             for (Map.Entry<UUID, Set<String>> entry : users.entrySet()) {
@@ -211,6 +245,21 @@ public class RoomSessionManager {
 
         broadcastOnlineMembers(roomId);
         log.info("Presence: Room {} memory cleared", roomId);
+    }
+
+    /**
+     * O(1) lock-free check verifying whether a user email is currently online in the given room.
+     *
+     * @param roomId target room UUID
+     * @param email  user principal email
+     * @return true if user has an active verified session in the room
+     */
+    public boolean isEmailOnlineInRoom(UUID roomId, String email) {
+        if (roomId == null || email == null) {
+            return false;
+        }
+        Set<String> emails = roomOnlineEmails.get(roomId);
+        return emails != null && emails.contains(email.trim().toLowerCase());
     }
 
     /**

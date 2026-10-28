@@ -11,7 +11,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Central in-memory high performance Caffeine cache configuration.
+ * Central in-memory high-performance Caffeine cache configuration.
+ * Tuned with bounded W-TinyLFU eviction to minimize database round-trips under heavy WebSocket load.
  */
 @Configuration
 @EnableCaching
@@ -32,9 +33,9 @@ public class CacheConfig {
                 CACHE_PERMISSIONS
         ));
         cacheManager.setCaffeine(Caffeine.newBuilder()
-                .maximumSize(1000)
-                .expireAfterWrite(60, TimeUnit.SECONDS)
-                .recordStats()
+                .initialCapacity(128)
+                .maximumSize(10_000)
+                .expireAfterWrite(120, TimeUnit.SECONDS)
         );
         return cacheManager;
     }
