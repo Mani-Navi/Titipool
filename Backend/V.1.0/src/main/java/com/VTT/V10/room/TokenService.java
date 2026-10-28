@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 /**
  * Service managing canvas tokens, attributes, permissions, and asynchronous movement state persistence.
+ * Optimized with single-query EntityGraphs and indexed existence checks.
  */
 @Slf4j
 @Service
@@ -59,16 +60,14 @@ public class TokenService {
         if (requester != null && requester.getUser() != null) {
             finalControlledBy = requester.getUser().getId().toString();
             if (!isGM) {
-                final String uid = finalControlledBy;
-                List<Token> existing = tokenRepository.findBySceneId(scene.getId());
-                boolean alreadyHasToken = existing.stream().anyMatch(t -> uid.equals(t.getControlledBy()));
+                boolean alreadyHasToken = tokenRepository.existsBySceneIdAndControlledBy(scene.getId(), finalControlledBy);
                 if (alreadyHasToken) {
                     throw new ResponseStatusException(HttpStatus.FORBIDDEN, "هر بازیکن تنها مجاز به داشتن یک توکن اختصاصی است");
                 }
             } else {
                 finalControlledBy = (request.getControlledBy() != null && !request.getControlledBy().isBlank())
                         ? request.getControlledBy()
-                        : (requester.getUser() != null ? requester.getUser().getId().toString() : "");
+                        : requester.getUser().getId().toString();
             }
         } else if (isGM) {
             finalControlledBy = request.getControlledBy() != null ? request.getControlledBy() : "";
@@ -108,7 +107,7 @@ public class TokenService {
                     .ac(request.getAc() != null ? request.getAc() : 12)
                     .controlledBy(finalControlledBy)
                     .gmNotes(isGM ? request.getGmNotes() : null)
-                    .isProp(isGM ? Boolean.TRUE.equals(request.getIsProp()) : false)
+                    .isProp(isGM && Boolean.TRUE.equals(request.getIsProp()))
                     .goldValue(isGM && request.getGoldValue() != null ? request.getGoldValue() : 0)
                     .xpValue(isGM && request.getXpValue() != null ? request.getXpValue() : 0)
                     .isLooted(false)
@@ -134,7 +133,7 @@ public class TokenService {
 
     @Transactional
     public void deleteTokenWithAuth(UUID tokenId, String userEmail) {
-        Token token = tokenRepository.findById(tokenId)
+        Token token = tokenRepository.findWithSceneAndRoomById(tokenId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "توکن یافت نشد"));
 
         Room room = token.getScene() != null ? token.getScene().getRoom() : null;
@@ -194,7 +193,7 @@ public class TokenService {
 
         try {
             UUID tokenId = UUID.fromString(data.getTokenId());
-            Optional<Token> tokenOpt = tokenRepository.findById(tokenId);
+            Optional<Token> tokenOpt = tokenRepository.findWithSceneAndRoomById(tokenId);
             if (tokenOpt.isEmpty()) return;
 
             Token token = tokenOpt.get();
