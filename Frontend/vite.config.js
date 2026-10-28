@@ -25,11 +25,16 @@ export default defineConfig(({ mode }) => ({
     minify: 'esbuild',
     sourcemap: false,
     cssCodeSplit: true,
-    modulePreload: false,
+    modulePreload: {
+      polyfill: false,
+      resolveDependencies: (filename, deps) => {
+        // فقط هسته سبک React به صورت موازی با index.js پیش‌بارگذاری شود
+        return deps.filter((dep) => dep.includes('vendor-react'));
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // ۱. ماژول‌های مشترک Rollup و هسته React/Zustand حتماً اول بررسی شوند تا وارد vendor-three نشوند
           if (
               id.includes('commonjsHelpers') ||
               id.includes('vite/preload-helper') ||
@@ -46,7 +51,6 @@ export default defineConfig(({ mode }) => ({
 
           if (!id.includes('node_modules')) return;
 
-          // ۲. موتور سه‌بعدی و فیزیک کاملاً ایزوله (فقط در زمان اسکرول یا ورود به اتاق دانلود می‌شود)
           if (
               id.includes('node_modules/three') ||
               id.includes('node_modules/@react-three') ||
@@ -55,7 +59,6 @@ export default defineConfig(({ mode }) => ({
             return 'vendor-three';
           }
 
-          // ۳. موتور کانواس دوبعدی (فقط در صفحه اتاق بازی دانلود می‌شود)
           if (
               id.includes('node_modules/konva') ||
               id.includes('node_modules/react-konva')

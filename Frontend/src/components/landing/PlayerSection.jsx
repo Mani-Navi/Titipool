@@ -1,5 +1,4 @@
 import React, { useState, memo } from 'react';
-import { motion } from 'motion/react';
 import { Heart, Sparkles } from 'lucide-react';
 import { sound } from '../../utils/tableAudio';
 import { GsapHeadingReveal } from './GsapHeadingReveal';
@@ -60,9 +59,9 @@ export const PlayerSection = memo(() => {
                                 </div>
 
                                 <div className="w-full h-2.5 bg-neutral-800 rounded-full overflow-hidden mb-3">
-                                    <motion.div
-                                        animate={{ width: `${(currentHp / maxHp) * 100}%` }}
-                                        className="h-full bg-gradient-to-l from-emerald-500 to-emerald-400 rounded-full"
+                                    <div
+                                        style={{ width: `${(currentHp / maxHp) * 100}%` }}
+                                        className="h-full bg-gradient-to-l from-emerald-500 to-emerald-400 rounded-full transition-all duration-300 ease-out"
                                     />
                                 </div>
 
@@ -147,14 +146,10 @@ export const PlayerSection = memo(() => {
                             </div>
 
                             {lastAction && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 6 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="mt-3.5 p-2 rounded-xl bg-amber-950/60 border border-amber-500/40 text-amber-300 text-xs text-center flex items-center justify-center gap-1.5 shadow-md"
-                                >
+                                <div className="mt-3.5 p-2 rounded-xl bg-amber-950/60 border border-amber-500/40 text-amber-300 text-xs text-center flex items-center justify-center gap-1.5 shadow-md animate-fade-in-up">
                                     <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                                     <span>انجام شد: {lastAction}</span>
-                                </motion.div>
+                                </div>
                             )}
                         </div>
                     </div>
