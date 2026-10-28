@@ -1,31 +1,24 @@
 import api from "./axios";
 import { MAP_PRESETS } from "../constants/mapPresets";
 import { TOKEN_PRESETS } from "../constants/tokenPresets";
-
-const RAW_BASE = api.defaults.baseURL || "http://localhost:8080/api";
-const BACKEND_HOST = RAW_BASE.replace(/\/api\/?$/, "");
+import { getFullAssetUrl } from "../utils/assetUrl";
 
 export const getAssetUrl = (url) => {
   if (!url || typeof url !== "string") return "";
   const trimmed = url.trim();
+  if (!trimmed) return "";
 
-  // اگر لینک کامل یا داده data / blob است، فوراً برگردان
   if (
-      trimmed.startsWith("http://") ||
-      trimmed.startsWith("https://") ||
-      trimmed.startsWith("data:") ||
-      trimmed.startsWith("blob:")
+      !trimmed.startsWith("http://") &&
+      !trimmed.startsWith("https://") &&
+      !trimmed.startsWith("data:") &&
+      !trimmed.startsWith("blob:") &&
+      !trimmed.includes("/")
   ) {
-    return trimmed;
+    return getFullAssetUrl(`/uploads/${trimmed}`);
   }
 
-  // اگر فقط نام فایل بدون اسلش بود، مسیر uploads را به آن اضافه کن
-  if (!trimmed.includes("/")) {
-    return `${BACKEND_HOST}/uploads/${trimmed}`;
-  }
-
-  const cleanPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-  return `${BACKEND_HOST}${cleanPath}`;
+  return getFullAssetUrl(trimmed);
 };
 
 export const assetApi = {
