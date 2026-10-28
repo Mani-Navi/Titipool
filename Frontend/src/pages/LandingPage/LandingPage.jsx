@@ -14,6 +14,7 @@ import { PlayerSection } from '../../components/landing/PlayerSection';
 import { FeaturesSequence } from '../../components/landing/FeaturesSequence';
 import { HowItWorks } from '../../components/landing/HowItWorks';
 import { PersianBrandSection } from '../../components/landing/PersianBrandSection';
+import { FaqSection } from '../../components/landing/FaqSection';
 import { FinalCta } from '../../components/landing/FinalCta';
 import { Footer } from '../../components/landing/Footer';
 import { StickyMobileCTA } from '../../components/landing/StickyMobileCTA';
@@ -48,7 +49,7 @@ export default function LandingPage() {
         }
     }, []);
 
-    // بارگذاری موتور ۱ مگابایتی سه‌بعدی صرفاً پس از اولین اسکرول یا تعامل کاربر (حذف کامل Unused JS در لود اولیه)
+    // بارگذاری ماژول سه‌بعدی فقط با اسکرول کاربر یا کلیک روی کارت پیش‌نمایش
     useEffect(() => {
         if (shouldLoadDice) return;
 
@@ -169,6 +170,8 @@ export default function LandingPage() {
                     <HowItWorks onStartGame={handleStartGame} />
 
                     <PersianBrandSection />
+
+                    <FaqSection />
 
                     <FinalCta
                         onStartGame={handleStartGame}

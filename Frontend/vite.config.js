@@ -28,29 +28,32 @@ export default defineConfig(({ mode }) => ({
     modulePreload: {
       polyfill: false,
       resolveDependencies: (filename, deps) => {
-        // فقط هسته سبک React به صورت موازی با index.js پیش‌بارگذاری شود
         return deps.filter((dep) => dep.includes('vendor-react'));
       },
     },
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // ۱. پکیج سنگین reconciler به چانک اختصاصی منتقل شود تا در لندینگ دانلود نشود
+          if (id.includes('/react-reconciler/')) {
+            return 'vendor-reconciler';
+          }
+
+          // ۲. هسته سبک React صرفاً شامل پکیج‌های حداقلی مورد نیاز صفحه نخست
           if (
               id.includes('commonjsHelpers') ||
               id.includes('vite/preload-helper') ||
               id.includes('/react/') ||
               id.includes('/react-dom/') ||
               id.includes('/react-router') ||
-              id.includes('/scheduler/') ||
-              id.includes('/zustand/') ||
-              id.includes('/its-fine/') ||
-              id.includes('/react-reconciler/')
+              id.includes('/scheduler/')
           ) {
             return 'vendor-react';
           }
 
           if (!id.includes('node_modules')) return;
 
+          // ۳. موتور سه‌بعدی کاملاً ایزوله
           if (
               id.includes('node_modules/three') ||
               id.includes('node_modules/@react-three') ||
@@ -59,6 +62,7 @@ export default defineConfig(({ mode }) => ({
             return 'vendor-three';
           }
 
+          // ۴. موتور کانواس دوبعدی کاملاً ایزوله
           if (
               id.includes('node_modules/konva') ||
               id.includes('node_modules/react-konva')
@@ -72,6 +76,10 @@ export default defineConfig(({ mode }) => ({
 
           if (id.includes('node_modules/@stomp')) {
             return 'vendor-stomp';
+          }
+
+          if (id.includes('node_modules/zustand')) {
+            return 'vendor-zustand';
           }
         },
         entryFileNames: 'assets/[name]-[hash].js',
