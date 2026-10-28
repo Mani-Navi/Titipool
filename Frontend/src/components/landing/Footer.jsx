@@ -74,12 +74,12 @@ export const Footer = memo(() => {
                             <ul className="space-y-2 text-neutral-600 font-medium">
                                 <li>
                                     <a
-                                        href="mailto:support@titipool.ir"
+                                        href="mailto:support@titipoolgames.ir"
                                         className="hover:text-neutral-950 transition-colors inline-flex items-center gap-1.5 font-mono text-[11px]"
                                         dir="ltr"
                                     >
                                         <Mail className="w-3.5 h-3.5 text-[#f59e0b]" />
-                                        <span>support@titipool.ir</span>
+                                        <span>support@titipoolgames.ir</span>
                                     </a>
                                 </li>
                                 <li className="text-[11px] text-neutral-400">
@@ -95,8 +95,8 @@ export const Footer = memo(() => {
                     <div className="flex items-center gap-4">
                         <span className="font-mono">پلتفرم امن بازی رومیزی</span>
                         <span>·</span>
-                        <a href="mailto:support@titipool.ir" className="hover:underline font-mono">
-                            support@titipool.ir
+                        <a href="mailto:support@titipoolgames.ir" className="hover:underline font-mono">
+                            support@titipoolgames.ir
                         </a>
                         <span>·</span>
                         <span>ارتباط رمزنگاری‌شده سرتاسری</span>

@@ -1,6 +1,6 @@
 # Titipool (تیتی‌پول) — Persian Virtual Tabletop (VTT)
 
-> Titipool (https://titipool.ir) is the first native Persian (RTL) Virtual Tabletop (VTT) web platform designed for tabletop RPG players and Dungeon Masters (D&D 5e, Pathfinder, Call of Cthulhu). Inspired by the simplicity and speed of Owlbear Rodeo, Titipool runs directly in the browser at 60 FPS with zero installation required.
+> Titipool (https://titipoolgames.ir) is the first native Persian (RTL) Virtual Tabletop (VTT) web platform designed for tabletop RPG players and Dungeon Masters (D&D 5e, Pathfinder, Call of Cthulhu). Inspired by the simplicity and speed of Owlbear Rodeo, Titipool runs directly in the browser at 60 FPS with zero installation required.
 
 ## خلاصه معرفی فارسی (Persian Overview)
 تیتی‌پول (Titipool) اولین و سریع‌ترین پلتفرم میز بازی مجازی فارسی (Persian VTT) برای اجرای آنلاین بازی‌های نقش‌آفرینی رومیزی (مانند D&D 5e) است. این پلتفرم به دانجن‌مسترها (GM) و بازیکنان اجازه می‌دهد بدون نیاز به نصب نرم‌افزار یا ابزارهای جانبی، اتاق بسازند، با کد دعوت ۶ کاراکتری دوستان خود را دعوت کنند، نقشه و توکن بچینند، تاس سه‌بعدی فیزیکی پرتاب کنند و همزمان با چت صوتی داخلی بازی کنند.
@@ -14,15 +14,15 @@
 - **D&D Distance Rulers:** Multi-waypoint distance measurement supporting D&D 5e (5-10-5 chessboard), D&D 3.5e (alternating diagonal), Euclidean, and Manhattan metrics.
 
 ## Public URLs
-- Homepage: https://titipool.ir/
-- Login: https://titipool.ir/login
-- Register: https://titipool.ir/register
-- Terms of Service: https://titipool.ir/terms-of-service
-- Privacy Policy: https://titipool.ir/privacy-policy
-- Cookie Policy: https://titipool.ir/cookie-policy
-- Refund Policy: https://titipool.ir/refund-policy
+- Homepage: https://titipoolgames.ir/
+- Login: https://titipoolgames.ir/login
+- Register: https://titipoolgames.ir/register
+- Terms of Service: https://titipoolgames.ir/terms-of-service
+- Privacy Policy: https://titipoolgames.ir/privacy-policy
+- Cookie Policy: https://titipoolgames.ir/cookie-policy
+- Refund Policy: https://titipoolgames.ir/refund-policy
 
 ## Contact & Support
-- Website: https://titipool.ir
-- Support Email: support@titipool.ir
-- Legal Email: legal@titipool.ir
+- Website: https://titipoolgames.ir
+- Support Email: support@titipoolgames.ir
+- Legal Email: legal@titipoolgames.ir

@@ -83,11 +83,11 @@ export const PrivacyPolicyPage = () => {
                     </p>
                     <div className="pt-1">
                         <a
-                            href="mailto:support@titipool.ir"
+                            href="mailto:support@titipoolgames.ir"
                             className="text-amber-400 hover:text-amber-300 font-mono font-bold text-xs inline-flex items-center gap-1.5"
                             dir="ltr"
                         >
-                            <span>support@titipool.ir</span>
+                            <span>support@titipoolgames.ir</span>
                         </a>
                     </div>
                 </section>
