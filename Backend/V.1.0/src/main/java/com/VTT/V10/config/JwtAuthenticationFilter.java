@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.util.Collections;
 
 /**
- * Stateless once-per-request authentication filter for extracting and validating JWT tokens.
+ * Stateless once-per-request authentication filter performing single-pass JWT validation.
  */
 @Slf4j
 @Component
@@ -44,27 +44,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String jwt = authHeader.substring(BEARER_PREFIX.length());
         try {
-            if (jwtService.validateToken(jwt)) {
-                final String userEmail = jwtService.extractEmail(jwt);
-
-                if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    if (jwtService.isTokenValid(jwt, userEmail)) {
-                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                                userEmail,
-                                null,
-                                Collections.emptyList()
-                        );
-                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                        SecurityContextHolder.getContext().setAuthentication(authToken);
-                    }
-                }
-            } else {
+            final String userEmail = jwtService.validateAndExtractEmail(jwt);
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userEmail,
+                        null,
+                        Collections.emptyList()
+                );
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            } else if (userEmail == null) {
                 SecurityContextHolder.clearContext();
             }
         } catch (Exception ex) {
             SecurityContextHolder.clearContext();
             if (log.isDebugEnabled()) {
-                log.debug("JWT authentication filter rejected token validation: {}", ex.getMessage());
+                log.debug("JWT authentication filter rejected token: {}", ex.getMessage());
             }
         }
 

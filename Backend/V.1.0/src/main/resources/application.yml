@@ -14,7 +14,7 @@ server:
     threads:
       max: 50
       min-spare: 5
-    accept-count: 100
+    accept-count: 200
     connection-timeout: 20000
   error:
     include-stacktrace: never
@@ -24,6 +24,10 @@ spring:
   application:
     name: VTT-Platform
 
+  threads:
+    virtual:
+      enabled: true
+
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/VTT}
     username: ${DB_USER:postgres}
@@ -31,7 +35,7 @@ spring:
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: VTT-Hikari-Pool
-      maximum-pool-size: 10
+      maximum-pool-size: 15
       minimum-idle: 3
       connection-timeout: 20000
       idle-timeout: 300000
@@ -56,14 +60,7 @@ spring:
   cache:
     type: caffeine
     caffeine:
-      spec: maximumSize=1000,expireAfterWrite=60s
-
-  task:
-    execution:
-      pool:
-        core-size: 4
-        max-size: 8
-        queue-capacity: 500
+      spec: initialCapacity=128,maximumSize=10000,expireAfterWrite=120s
 
   flyway:
     enabled: true
