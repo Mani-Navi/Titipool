@@ -9,7 +9,6 @@ export function usePageTitle(title, customDescription = null) {
         const fullTitle = title ? `${title} | ${BASE_BRAND}` : BASE_BRAND;
         document.title = fullTitle;
 
-        // ۱. به‌روزرسانی پویای Canonical URL بر اساس مسیر فعلی (بدون پارامترهای اضافی)
         if (typeof window !== "undefined") {
             const cleanPath = window.location.pathname === "/" ? "" : window.location.pathname.replace(/\/+$/, "");
             const canonicalUrl = `https://titipoolgames.ir${cleanPath || "/"}`;
@@ -28,7 +27,6 @@ export function usePageTitle(title, customDescription = null) {
             }
         }
 
-        // ۲. به‌روزرسانی پویای Meta Description در صورت ارسال
         if (customDescription) {
             const descMeta = document.querySelector('meta[name="description"]');
             if (descMeta) {

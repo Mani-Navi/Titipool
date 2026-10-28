@@ -8,7 +8,6 @@ Disallow: /dashboard
 Disallow: /profile
 Disallow: /welcome
 
-# مجوز صریح به خزنده‌های موتورهای جستجوی هوش مصنوعی (GEO Optimization)
 User-agent: GPTBot
 Allow: /
 Allow: /llms.txt
