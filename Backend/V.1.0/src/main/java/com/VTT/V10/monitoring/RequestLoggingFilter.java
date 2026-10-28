@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * High-speed observability filter populating MDC context (traceId, user, IP),
- * detecting slow HTTP endpoints (>300ms), and logging security audit events.
+ * Ultra-low-overhead observability filter running ahead of Spring Security to guarantee
+ * MDC traceId/IP propagation and capture all security rejections (401/403/429) and slow endpoints (>300ms).
  */
 @Component
-@Order(Ordered.LOWEST_PRECEDENCE - 10)
+@Order(Ordered.HIGHEST_PRECEDENCE + 10)
 @RequiredArgsConstructor
 public class RequestLoggingFilter extends OncePerRequestFilter {
 
@@ -39,7 +39,9 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         String path = request.getRequestURI();
-        return path.startsWith("/uploads/") || path.startsWith("/actuator/health");
+        return path.startsWith("/uploads/")
+                || path.startsWith("/actuator/")
+                || path.startsWith("/ws");
     }
 
     @Override
@@ -53,14 +55,8 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         String traceId = resolveOrGenerateTraceId(request);
         String clientIp = extractClientIp(request);
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String principal = (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName()))
-                ? auth.getName()
-                : "anon";
-
         MDC.put("traceId", traceId);
         MDC.put("ip", clientIp);
-        MDC.put("user", principal);
         response.setHeader(TRACE_HEADER, traceId);
 
         try {
@@ -68,21 +64,34 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         } finally {
             long durationMs = (System.nanoTime() - startNano) / 1_000_000L;
             int status = response.getStatus();
-            String method = request.getMethod();
             String uri = request.getRequestURI();
 
-            // ۱. ثبت درخواست‌های کند در کانال پرفورمنس
-            if (durationMs >= SLOW_REQUEST_THRESHOLD_MS) {
-                PERF_LOG.warn("SLOW_API: {} {} -> status={} duration={}ms", method, uri, status, durationMs);
-                metricsService.incrementSlowRequest();
-            }
+            boolean isSlow = durationMs >= SLOW_REQUEST_THRESHOLD_MS;
+            boolean isSecurityStatus = (status == 401 || status == 403 || status == 429);
+            boolean isSensitiveAuthAction = uri.startsWith("/api/auth/login")
+                    || uri.startsWith("/api/auth/register")
+                    || uri.startsWith("/api/auth/google")
+                    || uri.startsWith("/api/user/change-");
 
-            // ۲. ثبت رخدادهای امنیتی (ورود، تغییر رمز، خطاهای ۴۰۱، ۴۰۳ و ۴۲۹)
-            if (status == 401 || status == 403 || status == 429) {
-                SEC_LOG.warn("SECURITY_REJECT: {} {} -> status={} duration={}ms", method, uri, status, durationMs);
-                metricsService.incrementSecurityEvent("HTTP_" + status);
-            } else if (uri.startsWith("/api/auth/") || uri.startsWith("/api/user/change-")) {
-                SEC_LOG.info("AUTH_AUDIT: {} {} -> status={} duration={}ms", method, uri, status, durationMs);
+            if (isSlow || isSecurityStatus || isSensitiveAuthAction) {
+                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+                    MDC.put("user", auth.getName());
+                }
+
+                String method = request.getMethod();
+
+                if (isSlow) {
+                    PERF_LOG.warn("SLOW_API: {} {} -> status={} duration={}ms", method, uri, status, durationMs);
+                    metricsService.incrementSlowRequest();
+                }
+
+                if (isSecurityStatus) {
+                    SEC_LOG.warn("SECURITY_REJECT: {} {} -> status={} duration={}ms", method, uri, status, durationMs);
+                    metricsService.incrementSecurityEvent("HTTP_" + status);
+                } else if (isSensitiveAuthAction) {
+                    SEC_LOG.info("AUTH_AUDIT: {} {} -> status={} duration={}ms", method, uri, status, durationMs);
+                }
             }
 
             MDC.clear();
@@ -91,7 +100,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
     private String resolveOrGenerateTraceId(HttpServletRequest request) {
         String incoming = request.getHeader(TRACE_HEADER);
-        if (incoming != null && incoming.length() >= 6 && incoming.length() <= 36) {
+        if (incoming != null && incoming.length() >= 6 && incoming.length() <= 32) {
             return incoming;
         }
         return Long.toHexString(ThreadLocalRandom.current().nextLong(0x10000000L, 0xFFFFFFFFL));

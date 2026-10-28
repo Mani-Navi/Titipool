@@ -29,7 +29,7 @@ ENV JAVA_OPTS="-XX:+UseG1GC \
                -Djava.security.egd=file:/dev/./urandom"
 
 RUN addgroup -S vttgroup && adduser -S vttuser -G vttgroup && \
-    mkdir -p /app/uploads && \
+    mkdir -p /app/uploads /app/logs/archived && \
     chown -R vttuser:vttgroup /app
 
 USER vttuser

@@ -2,7 +2,7 @@
 <configuration scan="true" scanPeriod="60 seconds">
 
     <property name="LOG_PATH" value="${LOG_PATH:-logs}" />
-    <property name="CONSOLE_PATTERN" value="%d{HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-SYSTEM}] [%X{user:-anon}@%X{ip:-local}] %logger{36} - %msg%n" />
+    <property name="CONSOLE_PATTERN" value="%d{HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-SYS}] [%X{ip:-local}] %logger{36} - %msg%n" />
     <property name="FILE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [trace=%X{traceId:-SYS}] [user=%X{user:-anon}] [ip=%X{ip:-local}] %logger{36} - %msg%n" />
 
     <!-- ۱. خروجی کنسول -->
@@ -13,7 +13,7 @@
         </encoder>
     </appender>
 
-    <!-- ۲. فایل لاگ اصلی برنامه با چرخش خودکار و فشرده‌سازی (حداکثر حجم کل: ۵۰۰ مگابایت) -->
+    <!-- ۲. فایل لاگ اصلی برنامه -->
     <appender name="APP_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/vtt-app.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
@@ -28,7 +28,7 @@
         </encoder>
     </appender>
 
-    <!-- ۳. فایل اختصاصی ممیزی امنیتی (Security Audit Log) -->
+    <!-- ۳. فایل اختصاصی ممیزی امنیتی -->
     <appender name="SECURITY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/vtt-security.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
@@ -43,7 +43,7 @@
         </encoder>
     </appender>
 
-    <!-- ۴. فایل اختصاصی پرفورمنس و درخواست‌های کند (Slow Operations Log) -->
+    <!-- ۴. فایل اختصاصی پرفورمنس و درخواست‌های کند -->
     <appender name="PERF_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/vtt-perf.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
@@ -58,11 +58,12 @@
         </encoder>
     </appender>
 
-    <!-- ۵. صف‌های غیرهمزمان (Async Non-Blocking Wrappers) برای حذف کامل تاخیر دیسک I/O -->
+    <!-- ۵. صف‌های غیرهمزمان بدون پیمایش استک (includeCallerData=false) -->
     <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
         <queueSize>1024</queueSize>
         <discardingThreshold>20</discardingThreshold>
         <neverBlock>true</neverBlock>
+        <includeCallerData>false</includeCallerData>
         <appender-ref ref="CONSOLE" />
     </appender>
 
@@ -70,6 +71,7 @@
         <queueSize>2048</queueSize>
         <discardingThreshold>0</discardingThreshold>
         <neverBlock>true</neverBlock>
+        <includeCallerData>false</includeCallerData>
         <appender-ref ref="APP_FILE" />
     </appender>
 
@@ -77,6 +79,7 @@
         <queueSize>1024</queueSize>
         <discardingThreshold>0</discardingThreshold>
         <neverBlock>true</neverBlock>
+        <includeCallerData>false</includeCallerData>
         <appender-ref ref="SECURITY_FILE" />
     </appender>
 
@@ -84,10 +87,10 @@
         <queueSize>512</queueSize>
         <discardingThreshold>0</discardingThreshold>
         <neverBlock>true</neverBlock>
+        <includeCallerData>false</includeCallerData>
         <appender-ref ref="PERF_FILE" />
     </appender>
 
-    <!-- کانال‌های اختصاصی لاگ -->
     <logger name="SECURITY_AUDIT" level="INFO" additivity="false">
         <appender-ref ref="ASYNC_SECURITY" />
         <appender-ref ref="ASYNC_CONSOLE" />
