@@ -25,6 +25,19 @@ export default defineConfig(({ mode }) => ({
     minify: 'esbuild',
     sourcemap: false,
     cssCodeSplit: true,
+    modulePreload: {
+      polyfill: false,
+      resolveDependencies: (filename, deps) => {
+        // جلوگیری از دانلود پیش‌فرض موتورهای سنگین اتاق بازی و سه‌بعدی در لود اولیه صفحه اصلی
+        return deps.filter(
+            (dep) =>
+                !dep.includes('vendor-three') &&
+                !dep.includes('vendor-konva') &&
+                !dep.includes('vendor-livekit') &&
+                !dep.includes('vendor-stomp')
+        );
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks: {

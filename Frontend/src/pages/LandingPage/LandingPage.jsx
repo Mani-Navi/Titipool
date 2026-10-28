@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 import { useAuthStore } from '../../stores/auth.store';
 import { isTokenExpired } from '../../utils/jwt';
@@ -26,8 +24,6 @@ const DiceSection = lazy(() =>
     }))
 );
 
-gsap.registerPlugin(ScrollTrigger);
-
 export default function LandingPage() {
     usePageTitle("میز مجازی بازی‌های رومیزی و D&D");
     const navigate = useNavigate();
@@ -47,32 +43,38 @@ export default function LandingPage() {
     }, [token]);
 
     useEffect(() => {
-        document.documentElement.style.overflowY = 'auto';
-        document.documentElement.style.height = 'auto';
-        document.body.style.overflowY = 'auto';
-        document.body.style.height = 'auto';
+        if (document.body.classList.contains('overflow-hidden')) {
+            document.body.classList.remove('overflow-hidden');
+        }
     }, []);
 
-    // اجرای بارگذاری سه‌بعدی صرفاً در زمان بیکاری پردازنده با requestIdleCallback
+    // بارگذاری موتور ۱ مگابایتی سه‌بعدی صرفاً پس از اولین اسکرول یا تعامل کاربر (حذف کامل Unused JS در لود اولیه)
     useEffect(() => {
-        if (!diceTriggerRef.current || shouldLoadDice) return;
+        if (shouldLoadDice) return;
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting) {
-                    if ('requestIdleCallback' in window) {
-                        window.requestIdleCallback(() => setShouldLoadDice(true));
-                    } else {
-                        setTimeout(() => setShouldLoadDice(true), 250);
-                    }
-                    observer.disconnect();
-                }
-            },
-            { rootMargin: '0px' }
-        );
+        let loaded = false;
+        const triggerLoad = () => {
+            if (loaded) return;
+            loaded = true;
+            setShouldLoadDice(true);
+            cleanup();
+        };
 
-        observer.observe(diceTriggerRef.current);
-        return () => observer.disconnect();
+        const onFirstScrollOrTouch = () => {
+            if (window.scrollY > 40) {
+                triggerLoad();
+            }
+        };
+
+        const cleanup = () => {
+            window.removeEventListener('scroll', onFirstScrollOrTouch);
+            window.removeEventListener('touchmove', triggerLoad);
+        };
+
+        window.addEventListener('scroll', onFirstScrollOrTouch, { passive: true });
+        window.addEventListener('touchmove', triggerLoad, { passive: true, once: true });
+
+        return cleanup;
     }, [shouldLoadDice]);
 
     const handleStartGame = () => {
@@ -101,8 +103,10 @@ export default function LandingPage() {
 
     const handleDiceExplore = () => {
         setShouldLoadDice(true);
-        const el = document.getElementById('dice');
-        if (el) el.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(() => {
+            const el = document.getElementById('dice');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }, 50);
     };
 
     return (
@@ -126,11 +130,11 @@ export default function LandingPage() {
 
                     <BigStatement />
 
-                    <div ref={diceTriggerRef} className="w-full">
+                    <div ref={diceTriggerRef} id="dice" className="w-full">
                         {shouldLoadDice ? (
                             <Suspense
                                 fallback={
-                                    <div className="w-full h-96 flex items-center justify-center bg-[#090a10] text-amber-400 font-bold text-xs" dir="rtl">
+                                    <div className="w-full h-96 flex items-center justify-center bg-[#090a10] text-amber-400 font-bold text-xs rounded-3xl max-w-6xl mx-auto my-8" dir="rtl">
                                         در حال آماده‌سازی استیج ۳بعدی تاس...
                                     </div>
                                 }
@@ -138,7 +142,19 @@ export default function LandingPage() {
                                 <DiceSection />
                             </Suspense>
                         ) : (
-                            <div className="w-full h-24 bg-transparent pointer-events-none" />
+                            <div
+                                onClick={() => setShouldLoadDice(true)}
+                                className="w-full max-w-6xl mx-auto my-12 px-4 cursor-pointer"
+                                dir="rtl"
+                            >
+                                <div className="w-full h-64 rounded-3xl bg-[#090a10] border border-[#242738] flex flex-col items-center justify-center gap-3 text-center p-6 shadow-xl">
+                                    <span className="text-xs font-mono text-amber-400 uppercase tracking-widest">REAL 3D RAPIER PHYSICS</span>
+                                    <h3 className="text-xl sm:text-2xl font-black text-white">میز پرتاب تاس سه‌بعدی فیزیکی</h3>
+                                    <span className="px-5 py-2 rounded-full bg-amber-500 text-zinc-950 font-bold text-xs shadow-md">
+                                        برای فعال‌سازی استیج سه‌بعدی اسکرول یا کلیک کنید
+                                    </span>
+                                </div>
+                            </div>
                         )}
                     </div>
 

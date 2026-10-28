@@ -30,69 +30,73 @@ export function useHeadingReveal(options = {}) {
 
         if (prefersReducedMotion) return;
 
-        // مهار امن خطاهای ارزیابی سلکتور DOM
-        const safeQuery = (target, selector) => {
-            try {
-                return typeof selector === 'string' && selector.trim() ? target.querySelector(selector) : null;
-            } catch {
-                return null;
-            }
+        let ctx = null;
+        const rafId = window.requestAnimationFrame(() => {
+            const safeQuery = (target, selector) => {
+                try {
+                    return typeof selector === 'string' && selector.trim() ? target.querySelector(selector) : null;
+                } catch {
+                    return null;
+                }
+            };
+
+            const safeQueryAll = (target, selector) => {
+                try {
+                    return typeof selector === 'string' && selector.trim() ? target.querySelectorAll(selector) : [];
+                } catch {
+                    return [];
+                }
+            };
+
+            ctx = gsap.context(() => {
+                const eyebrow = safeQuery(el, eyebrowSelector);
+                const lines = safeQueryAll(el, lineSelector);
+                const subtitle = safeQuery(el, subtitleSelector);
+
+                if (!lines.length && !eyebrow && !subtitle) return;
+
+                const tl = gsap.timeline({
+                    scrollTrigger: {
+                        trigger: el,
+                        start,
+                        once,
+                        toggleActions: 'play none none none',
+                    },
+                    delay,
+                });
+
+                if (eyebrow) {
+                    tl.fromTo(
+                        eyebrow,
+                        { yPercent: 100, opacity: 0 },
+                        { yPercent: 0, opacity: 1, duration: 0.5, ease: 'power2.out' }
+                    );
+                }
+
+                if (lines.length > 0) {
+                    tl.fromTo(
+                        lines,
+                        { yPercent, opacity: 0 },
+                        { yPercent: 0, opacity: 1, duration, ease, stagger },
+                        eyebrow ? '<0.05' : 0
+                    );
+                }
+
+                if (subtitle) {
+                    tl.fromTo(
+                        subtitle,
+                        { y: 16, opacity: 0 },
+                        { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' },
+                        '<0.15'
+                    );
+                }
+            }, el);
+        });
+
+        return () => {
+            window.cancelAnimationFrame(rafId);
+            if (ctx) ctx.revert();
         };
-
-        const safeQueryAll = (target, selector) => {
-            try {
-                return typeof selector === 'string' && selector.trim() ? target.querySelectorAll(selector) : [];
-            } catch {
-                return [];
-            }
-        };
-
-        const ctx = gsap.context(() => {
-            const eyebrow = safeQuery(el, eyebrowSelector);
-            const lines = safeQueryAll(el, lineSelector);
-            const subtitle = safeQuery(el, subtitleSelector);
-
-            if (!lines.length && !eyebrow && !subtitle) return;
-
-            const tl = gsap.timeline({
-                scrollTrigger: {
-                    trigger: el,
-                    start,
-                    once,
-                    toggleActions: 'play none none none',
-                },
-                delay,
-            });
-
-            // انیمیشن‌های بهینه شده بدون فیلتر Blur
-            if (eyebrow) {
-                tl.fromTo(
-                    eyebrow,
-                    { yPercent: 100, opacity: 0 },
-                    { yPercent: 0, opacity: 1, duration: 0.5, ease: 'power2.out' }
-                );
-            }
-
-            if (lines.length > 0) {
-                tl.fromTo(
-                    lines,
-                    { yPercent, opacity: 0 },
-                    { yPercent: 0, opacity: 1, duration, ease, stagger },
-                    eyebrow ? '<0.05' : 0
-                );
-            }
-
-            if (subtitle) {
-                tl.fromTo(
-                    subtitle,
-                    { y: 16, opacity: 0 },
-                    { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' },
-                    '<0.15'
-                );
-            }
-        }, el);
-
-        return () => ctx.revert();
     }, [
         lineSelector,
         eyebrowSelector,
