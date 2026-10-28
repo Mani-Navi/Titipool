@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo, memo } from "react";
 import { Stage, Layer } from "react-konva";
 import { useCanvasStore } from "../../stores/canvas.store";
 import { useSceneStore } from "../../stores/scene.store";
@@ -43,7 +43,7 @@ const generateUUID = () => {
   });
 };
 
-export const GameCanvas = ({ isGM = false, permissions = {} }) => {
+export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
   const containerRef = useRef(null);
   const stageRef = useRef(null);
   const textEditorInputRef = useRef(null);
@@ -113,10 +113,11 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
   const [liveFog, setLiveFog] = useState(null);
   const liveFogRef = useRef(null);
 
-  const [currentLinePoints, setCurrentLinePoints] = useState([]);
+  // نگهداری مختصات میانی ترسیم در Ref جهت جلوگیری از بازتولید هندلرهای Stage در هر فریم حرکت ماوس
+  const currentLinePointsRef = useRef([]);
+  const shapeStartRef = useRef(null);
   const [polygonVertices, setPolygonVertices] = useState([]);
   const [fogPolygonVertices, setFogPolygonVertices] = useState([]);
-  const [shapeStart, setShapeStart] = useState(null);
   const isInteracting = useRef(false);
 
   const [inlineTextEditor, setInlineTextEditor] = useState(null);
@@ -140,7 +141,6 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
 
   const canUseFog = isGM || Boolean(permissions?.canFog);
 
-  // در حالت سلکت، لایه ترسیمات و مه حتماً باید فعال باشد تا کلیک و انتخاب المان‌ها کار کند
   const isFeaturesListening =
       isSelectMode ||
       normalizedTool === "draw" ||
@@ -280,7 +280,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
           if (tokenApi && tokenApi.deleteToken) {
             tokenApi.deleteToken(strId).catch(() => {});
           }
-        } catch (err) {}
+        } catch {}
       }
       clearSelection();
       return;
@@ -501,6 +501,8 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       if (e.key === "Escape") {
         setPolygonVertices([]);
         setFogPolygonVertices([]);
+        currentLinePointsRef.current = [];
+        shapeStartRef.current = null;
         setLiveDrawing(null);
         liveDrawingRef.current = null;
         setLiveFog(null);
@@ -806,12 +808,12 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
 
         if (activeTool === TOOLS.DRAW) {
           isInteracting.current = true;
-          setShapeStart(pos);
+          shapeStartRef.current = pos;
 
           let initialDraw = null;
           if (activeDrawShape === DRAW_MODES.MARKER || activeDrawShape === DRAW_MODES.BRUSH) {
             const initialPoints = [pos.x, pos.y];
-            setCurrentLinePoints(initialPoints);
+            currentLinePointsRef.current = initialPoints;
             initialDraw = {
               type: activeDrawShape,
               points: initialPoints,
@@ -837,12 +839,11 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
               activeDrawShape === DRAW_MODES.TRIANGLE ||
               activeDrawShape === DRAW_MODES.HEXAGON
           ) {
-            const radius = 0;
             initialDraw = {
               type: activeDrawShape,
               x: pos.x,
               y: pos.y,
-              radius: radius,
+              radius: 0,
               stroke: drawStrokeColor,
               strokeWidth: drawStrokeWidth,
               fill: drawFillColor,
@@ -868,7 +869,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
 
         if (activeTool === TOOLS.FOG && canUseFog && fogBrushShape !== FOG_BRUSH_SHAPES.POLYGON) {
           isInteracting.current = true;
-          setShapeStart(pos);
+          shapeStartRef.current = pos;
 
           const isCoverAction = fogAction === FOG_ACTIONS.HIDE;
           const modeName = fogAction === FOG_ACTIONS.SLICE ? "slice" : isCoverAction ? "hide" : "reveal";
@@ -1017,14 +1018,20 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       return;
     }
 
-    if (!isInteracting.current) return;
+    const startPt = shapeStartRef.current;
+    if (!isInteracting.current || !startPt) return;
 
-    if (activeTool === TOOLS.DRAW && shapeStart) {
+    if (activeTool === TOOLS.DRAW) {
       let updatedDraw = null;
 
       if (activeDrawShape === DRAW_MODES.MARKER || activeDrawShape === DRAW_MODES.BRUSH) {
-        const updatedPoints = [...currentLinePoints, pos.x, pos.y];
-        setCurrentLinePoints(updatedPoints);
+        const pts = currentLinePointsRef.current;
+        const len = pts.length;
+        if (len >= 2 && Math.hypot(pos.x - pts[len - 2], pos.y - pts[len - 1]) < 2) {
+          return;
+        }
+        const updatedPoints = [...pts, pos.x, pos.y];
+        currentLinePointsRef.current = updatedPoints;
         updatedDraw = {
           type: activeDrawShape,
           points: updatedPoints,
@@ -1036,10 +1043,10 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       } else if (activeDrawShape === DRAW_MODES.RECTANGLE) {
         updatedDraw = {
           type: DRAW_MODES.RECTANGLE,
-          x: Math.min(shapeStart.x, pos.x),
-          y: Math.min(shapeStart.y, pos.y),
-          width: Math.abs(pos.x - shapeStart.x),
-          height: Math.abs(pos.y - shapeStart.y),
+          x: Math.min(startPt.x, pos.x),
+          y: Math.min(startPt.y, pos.y),
+          width: Math.abs(pos.x - startPt.x),
+          height: Math.abs(pos.y - startPt.y),
           stroke: drawStrokeColor,
           strokeWidth: drawStrokeWidth,
           fill: drawFillColor,
@@ -1050,11 +1057,11 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
           activeDrawShape === DRAW_MODES.TRIANGLE ||
           activeDrawShape === DRAW_MODES.HEXAGON
       ) {
-        const radius = Math.hypot(pos.x - shapeStart.x, pos.y - shapeStart.y);
+        const radius = Math.hypot(pos.x - startPt.x, pos.y - startPt.y);
         updatedDraw = {
           type: activeDrawShape,
-          x: shapeStart.x,
-          y: shapeStart.y,
+          x: startPt.x,
+          y: startPt.y,
           radius: radius,
           stroke: drawStrokeColor,
           strokeWidth: drawStrokeWidth,
@@ -1064,7 +1071,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       } else if (activeDrawShape === DRAW_MODES.LINE) {
         updatedDraw = {
           type: DRAW_MODES.LINE,
-          points: [shapeStart.x, shapeStart.y, pos.x, pos.y],
+          points: [startPt.x, startPt.y, pos.x, pos.y],
           stroke: drawStrokeColor,
           strokeWidth: drawStrokeWidth,
           isGMLayer: isDrawGMLayer,
@@ -1083,7 +1090,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       }
     }
 
-    if (activeTool === TOOLS.FOG && canUseFog && shapeStart && fogBrushShape !== FOG_BRUSH_SHAPES.POLYGON) {
+    if (activeTool === TOOLS.FOG && canUseFog && fogBrushShape !== FOG_BRUSH_SHAPES.POLYGON) {
       const isCoverAction = fogAction === FOG_ACTIONS.HIDE;
       const modeName = fogAction === FOG_ACTIONS.SLICE ? "slice" : isCoverAction ? "hide" : "reveal";
       let updatedFog = null;
@@ -1092,10 +1099,10 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
         updatedFog = {
           type: "rect",
           mode: modeName,
-          x: Math.min(shapeStart.x, pos.x),
-          y: Math.min(shapeStart.y, pos.y),
-          width: Math.abs(pos.x - shapeStart.x),
-          height: Math.abs(pos.y - shapeStart.y),
+          x: Math.min(startPt.x, pos.x),
+          y: Math.min(startPt.y, pos.y),
+          width: Math.abs(pos.x - startPt.x),
+          height: Math.abs(pos.y - startPt.y),
           isCover: isCoverAction,
         };
       } else if (
@@ -1103,12 +1110,12 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
           fogBrushShape === FOG_BRUSH_SHAPES.TRIANGLE ||
           fogBrushShape === FOG_BRUSH_SHAPES.HEXAGON
       ) {
-        const radius = Math.hypot(pos.x - shapeStart.x, pos.y - shapeStart.y);
+        const radius = Math.hypot(pos.x - startPt.x, pos.y - startPt.y);
         updatedFog = {
           type: fogBrushShape,
           mode: modeName,
-          x: shapeStart.x,
-          y: shapeStart.y,
+          x: startPt.x,
+          y: startPt.y,
           radius: radius,
           isCover: isCoverAction,
         };
@@ -1145,8 +1152,6 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
     fogBrushShape,
     fogPolygonVertices,
     fogAction,
-    shapeStart,
-    currentLinePoints,
     currentScene?.id,
   ]);
 
@@ -1163,9 +1168,10 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       return;
     }
 
+    const startPt = shapeStartRef.current;
     if (!isInteracting.current || !hasActiveMap) return;
 
-    if (activeTool === TOOLS.DRAW && shapeStart) {
+    if (activeTool === TOOLS.DRAW && startPt) {
       const finalShape = liveDrawingRef.current;
       if (finalShape) {
         const uniqueId = `draw-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -1182,12 +1188,12 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       wsService.send("DRAWING_LIVE_END", { sceneId: currentScene?.id });
       liveDrawingRef.current = null;
       setLiveDrawing(null);
-      setCurrentLinePoints([]);
-      setShapeStart(null);
+      currentLinePointsRef.current = [];
+      shapeStartRef.current = null;
       isInteracting.current = false;
     }
 
-    if (activeTool === TOOLS.FOG && canUseFog && shapeStart) {
+    if (activeTool === TOOLS.FOG && canUseFog && startPt) {
       const finalFogShape = liveFogRef.current;
       if (finalFogShape) {
         const uniqueFogId = generateUUID();
@@ -1211,8 +1217,8 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       wsService.send("FOG_LIVE_END", { sceneId: currentScene?.id });
       liveFogRef.current = null;
       setLiveFog(null);
-      setCurrentLinePoints([]);
-      setShapeStart(null);
+      currentLinePointsRef.current = [];
+      shapeStartRef.current = null;
       isInteracting.current = false;
     }
 
@@ -1222,7 +1228,6 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
     activeDrawShape,
     fogBrushShape,
     hasActiveMap,
-    shapeStart,
     currentScene?.id,
     addDrawing,
     canUseFog,
@@ -1346,6 +1351,22 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
       [isStageDraggable, setStagePos]
   );
 
+  const handleDblClickText = useCallback(
+      (textShape) => {
+        isTextEditorOpenRef.current = false;
+        setInlineTextEditor({
+          id: String(textShape.clientDrawingId || textShape.id || textShape.drawingId),
+          canvasX: textShape.x || 0,
+          canvasY: textShape.y || 0,
+          text: textShape.text || "",
+          fontFamily: textShape.fontFamily || "Vazirmatn",
+          fontSize: textShape.fontSize || 24,
+          fill: textShape.fill || textColor,
+        });
+      },
+      [textColor]
+  );
+
   return (
       <div
           ref={containerRef}
@@ -1382,8 +1403,8 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                 <span className="text-[11px] font-bold text-zinc-200 max-w-[140px] truncate select-none">
-              {selectionInfo.label}
-            </span>
+                  {selectionInfo.label}
+                </span>
               </div>
 
               <div className="w-px h-3.5 bg-zinc-800 mx-0.5" />
@@ -1513,20 +1534,20 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
                       <li className="flex items-start gap-2">
                         <MapIcon className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                         <span>
-                      <strong>۱. آپلود نقشه:</strong> تصویر نبرد را از کتابخانه است‌ها بارگذاری کنید.
-                    </span>
+                          <strong>۱. آپلود نقشه:</strong> تصویر نبرد را از کتابخانه است‌ها بارگذاری کنید.
+                        </span>
                       </li>
                       <li className="flex items-start gap-2">
                         <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                         <span>
-                      <strong>۲. تنظیمات گرید و صحنه:</strong> ابعاد و شرایط بازی را مشخص کنید.
-                    </span>
+                          <strong>۲. تنظیمات گرید و صحنه:</strong> ابعاد و شرایط بازی را مشخص کنید.
+                        </span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Eye className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                         <span>
-                      <strong>۳. مه جنگ و هیولاها:</strong> محیط را با مه پنهان و توکن‌ها را بچینید.
-                    </span>
+                          <strong>۳. مه جنگ و هیولاها:</strong> محیط را با مه پنهان و توکن‌ها را بچینید.
+                        </span>
                       </li>
                     </ul>
                   </div>
@@ -1540,20 +1561,20 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
                       <li className="flex items-start gap-2">
                         <UserCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                         <span>
-                      <strong>۱. کاراکتر من:</strong> با دکمه پایین، توکن اختصاصی‌تان را روی مپ بیاورید.
-                    </span>
+                          <strong>۱. کاراکتر من:</strong> با دکمه پایین، توکن اختصاصی‌تان را روی مپ بیاورید.
+                        </span>
                       </li>
                       <li className="flex items-start gap-2">
                         <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                         <span>
-                      <strong>۲. وضعیت سلامت:</strong> مقدار HP، زره و شرایط را در صورت دسترسی ویرایش کنید.
-                    </span>
+                          <strong>۲. وضعیت سلامت:</strong> مقدار HP، زره و شرایط را در صورت دسترسی ویرایش کنید.
+                        </span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Compass className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                         <span>
-                      <strong>۳. آماده‌باش:</strong> با بارگذاری نقشه توسط GM، سفر شما آغاز می‌شود!
-                    </span>
+                          <strong>۳. آماده‌باش:</strong> با بارگذاری نقشه توسط GM، سفر شما آغاز می‌شود!
+                        </span>
                       </li>
                     </ul>
                   </div>
@@ -1625,18 +1646,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
                       isGM={isGM}
                       permissions={permissions}
                       onErase={handleEraseDrawing}
-                      onDblClickText={(textShape) => {
-                        isTextEditorOpenRef.current = false;
-                        setInlineTextEditor({
-                          id: String(textShape.clientDrawingId || textShape.id || textShape.drawingId),
-                          canvasX: textShape.x || 0,
-                          canvasY: textShape.y || 0,
-                          text: textShape.text || "",
-                          fontFamily: textShape.fontFamily || "Vazirmatn",
-                          fontSize: textShape.fontSize || 24,
-                          fill: textShape.fill || textColor,
-                        });
-                      }}
+                      onDblClickText={handleDblClickText}
                   />
                   <FogLayer
                       width={mapWidth}
@@ -1659,4 +1669,7 @@ export const GameCanvas = ({ isGM = false, permissions = {} }) => {
         </Stage>
       </div>
   );
-};
+});
+
+GameCanvas.displayName = "GameCanvas";
+export default GameCanvas;
