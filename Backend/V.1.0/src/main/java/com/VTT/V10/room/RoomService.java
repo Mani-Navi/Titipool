@@ -21,10 +21,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
  * Core business service managing game rooms, lifecycle transitions, memberships, and real-time events.
+ * Engineered with O(1) in-memory fast-paths and debounced activity writes for high concurrency.
  */
 @Slf4j
 @Service
@@ -49,10 +51,15 @@ public class RoomService {
     private final CacheManager cacheManager;
 
     private static final int GM_INACTIVITY_TIMEOUT_MINUTES = 15;
+    private static final long ACTIVITY_WRITE_THROTTLE_MS = 60_000L; // Max 1 DB touch per 60s per room
+
+    // In-memory write-behind debounce map: RoomId -> Last Epoch MS touched
+    private final ConcurrentHashMap<UUID, Long> roomLastTouchMap = new ConcurrentHashMap<>();
+
+    public record MemberAuthContext(UUID memberId, boolean isHostOrAdmin) {}
 
     /**
      * Scheduled job running every 30 seconds to automatically deactivate rooms where the GM has been offline beyond timeout.
-     * Avoids redundant DB writes when GM is actively connected in memory.
      */
     @Scheduled(fixedRate = 30000)
     @Transactional
@@ -78,6 +85,7 @@ public class RoomService {
                     room.setIsActive(false);
                     roomRepository.save(room);
 
+                    roomLastTouchMap.remove(room.getId());
                     sessionManager.clearRoom(room.getId());
 
                     messagingTemplate.convertAndSend(
@@ -96,57 +104,52 @@ public class RoomService {
     @Transactional(readOnly = true)
     public boolean isUserMemberOfRoom(UUID roomId, UUID userId) {
         if (roomId == null || userId == null) return false;
+        if (sessionManager.getOnlineUserIds(roomId).contains(userId)) {
+            return true;
+        }
         return memberRepository.existsByRoomIdAndUserId(roomId, userId) ||
                 roomRepository.findById(roomId).filter(r -> r.getOwner() != null && r.getOwner().getId().equals(userId)).isPresent();
     }
 
+    /**
+     * Verifies whether a user email belongs to the room using an O(1) in-memory fast-path
+     * followed by Caffeine cache before querying PostgreSQL.
+     */
     @Transactional(readOnly = true)
     public boolean isMember(UUID roomId, String email) {
         if (roomId == null || email == null) return false;
-        return memberRepository.findByRoomIdAndUserEmail(roomId, email).isPresent() ||
-                roomRepository.findById(roomId)
-                        .filter(r -> r.getOwner() != null && r.getOwner().getEmail().equalsIgnoreCase(email))
-                        .isPresent();
+        if (sessionManager.isEmailOnlineInRoom(roomId, email)) {
+            return true;
+        }
+        return resolveMemberAuthContext(roomId, email) != null;
     }
 
+    /**
+     * Verifies whether the user is the room host/owner or holds GM/ADMIN role, backed by Caffeine cache.
+     */
     @Transactional(readOnly = true)
     public boolean isHostOrAdmin(UUID roomId, String email) {
-        try {
-            if (roomId == null || email == null) return false;
-
-            Optional<RoomMember> memberOpt = memberRepository.findByRoomIdAndUserEmail(roomId, email);
-            if (memberOpt.isPresent()) {
-                RoomMember member = memberOpt.get();
-                if (member.getRole() == RoomMember.Role.ADMIN || member.getRole() == RoomMember.Role.GM) {
-                    return true;
-                }
-                Room room = member.getRoom();
-                if (room != null && room.getOwner() != null && room.getOwner().getEmail().equalsIgnoreCase(email)) {
-                    return true;
-                }
-            }
-
-            return roomRepository.findById(roomId)
-                    .filter(r -> r.getOwner() != null && r.getOwner().getEmail().equalsIgnoreCase(email))
-                    .isPresent();
-        } catch (Exception e) {
-            return false;
-        }
+        if (roomId == null || email == null) return false;
+        MemberAuthContext ctx = resolveMemberAuthContext(roomId, email);
+        return ctx != null && ctx.isHostOrAdmin();
     }
 
+    /**
+     * High-speed permission check utilizing cached MemberAuthContext and cached PermissionResponse.
+     * Zero database queries on cache hit during real-time drawing/fog/token WebSocket streams.
+     */
     @Transactional(readOnly = true)
     public boolean hasPermission(UUID roomId, String email, String action) {
+        if (roomId == null || email == null || action == null) return false;
         try {
-            if (isHostOrAdmin(roomId, email)) return true;
+            MemberAuthContext ctx = resolveMemberAuthContext(roomId, email);
+            if (ctx == null) return false;
+            if (ctx.isHostOrAdmin()) return true;
+            if (ctx.memberId() == null) return false;
 
-            var memberOpt = memberRepository.findByRoomIdAndUserEmail(roomId, email);
-            if (memberOpt.isEmpty()) return false;
+            PermissionResponse perm = permissionService.getMemberPermissions(ctx.memberId());
+            if (perm == null) return false;
 
-            RoomMember member = memberOpt.get();
-            var permOpt = permissionRepository.findByMemberId(member.getId());
-            if (permOpt.isEmpty()) return false;
-
-            PlayerPermission perm = permOpt.get();
             return switch (action) {
                 case WsConstants.PERM_DRAWING -> Boolean.TRUE.equals(perm.getCanDrawing());
                 case WsConstants.PERM_TEXT -> Boolean.TRUE.equals(perm.getCanText());
@@ -158,6 +161,53 @@ public class RoomService {
             };
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    private MemberAuthContext resolveMemberAuthContext(UUID roomId, String email) {
+        String cacheKey = roomId + ":" + email.trim().toLowerCase();
+        Cache cache = cacheManager != null ? cacheManager.getCache(CacheConfig.CACHE_MEMBERS) : null;
+        if (cache != null) {
+            MemberAuthContext cached = cache.get(cacheKey, MemberAuthContext.class);
+            if (cached != null) {
+                return cached;
+            }
+        }
+
+        Optional<RoomMember> memberOpt = memberRepository.findByRoomIdAndUserEmail(roomId, email);
+        if (memberOpt.isPresent()) {
+            RoomMember member = memberOpt.get();
+            if (Boolean.TRUE.equals(member.getIsBanned())) {
+                return null;
+            }
+            Room room = member.getRoom();
+            boolean isOwner = room != null && room.getOwner() != null && room.getOwner().getEmail().equalsIgnoreCase(email);
+            boolean isGM = isOwner || member.getRole() == RoomMember.Role.ADMIN || member.getRole() == RoomMember.Role.GM;
+            MemberAuthContext ctx = new MemberAuthContext(member.getId(), isGM);
+            if (cache != null) {
+                cache.put(cacheKey, ctx);
+            }
+            return ctx;
+        }
+
+        Optional<Room> roomOpt = roomRepository.findById(roomId)
+                .filter(r -> r.getOwner() != null && r.getOwner().getEmail().equalsIgnoreCase(email));
+        if (roomOpt.isPresent()) {
+            MemberAuthContext ctx = new MemberAuthContext(null, true);
+            if (cache != null) {
+                cache.put(cacheKey, ctx);
+            }
+            return ctx;
+        }
+
+        return null;
+    }
+
+    private void evictMemberAuthCache(UUID roomId, String email) {
+        if (cacheManager == null || roomId == null || email == null) return;
+        Cache cache = cacheManager.getCache(CacheConfig.CACHE_MEMBERS);
+        if (cache != null) {
+            cache.evict(roomId + ":" + email.trim().toLowerCase());
         }
     }
 
@@ -295,6 +345,7 @@ public class RoomService {
             room.setLastActive(LocalDateTime.now());
             room.setGmLastSeenAt(LocalDateTime.now());
             roomRepository.save(room);
+            roomLastTouchMap.put(roomId, System.currentTimeMillis());
         } else {
             if (Boolean.FALSE.equals(room.getIsActive())) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "اتاق در حال حاضر غیرفعال است و در انتظار ورود دانجن‌مستر (GM) می‌باشد");
@@ -485,6 +536,7 @@ public class RoomService {
             } else {
                 permissionService.createDefaultPermissions(room, savedMember);
             }
+            evictMemberAuthCache(room.getId(), userEmail);
         }
 
         if (isOwner) {
@@ -495,6 +547,7 @@ public class RoomService {
             room.setLastActive(LocalDateTime.now());
             room.setGmLastSeenAt(LocalDateTime.now());
             roomRepository.save(room);
+            roomLastTouchMap.put(room.getId(), System.currentTimeMillis());
         }
 
         return convertToResponse(room, user);
@@ -512,6 +565,7 @@ public class RoomService {
         room.setIsActive(false);
         roomRepository.save(room);
 
+        roomLastTouchMap.remove(roomId);
         sessionManager.clearRoom(roomId);
 
         messagingTemplate.convertAndSend(
@@ -642,6 +696,7 @@ public class RoomService {
                     .canEditToken(true)
                     .build();
             permissionRepository.save(adminPermission);
+            evictMemberAuthCache(room.getId(), owner.getEmail());
         }
     }
 
@@ -663,10 +718,12 @@ public class RoomService {
 
         UUID targetUserId = target.getUser().getId();
         String targetUsername = target.getUser().getUsername();
+        String targetEmail = target.getUser().getEmail();
 
         permissionRepository.deleteByMemberId(memberId);
         memberRepository.delete(target);
         evictCache(CacheConfig.CACHE_PERMISSIONS, memberId);
+        evictMemberAuthCache(roomId, targetEmail);
         sessionManager.removeUser(roomId, targetUserId);
 
         messagingTemplate.convertAndSend(
@@ -702,6 +759,7 @@ public class RoomService {
         target.setIsBanned(true);
         memberRepository.save(target);
         evictCache(CacheConfig.CACHE_PERMISSIONS, memberId);
+        evictMemberAuthCache(roomId, target.getUser().getEmail());
         sessionManager.removeUser(roomId, target.getUser().getId());
 
         UUID targetUserId = target.getUser().getId();
@@ -781,6 +839,7 @@ public class RoomService {
         target.setRole(role);
         memberRepository.save(target);
         evictCache(CacheConfig.CACHE_PERMISSIONS, memberId);
+        evictMemberAuthCache(roomId, target.getUser().getEmail());
 
         RoomMemberResponse response = RoomMemberResponse.builder()
                 .id(target.getId())
@@ -811,6 +870,7 @@ public class RoomService {
             permissionRepository.deleteByMemberId(m.getId());
             memberRepository.delete(m);
             evictCache(CacheConfig.CACHE_PERMISSIONS, m.getId());
+            evictMemberAuthCache(roomId, userEmail);
             sessionManager.removeUser(roomId, user.getId());
         });
     }
@@ -833,15 +893,18 @@ public class RoomService {
                         .build()
         );
 
+        roomLastTouchMap.remove(roomId);
         sessionManager.clearRoom(roomId);
 
         List<RoomMember> members = memberRepository.findAllByRoomId(roomId);
         for (RoomMember m : members) {
             evictCache(CacheConfig.CACHE_PERMISSIONS, m.getId());
+            if (m.getUser() != null) {
+                evictMemberAuthCache(roomId, m.getUser().getEmail());
+            }
         }
         evictCache(CacheConfig.CACHE_SCENES, roomId);
         evictCache(CacheConfig.CACHE_ROOM_SETTINGS, roomId);
-        evictCache(CacheConfig.CACHE_MEMBERS, roomId);
 
         List<Scene> scenes = sceneRepository.findByRoomId(roomId);
         for (Scene scene : scenes) {
@@ -861,8 +924,19 @@ public class RoomService {
         roomRepository.delete(room);
     }
 
+    /**
+     * Debounced room activity updater. Touches PostgreSQL at most once every 60 seconds per room,
+     * eliminating hundreds of redundant UPDATE queries per second during active WebSocket streaming.
+     */
     @Transactional
     public void updateLastActive(UUID roomId, String username) {
+        if (roomId == null) return;
+        long nowMs = System.currentTimeMillis();
+        Long lastTouched = roomLastTouchMap.get(roomId);
+        if (lastTouched != null && (nowMs - lastTouched) < ACTIVITY_WRITE_THROTTLE_MS) {
+            return;
+        }
+        roomLastTouchMap.put(roomId, nowMs);
         roomRepository.touchRoomActivity(roomId, LocalDateTime.now());
     }
 
