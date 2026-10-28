@@ -316,4 +316,16 @@ public class RoomSessionManager {
     }
 
     public record UserSessionDetails(String sessionId, UUID roomId, UUID userId, String username, String email) {}
+
+    public int getActiveOnlineRoomsCount() {
+        return roomOnlineUsers.size();
+    }
+
+    public int getTotalOnlineUsersCount() {
+        return userActiveRoom.size();
+    }
+
+    public int getTotalActiveSessionsCount() {
+        return sessions.size();
+    }
 }
