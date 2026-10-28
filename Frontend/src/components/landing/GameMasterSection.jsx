@@ -1,5 +1,4 @@
 import React, { useState, memo } from 'react';
-import { motion } from 'motion/react';
 import { Crown, Layers, Eye } from 'lucide-react';
 import { sound } from '../../utils/tableAudio';
 import { GsapHeadingReveal } from './GsapHeadingReveal';
@@ -121,25 +120,17 @@ export const GameMasterSection = memo(() => {
                                     </div>
 
                                     <div className="flex items-center justify-around">
-                                        <motion.div
-                                            animate={{ y: [0, -4, 0] }}
-                                            transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                                            className="p-2 rounded-xl bg-purple-950/60 border border-purple-500/40 text-center"
-                                        >
+                                        <div className="p-2 rounded-xl bg-purple-950/60 border border-purple-500/40 text-center animate-float-card">
                                             <div className="text-2xl">🧙‍♂️</div>
                                             <div className="text-[10px] text-purple-300 font-bold mt-1">ویزارد</div>
                                             <div className="text-[9px] text-emerald-400 font-mono">HP 34/34</div>
-                                        </motion.div>
+                                        </div>
 
-                                        <motion.div
-                                            animate={{ y: [0, 4, 0] }}
-                                            transition={{ repeat: Infinity, duration: 3.5, ease: 'easeInOut' }}
-                                            className="p-2 rounded-xl bg-rose-950/60 border border-rose-500/40 text-center"
-                                        >
+                                        <div className="p-2 rounded-xl bg-rose-950/60 border border-rose-500/40 text-center animate-float-card">
                                             <div className="text-2xl">🐉</div>
                                             <div className="text-[10px] text-rose-300 font-bold mt-1">اژدهای جوان</div>
                                             <div className="text-[9px] text-rose-400 font-mono">HP 110/110</div>
-                                        </motion.div>
+                                        </div>
                                     </div>
 
                                     <div className="text-[10px] text-neutral-400 text-center">
@@ -148,11 +139,7 @@ export const GameMasterSection = memo(() => {
                                 </div>
 
                                 {activeLayer === 'fog' && (
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        className="absolute inset-0 bg-neutral-950/80 backdrop-blur-[2px] flex items-center justify-center p-6 text-center"
-                                    >
+                                    <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-[2px] flex items-center justify-center p-6 text-center animate-fade-in-up">
                                         <div className="p-4 rounded-xl bg-[#161824] border border-[#2e3146]">
                                             <Eye className="w-5 h-5 text-[#f59e0b] mx-auto mb-1" />
                                             <div className="text-xs font-bold text-white">ویرایش مه جنگ فعال است</div>
@@ -160,7 +147,7 @@ export const GameMasterSection = memo(() => {
                                                 با براش دستی بخش‌های دلخواه نقشه را برای بازیکنان پنهان یا آشکار کنید.
                                             </div>
                                         </div>
-                                    </motion.div>
+                                    </div>
                                 )}
                             </div>
                         </div>
