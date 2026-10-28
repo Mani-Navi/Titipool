@@ -15,31 +15,21 @@ export const GsapHeadingReveal = memo(({
                                            gradientClassName = 'bg-gradient-to-l from-neutral-950 via-neutral-800 to-neutral-700 bg-clip-text text-transparent',
                                            delay = 0,
                                        }) => {
-    const containerRef = useHeadingReveal({
-        lineSelector: '.reveal-line',
-        eyebrowSelector: '.reveal-eyebrow',
-        subtitleSelector: '.reveal-subtitle',
-        delay,
-        yPercent: 130,
-        stagger: 0.14,
-        duration: 1.05,
-        ease: 'power4.out',
-        rotateX: 30,
-        blur: true,
-    });
+    const containerRef = useHeadingReveal({ delay });
 
     const alignmentClass = align === 'center' ? 'text-center mx-auto' : 'text-right';
 
     return (
         <div
             ref={containerRef}
+            data-reveal-root=""
             className={`relative select-none ${alignmentClass} ${containerClassName}`}
             dir="rtl"
         >
             {eyebrow && (
                 <div className="overflow-hidden inline-flex mb-1.5 py-0.5">
                     <span
-                        className={`reveal-eyebrow inline-block text-xs font-mono font-bold tracking-widest uppercase ${eyebrowColor} will-change-transform`}
+                        className={`reveal-eyebrow inline-block text-xs font-mono font-bold tracking-widest uppercase ${eyebrowColor}`}
                     >
                         {eyebrow}
                     </span>
@@ -52,10 +42,10 @@ export const GsapHeadingReveal = memo(({
                     return (
                         <span
                             key={index}
-                            className="block overflow-hidden py-1 -my-1 [transform-style:preserve-3d] [perspective:1500px]"
+                            className="block overflow-hidden py-1 -my-1"
                         >
                             <span
-                                className={`reveal-line inline-block will-change-transform ${
+                                className={`reveal-line inline-block ${
                                     isGradient ? gradientClassName : ''
                                 }`}
                                 style={{ textWrap: 'balance' }}
@@ -69,7 +59,7 @@ export const GsapHeadingReveal = memo(({
 
             {subtitle && (
                 <p
-                    className={`reveal-subtitle ${subtitleClassName} will-change-transform`}
+                    className={`reveal-subtitle ${subtitleClassName}`}
                     style={{ textWrap: 'balance' }}
                 >
                     {subtitle}

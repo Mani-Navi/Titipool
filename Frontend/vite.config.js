@@ -29,30 +29,46 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (!id.includes('node_modules')) return;
+          // ۱. ماژول‌های مشترک Rollup و هسته React/Zustand حتماً اول بررسی شوند تا وارد vendor-three نشوند
           if (
-              id.includes('/three/') ||
-              id.includes('@react-three') ||
-              id.includes('@dimforge/rapier')
-          ) {
-            return 'vendor-three';
-          }
-          if (id.includes('/konva/') || id.includes('react-konva')) {
-            return 'vendor-konva';
-          }
-          if (id.includes('livekit-client')) {
-            return 'vendor-livekit';
-          }
-          if (id.includes('@stomp/stompjs')) {
-            return 'vendor-stomp';
-          }
-          if (
+              id.includes('commonjsHelpers') ||
+              id.includes('vite/preload-helper') ||
               id.includes('/react/') ||
               id.includes('/react-dom/') ||
               id.includes('/react-router') ||
-              id.includes('/scheduler/')
+              id.includes('/scheduler/') ||
+              id.includes('/zustand/') ||
+              id.includes('/its-fine/') ||
+              id.includes('/react-reconciler/')
           ) {
             return 'vendor-react';
+          }
+
+          if (!id.includes('node_modules')) return;
+
+          // ۲. موتور سه‌بعدی و فیزیک کاملاً ایزوله (فقط در زمان اسکرول یا ورود به اتاق دانلود می‌شود)
+          if (
+              id.includes('node_modules/three') ||
+              id.includes('node_modules/@react-three') ||
+              id.includes('node_modules/@dimforge')
+          ) {
+            return 'vendor-three';
+          }
+
+          // ۳. موتور کانواس دوبعدی (فقط در صفحه اتاق بازی دانلود می‌شود)
+          if (
+              id.includes('node_modules/konva') ||
+              id.includes('node_modules/react-konva')
+          ) {
+            return 'vendor-konva';
+          }
+
+          if (id.includes('node_modules/livekit-client')) {
+            return 'vendor-livekit';
+          }
+
+          if (id.includes('node_modules/@stomp')) {
+            return 'vendor-stomp';
           }
         },
         entryFileNames: 'assets/[name]-[hash].js',

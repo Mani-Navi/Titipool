@@ -2,56 +2,52 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
-    <!-- صفحه اصلی لندینگ پیج -->
     <url>
         <loc>https://titipoolgames.ir/</loc>
-        <lastmod>2026-10-14</lastmod>
+        <lastmod>2026-10-27</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
         <xhtml:link rel="alternate" hreflang="fa" href="https://titipoolgames.ir/"/>
     </url>
 
-    <!-- صفحه ورود -->
     <url>
         <loc>https://titipoolgames.ir/login</loc>
-        <lastmod>2026-10-14</lastmod>
+        <lastmod>2026-10-27</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
 
-    <!-- صفحه ثبت‌نام -->
     <url>
         <loc>https://titipoolgames.ir/register</loc>
-        <lastmod>2026-10-14</lastmod>
+        <lastmod>2026-10-27</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
 
-    <!-- صفحات قوانین و حقوقی -->
     <url>
         <loc>https://titipoolgames.ir/privacy-policy</loc>
-        <lastmod>2026-10-14</lastmod>
+        <lastmod>2026-10-27</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.3</priority>
     </url>
 
     <url>
         <loc>https://titipoolgames.ir/terms-of-service</loc>
-        <lastmod>2026-10-14</lastmod>
+        <lastmod>2026-10-27</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.3</priority>
     </url>
 
     <url>
         <loc>https://titipoolgames.ir/cookie-policy</loc>
-        <lastmod>2026-10-14</lastmod>
+        <lastmod>2026-10-27</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.3</priority>
     </url>
 
     <url>
         <loc>https://titipoolgames.ir/refund-policy</loc>
-        <lastmod>2026-10-14</lastmod>
+        <lastmod>2026-10-27</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.3</priority>
     </url>

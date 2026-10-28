@@ -3,15 +3,7 @@
 > Titipool (https://titipoolgames.ir) is the first native Persian (RTL) Virtual Tabletop (VTT) web platform designed for tabletop RPG players and Dungeon Masters (D&D 5e, Pathfinder, Call of Cthulhu). Inspired by the simplicity and speed of Owlbear Rodeo, Titipool runs directly in the browser at 60 FPS with zero installation required.
 
 ## خلاصه معرفی فارسی (Persian Overview)
-تیتی‌پول (Titipool) اولین و سریع‌ترین پلتفرم میز بازی مجازی فارسی (Persian VTT) برای اجرای آنلاین بازی‌های نقش‌آفرینی رومیزی (مانند D&D 5e) است. این پلتفرم به دانجن‌مسترها (GM) و بازیکنان اجازه می‌دهد بدون نیاز به نصب نرم‌افزار یا ابزارهای جانبی، اتاق بسازند، با کد دعوت ۶ کاراکتری دوستان خود را دعوت کنند، نقشه و توکن بچینند، تاس سه‌بعدی فیزیکی پرتاب کنند و همزمان با چت صوتی داخلی بازی کنند.
-
-## Core Capabilities & Technical Highlights
-- **Interactive 2D Tactical Canvas (Konva.js):** 60 FPS hardware-accelerated map and token rendering with automatic grid snapping (Square, Hex Horizontal, Hex Vertical, Isometric/Diamond) and multi-token cell clustering.
-- **3D Physics Dice Engine (Three.js + Rapier WASM):** Real-time 3D polyhedral dice rolling (`D2`, `D4`, `D6`, `Fudge`, `D8`, `D10`, `D12`, `D20`, `D100`, `D1000`) with procedural marble textures, mouse grab & re-throw, critical hit detection, and deterministic WebSocket synchronization.
-- **Dynamic Fog of War:** Non-destructive layer masking with Hide, Reveal, Slice, Fill, Trim, Join, and Global Reveal tools for Dungeon Masters.
-- **Built-in Low-Latency Voice Chat (LiveKit SFU):** Integrated Opus audio communication with Spacebar Push-to-Talk (PTT), active speaker indicators, and server-enforced GM Mute controls.
-- **D&D 5e Combat & Token Inspector:** Dynamic HP bars with damage/heal calculator, Armor Class (AC) badges, 16 standard D&D status conditions, secret GM notes, and granular per-player permissions (`canDrawing`, `canText`, `canFog`, `canAssets`, `canScene`, `canRuler`, `canEditToken`).
-- **D&D Distance Rulers:** Multi-waypoint distance measurement supporting D&D 5e (5-10-5 chessboard), D&D 3.5e (alternating diagonal), Euclidean, and Manhattan metrics.
+تیتی‌پول (Titipool) اولین و سریع‌ترین پلتفرم میز بازی مجازی فارسی (Persian VTT) برای اجرای آنلاین بازی‌های نقش‌آفرینی رومیزی (مانند D&D 5e) است. این پلتفرم به دانجن‌مسترها (GM) و بازیکنان اجازه می‌دهد بدون نیاز به نصب نرم‌افزار، اتاق بسازند، با کد دعوت ۶ کاراکتری دوستان خود را دعوت کنند، نقشه و توکن بچینند، تاس سه‌بعدی فیزیکی پرتاب کنند و همزمان با چت صوتی داخلی بازی کنند.
 
 ## Public URLs
 - Homepage: https://titipoolgames.ir/
