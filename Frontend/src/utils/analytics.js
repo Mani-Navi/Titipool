@@ -1,37 +1,46 @@
-/**
- * ماژول آنالیتیکس سبک و امن (CSP-Compliant & Cookieless)
- * سازگار با سیاست‌های امنیتی سخت‌گیرانه سرور و بدون تزریق اسکریپت خارجی
- */
+import api from "../api/axios";
 
-const IS_PROD = typeof window !== "undefined" && import.meta.env.PROD;
+let errorReportCount = 0;
+const MAX_REPORTS_PER_SESSION = 5;
+
+export const reportClientCrash = (component, error) => {
+    if (typeof window === "undefined" || errorReportCount >= MAX_REPORTS_PER_SESSION) return;
+    errorReportCount += 1;
+
+    const payload = {
+        component: String(component || "window").slice(0, 100),
+        message: String(error?.message || error || "Unknown client error").slice(0, 500),
+        stack: String(error?.stack || "").slice(0, 2000),
+        url: String(window.location.pathname).slice(0, 300),
+    };
+
+    api.post("/monitoring/client-error", payload).catch(() => {});
+};
 
 export const initAnalytics = () => {
-    // برای تطابق با Content Security Policy سرور، اسکریپت خارجی لود نمی‌شود
     if (typeof window === "undefined") return;
 
+    window.addEventListener("error", (event) => {
+        if (event?.error) {
+            reportClientCrash("GlobalErrorHandler", event.error);
+        }
+    });
+
     if (import.meta.env.DEV) {
-        console.info("[Analytics] Initialized in CSP-safe mode.");
+        console.info("[Monitoring] Initialized CSP-safe telemetry & crash reporter.");
     }
 };
 
-/**
- * ثبت امن رخدادهای سیستم
- */
 export const trackEvent = (eventName, props = {}) => {
     if (typeof window === "undefined") return;
-
     if (import.meta.env.DEV) {
-        console.debug(`[Analytics Event]: ${eventName}`, props);
+        console.debug(`[Telemetry Event]: ${eventName}`, props);
     }
 };
 
-/**
- * ثبت بازدید صفحات در ساختار SPA
- */
 export const trackPageView = (url) => {
     if (typeof window === "undefined") return;
-
     if (import.meta.env.DEV) {
-        console.debug(`[Analytics PageView]: ${url || window.location.pathname}`);
+        console.debug(`[Telemetry PageView]: ${url || window.location.pathname}`);
     }
 };
