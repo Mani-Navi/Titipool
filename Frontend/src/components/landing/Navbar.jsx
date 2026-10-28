@@ -103,7 +103,7 @@ export const Navbar = memo(({
                         <span className="text-sm sm:text-lg font-black tracking-tight text-neutral-900">
                             Titipool
                         </span>
-                        <span className="text-[10px] sm:text-[11px] font-mono font-bold text-[#ea580c] uppercase">
+                        <span className="text-[10px] sm:text-[11px] font-mono font-bold text-[#c2410c] uppercase">
                             VTT
                         </span>
                     </div>

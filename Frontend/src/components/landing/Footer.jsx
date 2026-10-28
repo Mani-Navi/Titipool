@@ -4,7 +4,7 @@ import { Dices, Mail } from 'lucide-react';
 
 export const Footer = memo(() => {
     return (
-        <footer className="border-t border-neutral-200/80 bg-white py-14 sm:py-20 px-6 sm:px-12 text-right" dir="rtl">
+        <footer className="border-t border-neutral-200/80 bg-white py-14 sm:py-20 px-6 sm:px-12 text-right w-full" dir="rtl">
             <div className="max-w-6xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-start gap-10">
                     <div className="max-w-sm">
@@ -16,14 +16,14 @@ export const Footer = memo(() => {
                                 Titipool
                             </span>
                         </div>
-                        <p className="text-xs text-neutral-500 leading-relaxed">
+                        <p className="text-xs text-neutral-600 leading-relaxed">
                             میز بازی مجازی برای تجربه بازی‌های نقش‌آفرینی فارسی. بدون نیاز به نصب، طراحی‌شده با استانداردهای مدرن وب.
                         </p>
                     </div>
 
                     <div className="flex flex-wrap gap-12 sm:gap-16 text-xs">
                         <div>
-                            <h4 className="font-bold text-neutral-900 mb-3">پلتفرم</h4>
+                            <h3 className="font-bold text-neutral-900 mb-3">پلتفرم</h3>
                             <ul className="space-y-2 text-neutral-600 font-medium">
                                 <li>
                                     <a href="#hero" className="hover:text-neutral-950 transition-colors">
@@ -44,7 +44,7 @@ export const Footer = memo(() => {
                         </div>
 
                         <div>
-                            <h4 className="font-bold text-neutral-900 mb-3">قوانین و امنیت</h4>
+                            <h3 className="font-bold text-neutral-900 mb-3">قوانین و امنیت</h3>
                             <ul className="space-y-2 text-neutral-600 font-medium">
                                 <li>
                                     <Link to="/privacy-policy" className="hover:text-neutral-950 transition-colors">
@@ -70,7 +70,7 @@ export const Footer = memo(() => {
                         </div>
 
                         <div>
-                            <h4 className="font-bold text-neutral-900 mb-3">ارتباط و پشتیبانی</h4>
+                            <h3 className="font-bold text-neutral-900 mb-3">ارتباط و پشتیبانی</h3>
                             <ul className="space-y-2 text-neutral-600 font-medium">
                                 <li>
                                     <a
@@ -78,11 +78,11 @@ export const Footer = memo(() => {
                                         className="hover:text-neutral-950 transition-colors inline-flex items-center gap-1.5 font-mono text-[11px]"
                                         dir="ltr"
                                     >
-                                        <Mail className="w-3.5 h-3.5 text-[#f59e0b]" />
+                                        <Mail className="w-3.5 h-3.5 text-[#c2410c]" />
                                         <span>support@titipoolgames.ir</span>
                                     </a>
                                 </li>
-                                <li className="text-[11px] text-neutral-400">
+                                <li className="text-[11px] text-neutral-500">
                                     پاسخگویی روزهای کاری
                                 </li>
                             </ul>
@@ -90,7 +90,7 @@ export const Footer = memo(() => {
                     </div>
                 </div>
 
-                <div className="mt-12 pt-6 border-t border-neutral-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-neutral-400">
+                <div className="mt-12 pt-6 border-t border-neutral-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-neutral-500">
                     <span>© 2026 Titipool . تمامی حقوق محفوظ است.</span>
                     <div className="flex items-center gap-4">
                         <span className="font-mono">پلتفرم امن بازی رومیزی</span>

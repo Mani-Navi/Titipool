@@ -25,28 +25,35 @@ export default defineConfig(({ mode }) => ({
     minify: 'esbuild',
     sourcemap: false,
     cssCodeSplit: true,
-    modulePreload: {
-      polyfill: false,
-      resolveDependencies: (filename, deps) => {
-        // جلوگیری از دانلود پیش‌فرض موتورهای سنگین اتاق بازی و سه‌بعدی در لود اولیه صفحه اصلی
-        return deps.filter(
-            (dep) =>
-                !dep.includes('vendor-three') &&
-                !dep.includes('vendor-konva') &&
-                !dep.includes('vendor-livekit') &&
-                !dep.includes('vendor-stomp')
-        );
-      },
-    },
+    modulePreload: false,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-konva': ['konva', 'react-konva'],
-          'vendor-livekit': ['livekit-client'],
-          'vendor-stomp': ['@stomp/stompjs'],
-          'vendor-zustand': ['zustand'],
-          'vendor-three': ['three', '@react-three/fiber', '@react-three/rapier'],
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (
+              id.includes('/three/') ||
+              id.includes('@react-three') ||
+              id.includes('@dimforge/rapier')
+          ) {
+            return 'vendor-three';
+          }
+          if (id.includes('/konva/') || id.includes('react-konva')) {
+            return 'vendor-konva';
+          }
+          if (id.includes('livekit-client')) {
+            return 'vendor-livekit';
+          }
+          if (id.includes('@stomp/stompjs')) {
+            return 'vendor-stomp';
+          }
+          if (
+              id.includes('/react/') ||
+              id.includes('/react-dom/') ||
+              id.includes('/react-router') ||
+              id.includes('/scheduler/')
+          ) {
+            return 'vendor-react';
+          }
         },
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',

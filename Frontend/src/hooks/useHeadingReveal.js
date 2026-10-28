@@ -1,8 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(ScrollTrigger);
 
 export function useHeadingReveal(options = {}) {
     const containerRef = useRef(null);
@@ -11,104 +7,77 @@ export function useHeadingReveal(options = {}) {
         lineSelector = '.reveal-line',
         eyebrowSelector = '.reveal-eyebrow',
         subtitleSelector = '.reveal-subtitle',
-        yPercent = 110,
         stagger = 0.08,
-        duration = 0.75,
-        ease = 'power3.out',
-        start = 'top 88%',
+        duration = 0.65,
         delay = 0,
         once = true,
     } = options;
 
     useEffect(() => {
         const el = containerRef.current;
-        if (!el) return;
+        if (!el || typeof window === 'undefined') return;
 
         const prefersReducedMotion =
-            typeof window !== 'undefined' &&
+            window.matchMedia &&
             window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         if (prefersReducedMotion) return;
 
-        let ctx = null;
-        const rafId = window.requestAnimationFrame(() => {
-            const safeQuery = (target, selector) => {
-                try {
-                    return typeof selector === 'string' && selector.trim() ? target.querySelector(selector) : null;
-                } catch {
-                    return null;
-                }
-            };
+        const eyebrow = el.querySelector(eyebrowSelector);
+        const lines = Array.from(el.querySelectorAll(lineSelector));
+        const subtitle = el.querySelector(subtitleSelector);
+        const allTargets = [eyebrow, ...lines, subtitle].filter(Boolean);
 
-            const safeQueryAll = (target, selector) => {
-                try {
-                    return typeof selector === 'string' && selector.trim() ? target.querySelectorAll(selector) : [];
-                } catch {
-                    return [];
-                }
-            };
+        if (allTargets.length === 0) return;
 
-            ctx = gsap.context(() => {
-                const eyebrow = safeQuery(el, eyebrowSelector);
-                const lines = safeQueryAll(el, lineSelector);
-                const subtitle = safeQuery(el, subtitleSelector);
+        const baseTransition = `transform ${duration}s cubic-bezier(0.16, 1, 0.3, 1), opacity ${duration}s ease-out`;
 
-                if (!lines.length && !eyebrow && !subtitle) return;
-
-                const tl = gsap.timeline({
-                    scrollTrigger: {
-                        trigger: el,
-                        start,
-                        once,
-                        toggleActions: 'play none none none',
-                    },
-                    delay,
-                });
-
-                if (eyebrow) {
-                    tl.fromTo(
-                        eyebrow,
-                        { yPercent: 100, opacity: 0 },
-                        { yPercent: 0, opacity: 1, duration: 0.5, ease: 'power2.out' }
-                    );
-                }
-
-                if (lines.length > 0) {
-                    tl.fromTo(
-                        lines,
-                        { yPercent, opacity: 0 },
-                        { yPercent: 0, opacity: 1, duration, ease, stagger },
-                        eyebrow ? '<0.05' : 0
-                    );
-                }
-
-                if (subtitle) {
-                    tl.fromTo(
-                        subtitle,
-                        { y: 16, opacity: 0 },
-                        { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' },
-                        '<0.15'
-                    );
-                }
-            }, el);
+        allTargets.forEach((node) => {
+            node.style.opacity = '0';
+            node.style.transform = 'translate3d(0, 28px, 0)';
         });
 
-        return () => {
-            window.cancelAnimationFrame(rafId);
-            if (ctx) ctx.revert();
+        const reveal = () => {
+            if (eyebrow) {
+                eyebrow.style.transition = baseTransition;
+                eyebrow.style.transitionDelay = `${delay}s`;
+                eyebrow.style.opacity = '1';
+                eyebrow.style.transform = 'translate3d(0, 0, 0)';
+            }
+
+            lines.forEach((line, idx) => {
+                const lineDelay = delay + (eyebrow ? 0.05 : 0) + idx * stagger;
+                line.style.transition = baseTransition;
+                line.style.transitionDelay = `${lineDelay}s`;
+                line.style.opacity = '1';
+                line.style.transform = 'translate3d(0, 0, 0)';
+            });
+
+            if (subtitle) {
+                const subDelay = delay + (lines.length * stagger) + 0.12;
+                subtitle.style.transition = baseTransition;
+                subtitle.style.transitionDelay = `${subDelay}s`;
+                subtitle.style.opacity = '1';
+                subtitle.style.transform = 'translate3d(0, 0, 0)';
+            }
         };
-    }, [
-        lineSelector,
-        eyebrowSelector,
-        subtitleSelector,
-        yPercent,
-        stagger,
-        duration,
-        ease,
-        start,
-        delay,
-        once,
-    ]);
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0]?.isIntersecting) {
+                    window.requestAnimationFrame(reveal);
+                    if (once) observer.disconnect();
+                }
+            },
+            { threshold: 0.12 }
+        );
+
+        observer.observe(el);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [lineSelector, eyebrowSelector, subtitleSelector, stagger, duration, delay, once]);
 
     return containerRef;
 }
