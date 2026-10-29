@@ -55,10 +55,11 @@ export const DrawSubToolbar = memo(() => {
 
     return (
         <div
-            className="flex items-center gap-2 p-1.5 bg-zinc-900/95 border border-zinc-800/90 rounded-2xl shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-150"
+            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 sm:gap-2 p-2 sm:p-1.5 bg-zinc-900/95 border border-zinc-800/90 rounded-2xl shadow-2xl backdrop-blur-xl max-w-[95vw] sm:max-w-none animate-in fade-in slide-in-from-bottom-2 duration-150"
             dir="rtl"
         >
-            <div className="flex items-center gap-1 bg-zinc-950/60 p-1 rounded-xl border border-zinc-800/50">
+            {/* ردیف اول در موبایل / بخش اول در دسکتاپ: ابزارهای هندسی و قلم */}
+            <div className="flex items-center gap-1 bg-zinc-950/60 p-1 rounded-xl border border-zinc-800/50 overflow-x-auto no-scrollbar">
                 {drawModesList.map((mode) => {
                     const Icon = mode.icon;
                     const isActive = activeDrawShape === mode.id;
@@ -68,73 +69,80 @@ export const DrawSubToolbar = memo(() => {
                             <button
                                 type="button"
                                 onClick={() => setActiveDrawShape(mode.id)}
+                                aria-label={mode.label}
+                                aria-pressed={isActive}
                                 className={cn(
-                                    "w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer",
+                                    "w-8.5 h-8.5 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-90",
                                     isActive
                                         ? "bg-amber-500 text-zinc-950 font-bold shadow-md shadow-amber-500/20 scale-105"
                                         : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/70"
                                 )}
                             >
-                                <Icon className="w-4 h-4" />
+                                <Icon className="w-4 h-4" aria-hidden="true" />
                             </button>
                         </Tooltip>
                     );
                 })}
             </div>
 
-            <div className="h-5 w-px bg-zinc-800" />
+            <div className="hidden sm:block h-5 w-px bg-zinc-800 shrink-0" aria-hidden="true" />
 
-            <div className="flex items-center gap-1.5 px-1">
-                {COLOR_PALETTE.map((color) => (
-                    <button
-                        key={color}
-                        type="button"
-                        onClick={() => setDrawStrokeColor(color)}
-                        style={{ backgroundColor: color }}
-                        className={cn(
-                            "w-5 h-5 rounded-full transition-transform cursor-pointer border",
-                            drawStrokeColor === color
-                                ? "scale-125 border-white ring-2 ring-amber-500/50 shadow-sm"
-                                : "border-zinc-700 hover:scale-110"
-                        )}
-                    />
-                ))}
+            {/* ردیف دوم در موبایل / ادامه ردیف در دسکتاپ: رنگ، ضخامت خط و لایه GM */}
+            <div className="flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 sm:py-0 px-0.5">
+                <div className="flex items-center gap-1.5 px-1 shrink-0">
+                    {COLOR_PALETTE.map((color) => (
+                        <button
+                            key={color}
+                            type="button"
+                            onClick={() => setDrawStrokeColor(color)}
+                            style={{ backgroundColor: color }}
+                            aria-label={`انتخاب رنگ ${color}`}
+                            className={cn(
+                                "w-5.5 h-5.5 sm:w-5 sm:h-5 rounded-full transition-transform cursor-pointer border shrink-0 active:scale-90",
+                                drawStrokeColor === color
+                                    ? "scale-125 border-white ring-2 ring-amber-500/50 shadow-sm"
+                                    : "border-zinc-700 hover:scale-110"
+                            )}
+                        />
+                    ))}
+                </div>
+
+                <div className="h-5 w-px bg-zinc-800 shrink-0" aria-hidden="true" />
+
+                <div className="flex items-center gap-1 shrink-0">
+                    {STROKE_WIDTHS.map((width) => (
+                        <button
+                            key={width}
+                            type="button"
+                            onClick={() => setDrawStrokeWidth(width)}
+                            aria-label={`ضخامت خط ${width}`}
+                            className={cn(
+                                "w-7.5 h-7.5 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-xs font-mono transition-all cursor-pointer shrink-0 active:scale-90",
+                                drawStrokeWidth === width
+                                    ? "bg-zinc-800 text-amber-400 font-bold border border-zinc-700"
+                                    : "text-zinc-500 hover:text-zinc-300"
+                            )}
+                        >
+                            {width}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="h-5 w-px bg-zinc-800 shrink-0" aria-hidden="true" />
+
+                <button
+                    type="button"
+                    onClick={() => setIsDrawGMLayer(!isDrawGMLayer)}
+                    className={cn(
+                        "px-2.5 h-7.5 sm:h-7 rounded-lg text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0 active:scale-95",
+                        isDrawGMLayer
+                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
+                            : "text-zinc-400 hover:bg-zinc-800 border border-zinc-800/80 sm:border-transparent"
+                    )}
+                >
+                    {isDrawGMLayer ? "لایه GM (مخفی)" : "لایه عمومی"}
+                </button>
             </div>
-
-            <div className="h-5 w-px bg-zinc-800" />
-
-            <div className="flex items-center gap-1">
-                {STROKE_WIDTHS.map((width) => (
-                    <button
-                        key={width}
-                        type="button"
-                        onClick={() => setDrawStrokeWidth(width)}
-                        className={cn(
-                            "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-mono transition-all cursor-pointer",
-                            drawStrokeWidth === width
-                                ? "bg-zinc-800 text-amber-400 font-bold border border-zinc-700"
-                                : "text-zinc-500 hover:text-zinc-300"
-                        )}
-                    >
-                        {width}
-                    </button>
-                ))}
-            </div>
-
-            <div className="h-5 w-px bg-zinc-800" />
-
-            <button
-                type="button"
-                onClick={() => setIsDrawGMLayer(!isDrawGMLayer)}
-                className={cn(
-                    "px-2.5 h-7 rounded-lg text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1",
-                    isDrawGMLayer
-                        ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
-                        : "text-zinc-400 hover:bg-zinc-800"
-                )}
-            >
-                {isDrawGMLayer ? "لایه GM (مخفی)" : "لایه عمومی"}
-            </button>
         </div>
     );
 });

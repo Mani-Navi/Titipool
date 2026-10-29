@@ -279,225 +279,251 @@ export const FogSubToolbar = memo(() => {
 
     return (
         <div
-            className="relative flex items-center gap-2 px-3 py-1.5 bg-zinc-950/95 border border-zinc-800/90 rounded-2xl shadow-2xl backdrop-blur-2xl text-zinc-100 overflow-visible"
+            ref={fitMenuRef}
+            className="relative flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 sm:gap-2 p-2 sm:px-3 sm:py-1.5 bg-zinc-950/95 border border-zinc-800/90 rounded-2xl shadow-2xl backdrop-blur-2xl text-zinc-100 max-w-[95vw] sm:max-w-none overflow-visible"
             dir="rtl"
         >
-            <div className="flex items-center gap-1.5 p-1 bg-zinc-900/90 rounded-xl border border-zinc-800/80">
-                <Tooltip
-                    content={isFogRevealedGlobally ? "Disable Global Reveal" : "Enable Global Reveal"}
-                    subContent={
-                        isFogRevealedGlobally
-                            ? "غیرفعال‌سازی آشکارساز (نمایش مجدد مه برای بازیکنان)"
-                            : "فعال‌سازی آشکارساز (پنهان کردن موقت مه نقشه)"
-                    }
-                >
-                    <button
-                        type="button"
-                        onClick={handleToggleGlobalReveal}
-                        className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none active:scale-95",
+            {/* ردیف اول در موبایل / بخش اول در دسکتاپ: حالت‌های عملکرد مه */}
+            <div className="flex items-center justify-between sm:justify-start gap-1.5">
+                <div className="flex items-center gap-1 p-1 bg-zinc-900/90 rounded-xl border border-zinc-800/80 flex-1 sm:flex-initial justify-around sm:justify-start">
+                    <Tooltip
+                        content={isFogRevealedGlobally ? "Disable Global Reveal" : "Enable Global Reveal"}
+                        subContent={
                             isFogRevealedGlobally
-                                ? "bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/25 ring-1 ring-amber-400/50"
-                                : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60"
-                        )}
+                                ? "غیرفعال‌سازی آشکارساز (نمایش مجدد مه برای بازیکنان)"
+                                : "فعال‌سازی آشکارساز (پنهان کردن موقت مه نقشه)"
+                        }
                     >
-                        <Eye className="w-4 h-4 stroke-[2.2]" />
-                        <span>آشکارساز</span>
-                    </button>
-                </Tooltip>
+                        <button
+                            type="button"
+                            onClick={handleToggleGlobalReveal}
+                            className={cn(
+                                "flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer select-none active:scale-95 whitespace-nowrap",
+                                isFogRevealedGlobally
+                                    ? "bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/25 ring-1 ring-amber-400/50"
+                                    : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60"
+                            )}
+                        >
+                            <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.2]" />
+                            <span>آشکارساز</span>
+                        </button>
+                    </Tooltip>
 
-                <Tooltip content="Hide Fog" subContent="پوشاندن نقشه با تاریکی">
-                    <button
-                        type="button"
-                        onClick={() => setFogAction(FOG_ACTIONS.HIDE)}
-                        className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none active:scale-95",
-                            fogAction === FOG_ACTIONS.HIDE
-                                ? "bg-rose-600 text-white shadow-md shadow-rose-600/30 ring-1 ring-rose-400/50"
-                                : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60"
-                        )}
-                    >
-                        <EyeOff className="w-4 h-4 stroke-[2.2]" />
-                        <span>پوشاندن</span>
-                    </button>
-                </Tooltip>
+                    <Tooltip content="Hide Fog" subContent="پوشاندن نقشه با تاریکی">
+                        <button
+                            type="button"
+                            onClick={() => setFogAction(FOG_ACTIONS.HIDE)}
+                            className={cn(
+                                "flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer select-none active:scale-95 whitespace-nowrap",
+                                fogAction === FOG_ACTIONS.HIDE
+                                    ? "bg-rose-600 text-white shadow-md shadow-rose-600/30 ring-1 ring-rose-400/50"
+                                    : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60"
+                            )}
+                        >
+                            <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.2]" />
+                            <span>پوشاندن</span>
+                        </button>
+                    </Tooltip>
 
-                <Tooltip content="Slice Fog" subContent="برش دقیق بخشی از مه با شکل یا خودنویس">
-                    <button
-                        type="button"
-                        onClick={() => setFogAction(FOG_ACTIONS.SLICE)}
-                        className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer select-none active:scale-95",
-                            fogAction === FOG_ACTIONS.SLICE
-                                ? "bg-purple-600 text-white shadow-md shadow-purple-600/30 ring-1 ring-purple-400/50"
-                                : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60"
-                        )}
-                    >
-                        <Scissors className="w-4 h-4 stroke-[2.2]" />
-                        <span>برش</span>
-                    </button>
-                </Tooltip>
-            </div>
+                    <Tooltip content="Slice Fog" subContent="برش دقیق بخشی از مه با شکل یا خودنویس">
+                        <button
+                            type="button"
+                            onClick={() => setFogAction(FOG_ACTIONS.SLICE)}
+                            className={cn(
+                                "flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer select-none active:scale-95 whitespace-nowrap",
+                                fogAction === FOG_ACTIONS.SLICE
+                                    ? "bg-purple-600 text-white shadow-md shadow-purple-600/30 ring-1 ring-purple-400/50"
+                                    : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60"
+                            )}
+                        >
+                            <Scissors className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.2]" />
+                            <span>برش</span>
+                        </button>
+                    </Tooltip>
+                </div>
 
-            <div className="h-6 w-px bg-zinc-800/80 mx-0.5" />
-
-            <div className="flex items-center gap-1 p-0.5 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
-                <Tooltip content="Circle Fog" subContent="دایره">
-                    <button
-                        type="button"
-                        onClick={() => setFogBrushShape(FOG_BRUSH_SHAPES.CIRCLE)}
-                        className={cn(
-                            "w-8.5 h-8.5 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95",
-                            fogBrushShape === FOG_BRUSH_SHAPES.CIRCLE
-                                ? "bg-zinc-800 text-amber-400 border border-amber-500/50 shadow-md font-bold"
-                                : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
-                        )}
-                    >
-                        <Circle className="w-4 h-4 stroke-[2]" />
-                    </button>
-                </Tooltip>
-
-                <Tooltip content="Rectangle Fog" subContent="مستطیل">
-                    <button
-                        type="button"
-                        onClick={() => setFogBrushShape(FOG_BRUSH_SHAPES.RECTANGLE)}
-                        className={cn(
-                            "w-8.5 h-8.5 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95",
-                            fogBrushShape === FOG_BRUSH_SHAPES.RECTANGLE
-                                ? "bg-zinc-800 text-amber-400 border border-amber-500/50 shadow-md font-bold"
-                                : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
-                        )}
-                    >
-                        <Square className="w-4 h-4 stroke-[2]" />
-                    </button>
-                </Tooltip>
-
-                <Tooltip content="Triangle Fog" subContent="مثلث">
-                    <button
-                        type="button"
-                        onClick={() => setFogBrushShape(FOG_BRUSH_SHAPES.TRIANGLE)}
-                        className={cn(
-                            "w-8.5 h-8.5 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95",
-                            fogBrushShape === FOG_BRUSH_SHAPES.TRIANGLE
-                                ? "bg-zinc-800 text-amber-400 border border-amber-500/50 shadow-md font-bold"
-                                : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
-                        )}
-                    >
-                        <Triangle className="w-4 h-4 stroke-[2]" />
-                    </button>
-                </Tooltip>
-
-                <Tooltip content="Hexagon Fog" subContent="شش‌ضلعی">
-                    <button
-                        type="button"
-                        onClick={() => setFogBrushShape(FOG_BRUSH_SHAPES.HEXAGON)}
-                        className={cn(
-                            "w-8.5 h-8.5 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95",
-                            fogBrushShape === FOG_BRUSH_SHAPES.HEXAGON
-                                ? "bg-zinc-800 text-amber-400 border border-amber-500/50 shadow-md font-bold"
-                                : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
-                        )}
-                    >
-                        <Hexagon className="w-4 h-4 stroke-[2]" />
-                    </button>
-                </Tooltip>
-
-                <Tooltip content="Pen / Polygon Fog" subContent="خودنویس چندضلعی نقطه‌به‌نقطه">
-                    <button
-                        type="button"
-                        onClick={() => setFogBrushShape(FOG_BRUSH_SHAPES.POLYGON)}
-                        className={cn(
-                            "w-8.5 h-8.5 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95",
-                            fogBrushShape === FOG_BRUSH_SHAPES.POLYGON
-                                ? "bg-zinc-800 text-amber-400 border border-amber-500/50 shadow-md font-bold"
-                                : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
-                        )}
-                    >
-                        <PenTool className="w-4 h-4 stroke-[2]" />
-                    </button>
-                </Tooltip>
-            </div>
-
-            <div className="h-6 w-px bg-zinc-800/80 mx-0.5" />
-
-            <Tooltip
-                content="Fill Fog"
-                subContent={isFogFilled ? "خالی کردن مه کل نقشه" : "پوشاندن کل نقشه با مه"}
-            >
+                {/* دکمه حذف کل مه در موبایل کنار حالت‌ها قرار می‌گیرد تا ردیف دوم فشرده‌تر شود */}
                 <button
                     type="button"
-                    onClick={handleToggleFillFog}
-                    className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer active:scale-95",
-                        isFogFilled
-                            ? "bg-rose-600 text-white shadow-rose-600/30 border border-rose-400/40"
-                            : "bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 border border-zinc-700/80"
-                    )}
+                    onClick={handleClearAll}
+                    aria-label="حذف کامل تمام مه جنگ نقشه"
+                    className="sm:hidden w-9 h-9 rounded-xl flex items-center justify-center text-zinc-400 hover:text-rose-400 bg-zinc-900/90 border border-zinc-800 active:scale-90 transition-all cursor-pointer shrink-0"
+                    title="حذف کامل مه جنگ"
                 >
-                    <EyeOff className="w-4 h-4 stroke-[2]" />
-                    <span>{isFogFilled ? "خالی کردن مه" : "Fill Fog"}</span>
+                    <Trash2 className="w-4 h-4 stroke-[2]" />
                 </button>
-            </Tooltip>
+            </div>
 
-            <div className="relative" ref={fitMenuRef}>
-                <button
-                    type="button"
-                    onClick={() => setIsFitMenuOpen((prev) => !prev)}
-                    className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-sm active:scale-95 border",
-                        isFitMenuOpen
-                            ? "bg-amber-500/20 text-amber-300 border-amber-500"
-                            : "bg-zinc-900/90 border-amber-500/40 hover:border-amber-500 text-amber-400 hover:bg-zinc-850"
-                    )}
-                >
-                    <CurrentOptionIcon className={cn("w-4 h-4 stroke-[2.2]", currentOption.colorClass)} />
-                    <span>{currentOption.shortLabel} Fog</span>
-                    <ChevronDown
-                        className={cn(
-                            "w-3.5 h-3.5 transition-transform duration-200 opacity-80",
-                            isFitMenuOpen ? "rotate-180" : ""
+            <div className="hidden sm:block h-6 w-px bg-zinc-800/80 mx-0.5 shrink-0" aria-hidden="true" />
+
+            {/* ردیف دوم در موبایل / ادامه در دسکتاپ: اشکال قلم مه + Fill + Fit */}
+            <div className="flex items-center justify-between sm:justify-start gap-1.5">
+                <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 bg-zinc-900/50 rounded-xl border border-zinc-800/50 shrink-0">
+                    <Tooltip content="Circle Fog" subContent="دایره">
+                        <button
+                            type="button"
+                            onClick={() => setFogBrushShape(FOG_BRUSH_SHAPES.CIRCLE)}
+                            aria-label="قلم مه دایره‌ای"
+                            className={cn(
+                                "w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95",
+                                fogBrushShape === FOG_BRUSH_SHAPES.CIRCLE
+                                    ? "bg-zinc-800 text-amber-400 border border-amber-500/50 shadow-md font-bold"
+                                    : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
+                            )}
+                        >
+                            <Circle className="w-4 h-4 stroke-[2]" />
+                        </button>
+                    </Tooltip>
+
+                    <Tooltip content="Rectangle Fog" subContent="مستطیل">
+                        <button
+                            type="button"
+                            onClick={() => setFogBrushShape(FOG_BRUSH_SHAPES.RECTANGLE)}
+                            aria-label="قلم مه مستطیلی"
+                            className={cn(
+                                "w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95",
+                                fogBrushShape === FOG_BRUSH_SHAPES.RECTANGLE
+                                    ? "bg-zinc-800 text-amber-400 border border-amber-500/50 shadow-md font-bold"
+                                    : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
+                            )}
+                        >
+                            <Square className="w-4 h-4 stroke-[2]" />
+                        </button>
+                    </Tooltip>
+
+                    <Tooltip content="Triangle Fog" subContent="مثلث">
+                        <button
+                            type="button"
+                            onClick={() => setFogBrushShape(FOG_BRUSH_SHAPES.TRIANGLE)}
+                            aria-label="قلم مه مثلثی"
+                            className={cn(
+                                "w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95",
+                                fogBrushShape === FOG_BRUSH_SHAPES.TRIANGLE
+                                    ? "bg-zinc-800 text-amber-400 border border-amber-500/50 shadow-md font-bold"
+                                    : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
+                            )}
+                        >
+                            <Triangle className="w-4 h-4 stroke-[2]" />
+                        </button>
+                    </Tooltip>
+
+                    <Tooltip content="Hexagon Fog" subContent="شش‌ضلعی">
+                        <button
+                            type="button"
+                            onClick={() => setFogBrushShape(FOG_BRUSH_SHAPES.HEXAGON)}
+                            aria-label="قلم مه شش‌ضلعی"
+                            className={cn(
+                                "w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95",
+                                fogBrushShape === FOG_BRUSH_SHAPES.HEXAGON
+                                    ? "bg-zinc-800 text-amber-400 border border-amber-500/50 shadow-md font-bold"
+                                    : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
+                            )}
+                        >
+                            <Hexagon className="w-4 h-4 stroke-[2]" />
+                        </button>
+                    </Tooltip>
+
+                    <Tooltip content="Pen / Polygon Fog" subContent="خودنویس چندضلعی نقطه‌به‌نقطه">
+                        <button
+                            type="button"
+                            onClick={() => setFogBrushShape(FOG_BRUSH_SHAPES.POLYGON)}
+                            aria-label="قلم مه چندضلعی نقطه‌به‌نقطه"
+                            className={cn(
+                                "w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95",
+                                fogBrushShape === FOG_BRUSH_SHAPES.POLYGON
+                                    ? "bg-zinc-800 text-amber-400 border border-amber-500/50 shadow-md font-bold"
+                                    : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
+                            )}
+                        >
+                            <PenTool className="w-4 h-4 stroke-[2]" />
+                        </button>
+                    </Tooltip>
+                </div>
+
+                <div className="hidden sm:block h-6 w-px bg-zinc-800/80 mx-0.5 shrink-0" aria-hidden="true" />
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                    <Tooltip
+                        content="Fill Fog"
+                        subContent={isFogFilled ? "خالی کردن مه کل نقشه" : "پوشاندن کل نقشه با مه"}
+                    >
+                        <button
+                            type="button"
+                            onClick={handleToggleFillFog}
+                            className={cn(
+                                "flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl font-bold text-[11px] sm:text-xs shadow-md transition-all cursor-pointer active:scale-95 whitespace-nowrap",
+                                isFogFilled
+                                    ? "bg-rose-600 text-white shadow-rose-600/30 border border-rose-400/40"
+                                    : "bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 border border-zinc-700/80"
+                            )}
+                        >
+                            <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2]" />
+                            <span>{isFogFilled ? "خالی کردن" : "Fill"}</span>
+                        </button>
+                    </Tooltip>
+
+                    <div className="sm:relative">
+                        <button
+                            type="button"
+                            onClick={() => setIsFitMenuOpen((prev) => !prev)}
+                            className={cn(
+                                "flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl font-bold text-[11px] sm:text-xs transition-all cursor-pointer shadow-sm active:scale-95 border whitespace-nowrap",
+                                isFitMenuOpen
+                                    ? "bg-amber-500/20 text-amber-300 border-amber-500"
+                                    : "bg-zinc-900/90 border-amber-500/40 hover:border-amber-500 text-amber-400 hover:bg-zinc-850"
+                            )}
+                        >
+                            <CurrentOptionIcon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.2]", currentOption.colorClass)} />
+                            <span>{currentOption.shortLabel}</span>
+                            <ChevronDown
+                                className={cn(
+                                    "w-3.5 h-3.5 transition-transform duration-200 opacity-80",
+                                    isFitMenuOpen ? "rotate-180" : ""
+                                )}
+                            />
+                        </button>
+
+                        {isFitMenuOpen && (
+                            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 w-64 max-w-[90vw] bg-zinc-950/98 border border-zinc-800/90 rounded-2xl p-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.8)] backdrop-blur-2xl z-[100] flex flex-col gap-1 animate-fade-in-up">
+                                {FIT_OPTIONS.map((opt) => {
+                                    const OptionIcon = opt.icon;
+                                    const isSelected = selectedFitOptionKey === opt.key;
+                                    return (
+                                        <button
+                                            key={opt.key}
+                                            type="button"
+                                            onClick={() => handleFitOptionSelect(opt.key)}
+                                            className={cn(
+                                                "flex items-center justify-between w-full px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer active:scale-[0.98]",
+                                                isSelected
+                                                    ? "bg-zinc-900 text-zinc-100 border border-zinc-700/60 shadow-sm"
+                                                    : "hover:bg-zinc-900/70 text-zinc-400 hover:text-zinc-200"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-2.5">
+                                                <div className={cn("p-1.5 rounded-lg border", opt.bgClass)}>
+                                                    <OptionIcon className={cn("w-3.5 h-3.5", opt.colorClass)} />
+                                                </div>
+                                                <span>{opt.label}</span>
+                                            </div>
+                                            {isSelected && <Check className="w-4 h-4 text-amber-400 stroke-[2.5]" />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         )}
-                    />
-                </button>
-
-                {isFitMenuOpen && (
-                    <div className="absolute bottom-full mb-3 right-0 w-64 bg-zinc-950/98 border border-zinc-800/90 rounded-2xl p-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.8)] backdrop-blur-2xl z-[100] flex flex-col gap-1 animate-fade-in-up">
-                        {FIT_OPTIONS.map((opt) => {
-                            const OptionIcon = opt.icon;
-                            const isSelected = selectedFitOptionKey === opt.key;
-                            return (
-                                <button
-                                    key={opt.key}
-                                    type="button"
-                                    onClick={() => handleFitOptionSelect(opt.key)}
-                                    className={cn(
-                                        "flex items-center justify-between w-full px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer active:scale-[0.98]",
-                                        isSelected
-                                            ? "bg-zinc-900 text-zinc-100 border border-zinc-700/60 shadow-sm"
-                                            : "hover:bg-zinc-900/70 text-zinc-400 hover:text-zinc-200"
-                                    )}
-                                >
-                                    <div className="flex items-center gap-2.5">
-                                        <div className={cn("p-1.5 rounded-lg border", opt.bgClass)}>
-                                            <OptionIcon className={cn("w-3.5 h-3.5", opt.colorClass)} />
-                                        </div>
-                                        <span>{opt.label}</span>
-                                    </div>
-                                    {isSelected && <Check className="w-4 h-4 text-amber-400 stroke-[2.5]" />}
-                                </button>
-                            );
-                        })}
                     </div>
-                )}
+                </div>
             </div>
 
-            <div className="h-6 w-px bg-zinc-800/80 mx-0.5" />
+            <div className="hidden sm:block h-6 w-px bg-zinc-800/80 mx-0.5 shrink-0" aria-hidden="true" />
 
             <Tooltip content="Clear Fog" subContent="حذف کامل تمام مه جنگ نقشه">
                 <button
                     type="button"
                     onClick={handleClearAll}
-                    className="w-8.5 h-8.5 rounded-xl flex items-center justify-center text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 active:scale-90 transition-all cursor-pointer"
+                    aria-label="حذف کامل تمام مه جنگ نقشه"
+                    className="hidden sm:flex w-8.5 h-8.5 rounded-xl items-center justify-center text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 active:scale-90 transition-all cursor-pointer shrink-0"
                 >
                     <Trash2 className="w-4 h-4 stroke-[2]" />
                 </button>

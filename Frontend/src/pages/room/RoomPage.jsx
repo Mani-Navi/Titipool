@@ -62,7 +62,7 @@ class CanvasErrorBoundary extends Component {
                     <button
                         type="button"
                         onClick={() => this.setState({ hasError: false })}
-                        className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs rounded-xl shadow-lg transition-colors cursor-pointer"
+                        className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs rounded-xl shadow-lg transition-colors cursor-pointer active:scale-95"
                     >
                         راه‌اندازی مجدد کانواس
                     </button>
@@ -273,9 +273,9 @@ export const RoomPage = () => {
 
     const toggleFullscreen = () => {
         if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().then(() => setIsFullscreen(true));
+            document.documentElement.requestFullscreen?.().then(() => setIsFullscreen(true)).catch(() => {});
         } else {
-            document.exitFullscreen().then(() => setIsFullscreen(false));
+            document.exitFullscreen?.().then(() => setIsFullscreen(false)).catch(() => {});
         }
     };
 
@@ -290,26 +290,31 @@ export const RoomPage = () => {
 
             <SceneBar isGM={isGM} roomId={effectiveRoomId} />
 
+            {/* هدر کنترل‌های سمت چپ با چیدمان فوق‌فشرده در موبایل و حفظ ظاهر دسکتاپ */}
             <header
-                className="fixed top-2.5 sm:top-4 left-2.5 sm:left-6 z-30 flex items-center gap-1.5 sm:gap-2.5 pointer-events-auto"
+                className="fixed top-[max(0.625rem,env(safe-area-inset-top))] sm:top-4 left-2 sm:left-6 z-30 flex items-center gap-0.5 sm:gap-2.5 bg-zinc-950/90 sm:bg-transparent border border-zinc-800/80 sm:border-0 p-0.5 sm:p-0 rounded-2xl shadow-lg sm:shadow-none backdrop-blur-xl sm:backdrop-blur-none pointer-events-auto"
                 dir="ltr"
             >
-                <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-zinc-950/85 border border-zinc-800/80 rounded-xl shadow-lg backdrop-blur-xl text-[11px]">
-          <span
-              className={`w-2 h-2 rounded-full ${
-                  isConnected
-                      ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"
-                      : "bg-amber-400 animate-pulse"
-              }`}
-          />
+                <div
+                    className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:bg-zinc-950/85 sm:border sm:border-zinc-800/80 rounded-xl sm:shadow-lg sm:backdrop-blur-xl text-[11px]"
+                    title={isConnected ? "اتصال بلادرنگ برقرار است" : "در حال اتصال مجدد..."}
+                >
+                    <span
+                        className={`w-2 h-2 rounded-full shrink-0 ${
+                            isConnected
+                                ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"
+                                : "bg-amber-400 animate-pulse"
+                        }`}
+                    />
                     <span className="hidden sm:inline text-zinc-300 font-mono text-[10px] font-medium">
-            {isConnected ? "Live Sync" : "Connecting..."}
-          </span>
+                        {isConnected ? "Live Sync" : "Connecting..."}
+                    </span>
                 </div>
 
                 <button
                     type="button"
                     onClick={() => setIsHelpOpen(true)}
+                    aria-label="راهنمای کنترل‌ها و میانبرها"
                     className="hidden sm:flex w-9 h-9 rounded-xl bg-zinc-950/85 border border-zinc-800/80 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 items-center justify-center shadow-lg backdrop-blur-xl active:scale-90 transition-all duration-150 cursor-pointer"
                     title="راهنمای کلیدها"
                 >
@@ -319,7 +324,8 @@ export const RoomPage = () => {
                 <button
                     type="button"
                     onClick={toggleFullscreen}
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-zinc-950/85 border border-zinc-800/80 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 flex items-center justify-center shadow-lg backdrop-blur-xl active:scale-90 transition-all duration-150 cursor-pointer"
+                    aria-label={isFullscreen ? "خروج از حالت تمام‌صفحه" : "نمایش تمام‌صفحه"}
+                    className="hidden xs:flex w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:bg-zinc-950/85 sm:border sm:border-zinc-800/80 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 items-center justify-center sm:shadow-lg sm:backdrop-blur-xl active:scale-90 transition-all duration-150 cursor-pointer"
                     title="تمام صفحه"
                 >
                     {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
@@ -329,10 +335,11 @@ export const RoomPage = () => {
                     <button
                         type="button"
                         onClick={handleCloseRoom}
-                        className="px-2 sm:px-2.5 h-8 sm:h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 flex items-center gap-1.5 shadow-lg backdrop-blur-xl active:scale-95 transition-all duration-150 cursor-pointer font-bold text-xs"
+                        aria-label="بستن و غیرفعال‌سازی اتاق"
+                        className="w-8 h-8 sm:w-auto sm:px-2.5 sm:h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 flex items-center justify-center gap-1.5 sm:shadow-lg sm:backdrop-blur-xl active:scale-95 transition-all duration-150 cursor-pointer font-bold text-xs"
                         title="بستن و غیرفعال‌سازی اتاق"
                     >
-                        <PowerOff className="w-3.5 h-3.5 text-amber-400" />
+                        <PowerOff className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                         <span className="hidden sm:inline">بستن اتاق</span>
                     </button>
                 )}
@@ -340,7 +347,8 @@ export const RoomPage = () => {
                 <button
                     type="button"
                     onClick={() => navigate("/dashboard")}
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-zinc-950/85 border border-zinc-800/80 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 flex items-center justify-center shadow-lg backdrop-blur-xl active:scale-90 transition-all duration-150 cursor-pointer"
+                    aria-label="خروج از اتاق بازی و بازگشت به داشبورد"
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:bg-zinc-950/85 sm:border sm:border-zinc-800/80 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 flex items-center justify-center sm:shadow-lg sm:backdrop-blur-xl active:scale-90 transition-all duration-150 cursor-pointer"
                     title="خروج از اتاق"
                 >
                     <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -362,14 +370,14 @@ export const RoomPage = () => {
             <Modal
                 isOpen={isHelpOpen}
                 onClose={() => setIsHelpOpen(false)}
-                title="Keyboard Controls"
-                titleFa="کلیدهای میانبر و کنترل‌ها"
+                title="Controls & Shortcuts"
+                titleFa="راهنمای کلیدهای میانبر و ژست‌های لمسی"
                 maxWidth="md"
             >
                 <div className="space-y-3 text-xs text-zinc-300 font-fa" dir="rtl">
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-2">
-                            <span className="font-bold text-amber-400 block">ابزارها:</span>
+                            <span className="font-bold text-amber-400 block">ابزارها (کیبورد):</span>
                             <div className="flex justify-between items-center">
                                 <span>انتخاب:</span>
                                 <kbd className="font-mono bg-zinc-900 border border-zinc-700/80 px-1.5 py-0.5 rounded text-amber-400 text-[10px]">V</kbd>
@@ -401,18 +409,22 @@ export const RoomPage = () => {
                         </div>
 
                         <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-2">
-                            <span className="font-bold text-amber-400 block">اکشن‌ها:</span>
+                            <span className="font-bold text-amber-400 block">ماوس و لمس موبایل:</span>
                             <div className="flex justify-between items-center">
-                                <span>زوم:</span>
-                                <span className="text-zinc-400 text-[11px]">اسکرول ماوس</span>
+                                <span>زوم نقشه:</span>
+                                <span className="text-zinc-400 text-[11px]">اسکرول / دو انگشت (Pinch)</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span>پینگ رادار:</span>
-                                <span className="text-zinc-400 text-[11px]">دوبار کلیک روی مپ</span>
+                                <span className="text-zinc-400 text-[11px]">دابل‌کلیک / دابل‌تپ روی مپ</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span>ویرایش توکن:</span>
-                                <span className="text-zinc-400 text-[11px]">راست کلیک روی توکن</span>
+                                <span className="text-zinc-400 text-[11px]">راست‌کلیک / دکمه ویرایش</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span>پرتاب مجدد تاس:</span>
+                                <span className="text-zinc-400 text-[11px]">کشیدن تاس روی میز</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span>وصل/قطع میکروفون:</span>

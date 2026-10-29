@@ -131,6 +131,10 @@ export const ProfilePage = () => {
         formState: { errors: emailErrors, isSubmitting: isEmailSubmitting },
     } = useForm({
         resolver: zodResolver(emailSchema),
+        defaultValues: {
+            newEmail: "",
+            password: "",
+        },
     });
 
     const newPasswordValue = watchPass("newPassword", "");
@@ -265,11 +269,11 @@ export const ProfilePage = () => {
             style={{ WebkitOverflowScrolling: "touch" }}
             dir="rtl"
         >
-            <header className="h-16 shrink-0 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
+            <header className="min-h-16 shrink-0 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur-xl px-4 sm:px-6 pt-[env(safe-area-inset-top,0px)] flex items-center justify-between sticky top-0 z-30">
                 <div className="flex items-center gap-2">
                     <Link
                         to="/dashboard"
-                        className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 hover:text-amber-400 active:scale-95 transition-all p-2 rounded-xl hover:bg-zinc-900"
+                        className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 hover:text-amber-400 active:scale-95 transition-all px-2.5 py-2 rounded-xl hover:bg-zinc-900 min-h-[40px]"
                     >
                         <ArrowRight className="w-4 h-4" />
                         <span className="hidden sm:inline">بازگشت به داشبورد</span>
@@ -281,16 +285,17 @@ export const ProfilePage = () => {
                     <button
                         type="button"
                         onClick={logout}
-                        className="flex items-center gap-1.5 text-xs font-bold text-rose-400 hover:bg-rose-500/10 px-3 py-2 rounded-xl active:scale-95 transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 text-xs font-bold text-rose-400 hover:bg-rose-500/10 px-3 py-2 rounded-xl active:scale-95 transition-all cursor-pointer min-h-[40px]"
                     >
                         <LogOut className="w-4 h-4" />
-                        خروج
+                        <span>خروج</span>
                     </button>
                 </div>
             </header>
 
             <div className="flex-1 w-full">
-                <main className="max-w-4xl mx-auto px-3.5 sm:px-6 py-5 sm:py-8 space-y-4 sm:space-y-6 pb-20 animate-fade-in-up">
+                <main className="max-w-4xl mx-auto px-3.5 sm:px-6 py-5 sm:py-8 space-y-4 sm:space-y-6 pb-[max(5rem,env(safe-area-inset-bottom))] animate-fade-in-up">
+                    {/* کارت مشخصات بالا */}
                     <div className="relative glass-card border border-zinc-800/80 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl overflow-hidden flex flex-col items-center text-center">
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-32 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -304,8 +309,12 @@ export const ProfilePage = () => {
                             </div>
                         </div>
 
-                        <h1 className="text-lg sm:text-2xl font-black text-zinc-100">{user?.username}</h1>
-                        <p className="text-xs text-zinc-400 mt-0.5 font-mono">{user?.email}</p>
+                        <h1 dir="auto" className="text-lg sm:text-2xl font-black text-zinc-100 max-w-full truncate px-2">
+                            {user?.username}
+                        </h1>
+                        <p dir="ltr" className="text-xs text-zinc-400 mt-0.5 font-mono max-w-full truncate px-2">
+                            {user?.email}
+                        </p>
 
                         <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full max-w-lg mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-zinc-800/60">
                             <div className="bg-zinc-900/60 border border-zinc-800/70 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 flex flex-col items-center transition-all hover:border-zinc-700">
@@ -350,56 +359,56 @@ export const ProfilePage = () => {
                             <button
                                 type="button"
                                 onClick={() => setActiveTab("overview")}
-                                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 shrink-0 cursor-pointer active:scale-95 ${
+                                className={`flex items-center gap-1.5 px-3.5 min-h-[40px] py-2 rounded-xl text-xs font-bold transition-all duration-150 shrink-0 cursor-pointer active:scale-95 ${
                                     activeTab === "overview"
                                         ? "bg-zinc-100 text-zinc-950 shadow-md"
                                         : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
                                 }`}
                             >
                                 <UserIcon className="w-3.5 h-3.5" />
-                                اطلاعات حساب
+                                <span>اطلاعات حساب</span>
                             </button>
 
                             <button
                                 type="button"
                                 onClick={() => setActiveTab("avatars")}
-                                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 shrink-0 cursor-pointer active:scale-95 ${
+                                className={`flex items-center gap-1.5 px-3.5 min-h-[40px] py-2 rounded-xl text-xs font-bold transition-all duration-150 shrink-0 cursor-pointer active:scale-95 ${
                                     activeTab === "avatars"
                                         ? "bg-zinc-100 text-zinc-950 shadow-md"
                                         : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
                                 }`}
                             >
                                 <Award className="w-3.5 h-3.5" />
-                                آواتار RPG
+                                <span>آواتار RPG</span>
                             </button>
 
                             <button
                                 type="button"
                                 onClick={() => setActiveTab("security")}
-                                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 shrink-0 cursor-pointer active:scale-95 ${
+                                className={`flex items-center gap-1.5 px-3.5 min-h-[40px] py-2 rounded-xl text-xs font-bold transition-all duration-150 shrink-0 cursor-pointer active:scale-95 ${
                                     activeTab === "security"
                                         ? "bg-zinc-100 text-zinc-950 shadow-md"
                                         : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
                                 }`}
                             >
                                 <Shield className="w-3.5 h-3.5" />
-                                امنیت و پسورد
+                                <span>امنیت و پسورد</span>
                                 {!hasPassword && (
-                                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" title="نیاز به تعیین رمز عبور" />
                                 )}
                             </button>
 
                             <button
                                 type="button"
                                 onClick={() => setActiveTab("email")}
-                                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 shrink-0 cursor-pointer active:scale-95 ${
+                                className={`flex items-center gap-1.5 px-3.5 min-h-[40px] py-2 rounded-xl text-xs font-bold transition-all duration-150 shrink-0 cursor-pointer active:scale-95 ${
                                     activeTab === "email"
                                         ? "bg-zinc-100 text-zinc-950 shadow-md"
                                         : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
                                 }`}
                             >
                                 <Mail className="w-3.5 h-3.5" />
-                                تنظیمات ایمیل
+                                <span>تنظیمات ایمیل</span>
                             </button>
                         </div>
 
@@ -410,13 +419,22 @@ export const ProfilePage = () => {
                                     <p className="text-xs text-zinc-400 mt-0.5">نام نمایشی شما در میزها و بازی‌ها</p>
                                 </div>
 
-                                <form onSubmit={handleUpdateUsername} className="space-y-3.5">
+                                <form
+                                    onSubmit={handleUpdateUsername}
+                                    autoComplete="off"
+                                    data-form-type="other"
+                                    className="space-y-3.5"
+                                >
                                     <Input
                                         label="نام کاربری (Username)"
+                                        name="profileDisplayHandle"
+                                        dir="auto"
+                                        autoComplete="off"
+                                        data-lpignore="true"
                                         value={usernameInput}
                                         onChange={(e) => setUsernameInput(e.target.value)}
                                         placeholder="مثلا: master_of_dungeons"
-                                        className="h-10 text-sm"
+                                        className="h-11 sm:h-10 text-sm"
                                     />
 
                                     <Button
@@ -471,7 +489,12 @@ export const ProfilePage = () => {
                         )}
 
                         {activeTab === "security" && (
-                            <form onSubmit={handlePassSubmit(onSubmitPassword)} className="space-y-3.5 max-w-md animate-fade-in-up">
+                            <form
+                                onSubmit={handlePassSubmit(onSubmitPassword)}
+                                autoComplete="off"
+                                data-form-type="other"
+                                className="space-y-3.5 max-w-md animate-fade-in-up"
+                            >
                                 {!hasPassword ? (
                                     <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs leading-relaxed flex items-start gap-2.5">
                                         <KeyRound className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
@@ -491,17 +514,21 @@ export const ProfilePage = () => {
                                     <div className="relative">
                                         <Input
                                             label="رمز عبور فعلی"
-                                            type={showCurrentPass ? "text" : "password"}
+                                            type="text"
+                                            dir="ltr"
                                             placeholder="••••••••"
+                                            autoComplete="off"
+                                            data-lpignore="true"
+                                            style={!showCurrentPass ? { WebkitTextSecurity: "disc" } : undefined}
                                             error={passErrors.currentPassword?.message}
                                             disabled={isPassSubmitting}
-                                            className="h-10 text-sm pl-11"
+                                            className="h-11 sm:h-10 text-sm pl-11 text-left font-mono"
                                             {...registerPass("currentPassword")}
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowCurrentPass(!showCurrentPass)}
-                                            className="absolute left-2.5 top-[38px] -translate-y-1/2 text-zinc-400 hover:text-zinc-200 active:text-amber-400 p-1.5 cursor-pointer rounded-lg active:scale-90 transition-all flex items-center justify-center focus-visible:outline-none"
+                                            className="absolute left-2.5 top-[39px] sm:top-[38px] -translate-y-1/2 text-zinc-400 hover:text-zinc-200 active:text-amber-400 p-1.5 cursor-pointer rounded-lg active:scale-90 transition-all flex items-center justify-center focus-visible:outline-none"
                                             tabIndex={-1}
                                             aria-label="تغییر وضعیت نمایش رمز فعلی"
                                         >
@@ -514,17 +541,21 @@ export const ProfilePage = () => {
                                     <div className="relative">
                                         <Input
                                             label={hasPassword ? "رمز عبور جدید" : "تعیین رمز عبور"}
-                                            type={showNewPass ? "text" : "password"}
+                                            type="text"
+                                            dir="ltr"
                                             placeholder="••••••••"
+                                            autoComplete="new-password"
+                                            data-lpignore="true"
+                                            style={!showNewPass ? { WebkitTextSecurity: "disc" } : undefined}
                                             error={passErrors.newPassword?.message}
                                             disabled={isPassSubmitting}
-                                            className="h-10 text-sm pl-11"
+                                            className="h-11 sm:h-10 text-sm pl-11 text-left font-mono"
                                             {...registerPass("newPassword")}
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowNewPass(!showNewPass)}
-                                            className="absolute left-2.5 top-[38px] -translate-y-1/2 text-zinc-400 hover:text-zinc-200 active:text-amber-400 p-1.5 cursor-pointer rounded-lg active:scale-90 transition-all flex items-center justify-center focus-visible:outline-none"
+                                            className="absolute left-2.5 top-[39px] sm:top-[38px] -translate-y-1/2 text-zinc-400 hover:text-zinc-200 active:text-amber-400 p-1.5 cursor-pointer rounded-lg active:scale-90 transition-all flex items-center justify-center focus-visible:outline-none"
                                             tabIndex={-1}
                                             aria-label="تغییر وضعیت نمایش رمز جدید"
                                         >
@@ -581,17 +612,21 @@ export const ProfilePage = () => {
                                 <div className="relative">
                                     <Input
                                         label={hasPassword ? "تکرار رمز عبور جدید" : "تکرار رمز عبور"}
-                                        type={showConfirmPass ? "text" : "password"}
+                                        type="text"
+                                        dir="ltr"
                                         placeholder="••••••••"
+                                        autoComplete="new-password"
+                                        data-lpignore="true"
+                                        style={!showConfirmPass ? { WebkitTextSecurity: "disc" } : undefined}
                                         error={passErrors.confirmPassword?.message}
                                         disabled={isPassSubmitting}
-                                        className="h-10 text-sm pl-11"
+                                        className="h-11 sm:h-10 text-sm pl-11 text-left font-mono"
                                         {...registerPass("confirmPassword")}
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowConfirmPass(!showConfirmPass)}
-                                        className="absolute left-2.5 top-[38px] -translate-y-1/2 text-zinc-400 hover:text-zinc-200 active:text-amber-400 p-1.5 cursor-pointer rounded-lg active:scale-90 transition-all flex items-center justify-center focus-visible:outline-none"
+                                        className="absolute left-2.5 top-[39px] sm:top-[38px] -translate-y-1/2 text-zinc-400 hover:text-zinc-200 active:text-amber-400 p-1.5 cursor-pointer rounded-lg active:scale-90 transition-all flex items-center justify-center focus-visible:outline-none"
                                         tabIndex={-1}
                                         aria-label="تغییر وضعیت نمایش تکرار رمز"
                                     >
@@ -614,21 +649,21 @@ export const ProfilePage = () => {
                         {activeTab === "email" && (
                             <div className="space-y-5 max-w-md animate-fade-in-up">
                                 <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/80 border border-zinc-800 space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="min-w-0">
                                             <span className="text-[11px] text-zinc-400">ایمیل حساب کاربری:</span>
-                                            <div className="text-xs sm:text-sm font-bold text-zinc-200 mt-0.5 truncate max-w-[180px] sm:max-w-none font-mono">
+                                            <div dir="ltr" className="text-xs sm:text-sm font-bold text-zinc-200 mt-0.5 truncate font-mono text-left">
                                                 {user?.email}
                                             </div>
                                         </div>
 
                                         {isVerified ? (
-                                            <span className="flex items-center gap-1 text-[11px] sm:text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full shadow-sm">
+                                            <span className="flex items-center gap-1 text-[11px] sm:text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full shadow-sm shrink-0">
                                                 <CheckCircle2 className="w-3.5 h-3.5" />
-                                                تایید شده
+                                                <span>تایید شده</span>
                                             </span>
                                         ) : (
-                                            <span className="text-[11px] sm:text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full">
+                                            <span className="text-[11px] sm:text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full shrink-0">
                                                 تایید نشده
                                             </span>
                                         )}
@@ -651,25 +686,28 @@ export const ProfilePage = () => {
                                                     className="w-full text-xs font-bold h-10 active:scale-[0.98] transition-transform"
                                                 >
                                                     <Send className="w-3.5 h-3.5 ml-1.5" />
-                                                    ارسال کد ۶ رقمی به ایمیل
+                                                    <span>ارسال کد ۶ رقمی به ایمیل</span>
                                                 </Button>
                                             ) : (
-                                                <form onSubmit={handleVerifyCode} className="space-y-2.5">
+                                                <form onSubmit={handleVerifyCode} autoComplete="off" className="space-y-2.5">
                                                     <div className="flex items-center gap-2">
                                                         <input
                                                             type="text"
+                                                            dir="ltr"
+                                                            inputMode="numeric"
+                                                            autoComplete="one-time-code"
                                                             maxLength={6}
                                                             value={verificationCode}
                                                             onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
                                                             placeholder="کد ۶ رقمی"
-                                                            className="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-center text-sm font-mono tracking-widest text-zinc-100 focus:border-amber-400 focus:outline-none"
+                                                            className="flex-1 min-w-0 h-10 bg-zinc-950 border border-zinc-700 rounded-xl px-3 text-center text-sm font-mono tracking-widest text-zinc-100 focus:border-amber-400 focus:outline-none"
                                                         />
                                                         <Button
                                                             type="submit"
                                                             variant="amber"
                                                             size="sm"
                                                             isLoading={isVerifyingCode}
-                                                            className="text-xs font-bold shrink-0 h-10 px-3 active:scale-[0.98]"
+                                                            className="text-xs font-bold shrink-0 h-10 px-3.5 active:scale-[0.98]"
                                                         >
                                                             تایید کد
                                                         </Button>
@@ -697,32 +735,44 @@ export const ProfilePage = () => {
                                     )}
                                 </div>
 
-                                <form onSubmit={handleEmailSubmit(onSubmitEmail)} className="space-y-3.5 pt-1">
+                                <form
+                                    onSubmit={handleEmailSubmit(onSubmitEmail)}
+                                    autoComplete="off"
+                                    data-form-type="other"
+                                    className="space-y-3.5 pt-1"
+                                >
                                     <h4 className="text-xs font-bold text-zinc-300">درخواست تغییر آدرس ایمیل</h4>
                                     <Input
                                         label="ایمیل جدید"
                                         type="email"
+                                        dir="ltr"
+                                        autoComplete="off"
+                                        data-lpignore="true"
                                         placeholder="new@example.com"
                                         error={emailErrors.newEmail?.message}
                                         disabled={isEmailSubmitting}
-                                        className="h-10 text-sm"
+                                        className="h-11 sm:h-10 text-sm text-left font-mono"
                                         {...registerEmail("newEmail")}
                                     />
 
                                     <div className="relative">
                                         <Input
                                             label="رمز عبور فعلی جهت تایید"
-                                            type={showEmailPass ? "text" : "password"}
+                                            type="text"
+                                            dir="ltr"
+                                            autoComplete="off"
+                                            data-lpignore="true"
+                                            style={!showEmailPass ? { WebkitTextSecurity: "disc" } : undefined}
                                             placeholder="••••••••"
                                             error={emailErrors.password?.message}
                                             disabled={isEmailSubmitting}
-                                            className="h-10 text-sm pl-11"
+                                            className="h-11 sm:h-10 text-sm pl-11 text-left font-mono"
                                             {...registerEmail("password")}
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowEmailPass(!showEmailPass)}
-                                            className="absolute left-2.5 top-[38px] -translate-y-1/2 text-zinc-400 hover:text-zinc-200 active:text-amber-400 p-1.5 cursor-pointer rounded-lg active:scale-90 transition-all flex items-center justify-center focus-visible:outline-none"
+                                            className="absolute left-2.5 top-[39px] sm:top-[38px] -translate-y-1/2 text-zinc-400 hover:text-zinc-200 active:text-amber-400 p-1.5 cursor-pointer rounded-lg active:scale-90 transition-all flex items-center justify-center focus-visible:outline-none"
                                             tabIndex={-1}
                                             aria-label="تغییر وضعیت نمایش رمز"
                                         >

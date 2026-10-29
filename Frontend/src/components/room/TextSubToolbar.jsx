@@ -94,13 +94,14 @@ export const TextSubToolbar = memo(() => {
     return (
         <div
             ref={textContainerRef}
-            className="relative flex items-center gap-1.5 p-1.5 bg-zinc-950/95 border border-zinc-800/90 rounded-2xl shadow-2xl backdrop-blur-2xl text-zinc-200 overflow-visible"
+            className="relative flex flex-wrap sm:flex-nowrap items-center justify-center gap-1 sm:gap-1.5 p-1.5 bg-zinc-950/95 border border-zinc-800/90 rounded-2xl shadow-2xl backdrop-blur-2xl text-zinc-200 max-w-[95vw] sm:max-w-none overflow-visible"
             dir="rtl"
         >
             <select
                 value={textFontFamily}
                 onChange={(e) => setTextFontFamily(e.target.value)}
-                className="px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-amber-500 cursor-pointer"
+                aria-label="انتخاب فونت متن"
+                className="px-2 sm:px-2.5 h-8 bg-zinc-900 border border-zinc-800 rounded-xl text-[11px] sm:text-xs text-zinc-200 focus:outline-none focus:border-amber-500 cursor-pointer max-w-[112px] sm:max-w-none truncate"
                 style={{ fontFamily: textFontFamily }}
             >
                 {TEXT_FONTS_LIST.map((font) => (
@@ -110,14 +111,16 @@ export const TextSubToolbar = memo(() => {
                 ))}
             </select>
 
-            <div className="h-5 w-px bg-zinc-800 mx-0.5" />
+            <div className="hidden sm:block h-5 w-px bg-zinc-800 mx-0.5" aria-hidden="true" />
 
             <div className="flex items-center gap-1 bg-zinc-900/90 p-1 rounded-xl border border-zinc-800/80">
                 <button
                     type="button"
                     onClick={() => setTextIsBold(!textIsBold)}
+                    aria-label="متن درشت (Bold)"
+                    aria-pressed={textIsBold}
                     className={cn(
-                        "w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-90",
+                        "w-7.5 h-7.5 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-90",
                         textIsBold ? "bg-amber-500 text-zinc-950 font-bold" : "text-zinc-400 hover:text-zinc-200"
                     )}
                     title="درشت (Bold)"
@@ -128,8 +131,10 @@ export const TextSubToolbar = memo(() => {
                 <button
                     type="button"
                     onClick={() => setTextIsItalic(!textIsItalic)}
+                    aria-label="متن مورب (Italic)"
+                    aria-pressed={textIsItalic}
                     className={cn(
-                        "w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-90",
+                        "w-7.5 h-7.5 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-90",
                         textIsItalic ? "bg-amber-500 text-zinc-950 font-bold" : "text-zinc-400 hover:text-zinc-200"
                     )}
                     title="مورب (Italic)"
@@ -142,8 +147,10 @@ export const TextSubToolbar = memo(() => {
                 <button
                     type="button"
                     onClick={() => setTextHeading("h1")}
+                    aria-label="تیتر بزرگ H1"
+                    aria-pressed={textHeading === "h1"}
                     className={cn(
-                        "w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-90",
+                        "w-7.5 h-7.5 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-90",
                         textHeading === "h1" ? "bg-amber-500 text-zinc-950 font-bold" : "text-zinc-400 hover:text-zinc-200"
                     )}
                     title="تیتر بزرگ (H1)"
@@ -154,8 +161,10 @@ export const TextSubToolbar = memo(() => {
                 <button
                     type="button"
                     onClick={() => setTextHeading("h2")}
+                    aria-label="تیتر متوسط H2"
+                    aria-pressed={textHeading === "h2"}
                     className={cn(
-                        "w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-90",
+                        "w-7.5 h-7.5 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-90",
                         textHeading === "h2" ? "bg-amber-500 text-zinc-950 font-bold" : "text-zinc-400 hover:text-zinc-200"
                     )}
                     title="تیتر متوسط (H2)"
@@ -164,9 +173,9 @@ export const TextSubToolbar = memo(() => {
                 </button>
             </div>
 
-            <div className="h-5 w-px bg-zinc-800 mx-0.5" />
+            <div className="hidden sm:block h-5 w-px bg-zinc-800 mx-0.5" aria-hidden="true" />
 
-            <div className="relative">
+            <div className="sm:relative">
                 <button
                     type="button"
                     onClick={() => {
@@ -174,20 +183,21 @@ export const TextSubToolbar = memo(() => {
                         setIsStrokeMenuOpen(false);
                         setIsEmojiOpen(false);
                     }}
-                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer active:scale-95"
+                    aria-label="انتخاب رنگ نوشته"
+                    className="flex items-center gap-1.5 px-2 h-8 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer active:scale-95"
                     title="انتخاب رنگ نوشته"
                 >
                     <div
-                        className="w-4 h-4 rounded-full border border-zinc-700 shadow-sm"
+                        className="w-4 h-4 rounded-full border border-zinc-700 shadow-sm shrink-0"
                         style={{ backgroundColor: textColor }}
                     />
                     <Palette className="w-3.5 h-3.5 text-zinc-400" />
                 </button>
 
                 {isColorOpen && (
-                    <div className="absolute bottom-full mb-3 right-0 p-2.5 bg-zinc-950/98 border border-zinc-800 rounded-2xl shadow-2xl z-[100] flex flex-col gap-2 min-w-[150px] backdrop-blur-2xl animate-fade-in-up">
+                    <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 p-3 bg-zinc-950/98 border border-zinc-800 rounded-2xl shadow-2xl z-[100] flex flex-col gap-2 min-w-[165px] backdrop-blur-2xl animate-fade-in-up">
                         <span className="text-[10px] text-zinc-400 font-medium text-right">رنگ نوشته</span>
-                        <div className="grid grid-cols-4 gap-1.5">
+                        <div className="grid grid-cols-4 gap-2">
                             {PRESET_COLORS.map((c) => (
                                 <button
                                     key={c}
@@ -196,12 +206,12 @@ export const TextSubToolbar = memo(() => {
                                         setTextColor(c);
                                         setIsColorOpen(false);
                                     }}
-                                    className="w-6 h-6 rounded-lg border border-zinc-700 flex items-center justify-center cursor-pointer transition-transform hover:scale-110 active:scale-95"
+                                    className="w-7 h-7 sm:w-6 sm:h-6 rounded-lg border border-zinc-700 flex items-center justify-center cursor-pointer transition-transform hover:scale-110 active:scale-95"
                                     style={{ backgroundColor: c }}
                                 >
                                     {textColor === c && (
                                         <Check
-                                            className={cn("w-3 h-3", c === "#ffffff" ? "text-zinc-950" : "text-white")}
+                                            className={cn("w-3.5 h-3.5", c === "#ffffff" ? "text-zinc-950" : "text-white")}
                                         />
                                     )}
                                 </button>
@@ -211,7 +221,7 @@ export const TextSubToolbar = memo(() => {
                 )}
             </div>
 
-            <div className="relative">
+            <div className="sm:relative">
                 <button
                     type="button"
                     onClick={() => {
@@ -219,8 +229,9 @@ export const TextSubToolbar = memo(() => {
                         setIsColorOpen(false);
                         setIsEmojiOpen(false);
                     }}
+                    aria-label="تنظیمات حاشیه دور متن"
                     className={cn(
-                        "flex items-center gap-1.5 px-2 py-1.5 rounded-xl bg-zinc-900 border transition-all cursor-pointer active:scale-95",
+                        "flex items-center gap-1.5 px-2.5 h-8 rounded-xl bg-zinc-900 border transition-all cursor-pointer active:scale-95",
                         textHasStroke
                             ? "border-amber-500/60 text-amber-400"
                             : "border-zinc-800 text-zinc-400 hover:text-zinc-200"
@@ -232,7 +243,7 @@ export const TextSubToolbar = memo(() => {
                 </button>
 
                 {isStrokeMenuOpen && (
-                    <div className="absolute bottom-full mb-3 right-0 p-3 bg-zinc-950/98 border border-zinc-800 rounded-2xl shadow-2xl z-[100] flex flex-col gap-3 min-w-[180px] backdrop-blur-2xl animate-fade-in-up">
+                    <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 p-3 bg-zinc-950/98 border border-zinc-800 rounded-2xl shadow-2xl z-[100] flex flex-col gap-3 min-w-[195px] backdrop-blur-2xl animate-fade-in-up">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-zinc-200">حاشیه متن</span>
                             <input
@@ -247,19 +258,19 @@ export const TextSubToolbar = memo(() => {
                             <>
                                 <div className="flex flex-col gap-1.5">
                                     <span className="text-[10px] text-zinc-400">رنگ حاشیه:</span>
-                                    <div className="grid grid-cols-4 gap-1.5">
+                                    <div className="grid grid-cols-4 gap-2">
                                         {PRESET_COLORS.map((c) => (
                                             <button
                                                 key={c}
                                                 type="button"
                                                 onClick={() => setTextStrokeColor(c)}
-                                                className="w-6 h-6 rounded-lg border border-zinc-700 flex items-center justify-center cursor-pointer transition-transform hover:scale-110 active:scale-95"
+                                                className="w-7 h-7 sm:w-6 sm:h-6 rounded-lg border border-zinc-700 flex items-center justify-center cursor-pointer transition-transform hover:scale-110 active:scale-95"
                                                 style={{ backgroundColor: c }}
                                             >
                                                 {textStrokeColor === c && (
                                                     <Check
                                                         className={cn(
-                                                            "w-3 h-3",
+                                                            "w-3.5 h-3.5",
                                                             c === "#ffffff" ? "text-zinc-950" : "text-white"
                                                         )}
                                                     />
@@ -289,9 +300,9 @@ export const TextSubToolbar = memo(() => {
                 )}
             </div>
 
-            <div className="h-5 w-px bg-zinc-800 mx-0.5" />
+            <div className="hidden sm:block h-5 w-px bg-zinc-800 mx-0.5" aria-hidden="true" />
 
-            <div className="relative">
+            <div className="sm:relative">
                 <button
                     type="button"
                     onClick={() => {
@@ -299,18 +310,19 @@ export const TextSubToolbar = memo(() => {
                         setIsColorOpen(false);
                         setIsStrokeMenuOpen(false);
                     }}
+                    aria-label="درج ایموجی RPG"
                     className={cn(
-                        "w-7 h-7 rounded-xl bg-zinc-900 border flex items-center justify-center text-amber-400 transition-all cursor-pointer active:scale-95",
+                        "w-8 h-8 rounded-xl bg-zinc-900 border flex items-center justify-center text-amber-400 transition-all cursor-pointer active:scale-95",
                         isEmojiOpen ? "border-amber-500 bg-zinc-800" : "border-zinc-800 hover:bg-zinc-800"
                     )}
                     title="درج ایموجی RPG"
                 >
-                    <Smile className="w-3.5 h-3.5" />
+                    <Smile className="w-4 h-4" />
                 </button>
 
                 {isEmojiOpen && (
                     <div
-                        className="absolute bottom-full mb-3 -right-2 p-2.5 bg-zinc-950/98 border border-zinc-800 rounded-2xl shadow-2xl w-48 backdrop-blur-2xl z-[100] animate-fade-in-up"
+                        className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:-right-2 p-2.5 bg-zinc-950/98 border border-zinc-800 rounded-2xl shadow-2xl w-52 sm:w-48 backdrop-blur-2xl z-[100] animate-fade-in-up"
                         dir="ltr"
                     >
                         <div
@@ -331,7 +343,7 @@ export const TextSubToolbar = memo(() => {
                                         }
                                         setIsEmojiOpen(false);
                                     }}
-                                    className="w-7 h-7 rounded-lg bg-zinc-900/60 hover:bg-amber-500/20 hover:scale-110 border border-zinc-800/80 flex items-center justify-center text-base cursor-pointer transition-all active:scale-95"
+                                    className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg bg-zinc-900/60 hover:bg-amber-500/20 hover:scale-110 border border-zinc-800/80 flex items-center justify-center text-base cursor-pointer transition-all active:scale-95"
                                     title="درج ایموجی"
                                 >
                                     {emoji}

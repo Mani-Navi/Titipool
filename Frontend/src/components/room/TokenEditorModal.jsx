@@ -346,12 +346,12 @@ export const TokenEditorModal = memo(({ roomData }) => {
           maxWidth="lg"
       >
         <div
-            className="space-y-4 max-h-[82vh] overflow-y-auto px-1 font-fa text-zinc-200 select-none animate-fade-in-up"
+            className="space-y-3.5 sm:space-y-4 font-fa text-zinc-200 select-none animate-fade-in-up"
             dir="rtl"
         >
-          <div className="p-4 bg-zinc-950/80 rounded-2xl border border-zinc-800/90 shadow-lg space-y-3.5 backdrop-blur-md">
-            <div className="flex items-center gap-4">
-              <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-amber-500/40 bg-zinc-900 shrink-0 shadow-inner flex items-center justify-center group">
+          <div className="p-3.5 sm:p-4 bg-zinc-950/80 rounded-2xl border border-zinc-800/90 shadow-lg space-y-3.5 backdrop-blur-md">
+            <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-amber-500/40 bg-zinc-900 shrink-0 shadow-inner flex items-center justify-center group">
                 {hasValidAvatar ? (
                     <img
                         src={getFullAssetUrl(avatarUrl)}
@@ -360,16 +360,16 @@ export const TokenEditorModal = memo(({ roomData }) => {
                         onError={() => setAvatarUrl("")}
                     />
                 ) : (
-                    <User className="w-10 h-10 text-zinc-600" />
+                    <User className="w-8 h-8 sm:w-10 sm:h-10 text-zinc-600" />
                 )}
                 {isUploading && (
-                    <div className="absolute inset-0 bg-black/80 flex items-center justify-center text-xs text-amber-400 font-bold">
+                    <div className="absolute inset-0 bg-black/80 flex items-center justify-center text-[10px] sm:text-xs text-amber-400 font-bold text-center px-1">
                       در حال آپلود...
                     </div>
                 )}
               </div>
 
-              <div className="flex-1 space-y-2.5">
+              <div className="flex-1 min-w-0 space-y-2.5">
                 <div>
                   <label className="text-xs font-semibold text-zinc-300 block mb-1.5">
                     {isProp ? "نام شیء:" : "نام کاراکتر:"}
@@ -383,7 +383,7 @@ export const TokenEditorModal = memo(({ roomData }) => {
                   />
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2">
                   <input
                       type="file"
                       ref={fileInputRef}
@@ -395,18 +395,18 @@ export const TokenEditorModal = memo(({ roomData }) => {
                       type="button"
                       disabled={isUploading}
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex-1 py-2 px-3 bg-zinc-900 hover:bg-zinc-800/90 border border-zinc-700 text-zinc-300 rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm hover:border-amber-500/50 active:scale-95"
+                      className="flex-1 min-h-[38px] py-2 px-3 bg-zinc-900 hover:bg-zinc-800/90 border border-zinc-700 text-zinc-300 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm hover:border-amber-500/50 active:scale-95"
                   >
-                    <Upload className="w-4 h-4 text-amber-400" />
-                    <span>{isUploading ? "درحال آپلود..." : "آپلود تصویر (تا ۳MB)"}</span>
+                    <Upload className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="truncate">{isUploading ? "درحال آپلود..." : "آپلود تصویر (تا ۳MB)"}</span>
                   </button>
 
                   <button
                       type="button"
                       onClick={() => setShowPresetPicker(!showPresetPicker)}
-                      className="py-2 px-4 bg-zinc-900 hover:bg-zinc-800/90 border border-zinc-700 text-zinc-300 rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-sm hover:border-amber-500/50 active:scale-95"
+                      className="min-h-[38px] py-2 px-3.5 bg-zinc-900 hover:bg-zinc-800/90 border border-zinc-700 text-zinc-300 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm hover:border-amber-500/50 active:scale-95 shrink-0"
                   >
-                    <ImageIcon className="w-4 h-4 text-amber-400" />
+                    <ImageIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                     <span>آیکون‌های آماده</span>
                   </button>
                 </div>
@@ -420,7 +420,7 @@ export const TokenEditorModal = memo(({ roomData }) => {
             )}
 
             {showPresetPicker && (
-                <div className="p-3.5 bg-zinc-900/95 rounded-2xl border border-amber-500/50 space-y-2.5 animate-fade-in-up shadow-xl">
+                <div className="p-3 bg-zinc-900/95 rounded-2xl border border-amber-500/50 space-y-2.5 animate-fade-in-up shadow-xl">
                   <div className="flex items-center justify-between text-xs text-amber-400 font-bold border-b border-zinc-800 pb-2">
                     <span>انتخاب آیکون آماده فانتزی:</span>
                     <button
@@ -431,7 +431,7 @@ export const TokenEditorModal = memo(({ roomData }) => {
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-5 gap-2.5 max-h-48 overflow-y-auto pr-1">
+                  <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                     {PRESET_TOKEN_ICONS.map((preset) => (
                         <button
                             key={preset.id}
@@ -450,7 +450,7 @@ export const TokenEditorModal = memo(({ roomData }) => {
                           <img
                               src={preset.url}
                               alt={preset.label ? `آیکون آماده ${preset.label}` : "آیکون کاراکتر"}
-                              className="w-11 h-11 rounded-full object-cover bg-zinc-800 shadow"
+                              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover bg-zinc-800 shadow"
                               loading="lazy"
                           />
                           <span className="text-[10px] text-zinc-300 truncate w-full text-center font-medium">
@@ -465,51 +465,51 @@ export const TokenEditorModal = memo(({ roomData }) => {
             <div>
               <label className="text-[11px] text-zinc-400 block mb-1">یا آدرس مستقیم لینک تصویر:</label>
               <input
-                  type="text"
+                  type="url"
                   value={avatarUrl}
                   onChange={(e) => setAvatarUrl(e.target.value)}
                   placeholder="https://... یا /uploads/..."
-                  className="w-full h-8 px-3 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs text-zinc-300 focus:outline-none focus:border-amber-500 font-mono"
+                  className="w-full h-9 px-3 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs text-zinc-300 focus:outline-none focus:border-amber-500 font-mono"
                   dir="ltr"
               />
             </div>
           </div>
 
           {!isProp && (isGM || allowPlayerHp || canEditToken) && (
-              <div className="p-4 bg-zinc-950/80 rounded-2xl border border-zinc-800/90 shadow-lg space-y-3.5">
-                <div className="flex items-center justify-between gap-2 border-b border-zinc-900 pb-2.5">
+              <div className="p-3.5 sm:p-4 bg-zinc-950/80 rounded-2xl border border-zinc-800/90 shadow-lg space-y-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-900 pb-2.5">
                   <div className="flex items-center gap-2 text-xs font-bold text-zinc-100">
-                    <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
                       <Heart className="w-3.5 h-3.5 text-emerald-400" />
                     </div>
                     <span>نوار سلامتی (HP)</span>
                   </div>
 
                   {isGM && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <button
                             type="button"
                             onClick={() => setAllowPlayerHp(!allowPlayerHp)}
-                            className={`text-[11px] px-2.5 py-1 rounded-xl flex items-center gap-1.5 font-medium transition-all cursor-pointer active:scale-95 ${
+                            className={`text-[10px] sm:text-[11px] px-2.5 py-1 rounded-xl flex items-center gap-1 font-medium transition-all cursor-pointer active:scale-95 ${
                                 allowPlayerHp
                                     ? "bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-sm shadow-amber-500/10"
                                     : "bg-zinc-900 text-zinc-500 border border-zinc-800"
                             }`}
                         >
-                          <Key className="w-3 h-3 text-amber-400" />
+                          <Key className="w-3 h-3 text-amber-400 shrink-0" />
                           <span>{allowPlayerHp ? "دسترسی پلیر: فعال" : "دسترسی پلیر: قفل"}</span>
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setShowHp(!showHp)}
-                            className={`text-[11px] px-2.5 py-1 rounded-xl flex items-center gap-1.5 font-medium transition-all cursor-pointer active:scale-95 ${
+                            className={`text-[10px] sm:text-[11px] px-2.5 py-1 rounded-xl flex items-center gap-1 font-medium transition-all cursor-pointer active:scale-95 ${
                                 showHp
                                     ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm shadow-emerald-500/10"
                                     : "bg-zinc-900 text-zinc-500 border border-zinc-800"
                             }`}
                         >
-                          <Eye className="w-3 h-3 text-emerald-400" />
+                          <Eye className="w-3 h-3 text-emerald-400 shrink-0" />
                           <span>{showHp ? "نمایش روی توکن" : "مخفی از توکن"}</span>
                         </button>
                       </div>
@@ -524,21 +524,23 @@ export const TokenEditorModal = memo(({ roomData }) => {
                     </div>
                     <input
                         type="number"
+                        inputMode="numeric"
                         min={0}
                         max={maxHp}
                         value={hp}
                         onChange={(e) => handleHpChange(e.target.value)}
-                        className="w-full h-9 px-3 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs font-mono font-bold text-emerald-400 focus:outline-none focus:border-emerald-500 shadow-inner"
+                        className="w-full h-10 px-3 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs font-mono font-bold text-emerald-400 focus:outline-none focus:border-emerald-500 shadow-inner"
                     />
                   </div>
                   <div>
                     <label className="text-xs text-zinc-400 font-medium block mb-1">حداکثر Max HP:</label>
                     <input
                         type="number"
+                        inputMode="numeric"
                         min={1}
                         value={maxHp}
                         onChange={(e) => handleMaxHpChange(e.target.value)}
-                        className="w-full h-9 px-3 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs font-mono text-zinc-200 focus:outline-none focus:border-zinc-500 shadow-inner"
+                        className="w-full h-10 px-3 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs font-mono text-zinc-200 focus:outline-none focus:border-zinc-500 shadow-inner"
                     />
                   </div>
                 </div>
@@ -556,80 +558,84 @@ export const TokenEditorModal = memo(({ roomData }) => {
                   />
                 </div>
 
-                <div className="flex gap-2 pt-1">
+                <div className="flex items-center gap-1.5 sm:gap-2 pt-1">
                   <input
                       type="number"
+                      inputMode="numeric"
                       placeholder="مقدار..."
                       value={calcInput}
                       onChange={(e) => setCalcInput(e.target.value)}
-                      className="w-28 h-8 px-3 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs font-mono text-zinc-100 focus:outline-none focus:border-zinc-500"
+                      className="w-20 sm:w-28 h-9.5 px-2.5 sm:px-3 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs font-mono text-zinc-100 focus:outline-none focus:border-zinc-500 shrink-0"
                   />
                   <button
                       type="button"
                       onClick={handleApplyDamage}
-                      className="flex-1 py-1 text-xs bg-rose-500/15 text-rose-300 border border-rose-500/30 rounded-xl hover:bg-rose-500/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer font-medium active:scale-95"
+                      className="flex-1 h-9.5 px-2 text-xs bg-rose-500/15 text-rose-300 border border-rose-500/30 rounded-xl hover:bg-rose-500/25 transition-all flex items-center justify-center gap-1 cursor-pointer font-medium active:scale-95 whitespace-nowrap"
                   >
-                    <Minus className="w-3.5 h-3.5" /> اعمال آسیب
+                    <Minus className="w-3.5 h-3.5 shrink-0" />
+                    <span>اعمال آسیب</span>
                   </button>
                   <button
                       type="button"
                       onClick={handleApplyHeal}
-                      className="flex-1 py-1 text-xs bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer font-medium active:scale-95"
+                      className="flex-1 h-9.5 px-2 text-xs bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/25 transition-all flex items-center justify-center gap-1 cursor-pointer font-medium active:scale-95 whitespace-nowrap"
                   >
-                    <Plus className="w-3.5 h-3.5" /> اعمال شفا
+                    <Plus className="w-3.5 h-3.5 shrink-0" />
+                    <span>اعمال شفا</span>
                   </button>
                 </div>
               </div>
           )}
 
           {!isProp && (isGM || allowPlayerConditions || canEditToken) && (
-              <div className="p-4 bg-zinc-950/80 rounded-2xl border border-zinc-800/90 shadow-lg space-y-3.5">
+              <div className="p-3.5 sm:p-4 bg-zinc-950/80 rounded-2xl border border-zinc-800/90 shadow-lg space-y-3.5">
                 <div className="flex flex-col gap-2.5 border-b border-zinc-900 pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-bold text-zinc-100">
-                      <div className="w-6 h-6 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-100">
+                      <div className="w-6 h-6 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
                         <Activity className="w-3.5 h-3.5 text-amber-400" />
                       </div>
                       <span>فهرست وضعیت‌ها</span>
-                      <span className="text-[10px] text-zinc-500 font-normal">(حداکثر ۳ مورد همزمان)</span>
+                      <span className="text-[10px] text-zinc-500 font-normal">(حداکثر ۳ مورد)</span>
                     </div>
 
                     {isGM && (
                         <button
                             type="button"
                             onClick={() => setShowAddConditionPicker(!showAddConditionPicker)}
-                            className="text-xs bg-amber-500 hover:bg-amber-400 text-zinc-950 px-3 py-1.5 rounded-xl flex items-center gap-1.5 font-bold cursor-pointer transition-all shadow-md shadow-amber-500/20 active:scale-95"
+                            className="text-xs bg-amber-500 hover:bg-amber-400 text-zinc-950 px-3 py-1.5 rounded-xl flex items-center gap-1 font-bold cursor-pointer transition-all shadow-md shadow-amber-500/20 active:scale-95"
                         >
-                          <Plus className="w-3.5 h-3.5 stroke-[2.5]" /> افزودن به فهرست
+                          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>افزودن به فهرست</span>
                         </button>
                     )}
                   </div>
 
                   {isGM && (
-                      <div className="flex items-center gap-2 pt-1">
+                      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                         <button
                             type="button"
                             onClick={() => setAllowPlayerConditions(!allowPlayerConditions)}
-                            className={`text-[11px] px-2.5 py-1 rounded-xl flex items-center gap-1.5 font-medium transition-all cursor-pointer active:scale-95 ${
+                            className={`text-[10px] sm:text-[11px] px-2.5 py-1 rounded-xl flex items-center gap-1 font-medium transition-all cursor-pointer active:scale-95 ${
                                 allowPlayerConditions
                                     ? "bg-amber-500/15 text-amber-300 border border-amber-500/30"
                                     : "bg-zinc-900 text-zinc-500 border border-zinc-800"
                             }`}
                         >
-                          <Key className="w-3 h-3 text-amber-400" />
+                          <Key className="w-3 h-3 text-amber-400 shrink-0" />
                           <span>{allowPlayerConditions ? "دسترسی پلیر: فعال" : "دسترسی پلیر: قفل"}</span>
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setShowConditions(!showConditions)}
-                            className={`text-[11px] px-2.5 py-1 rounded-xl flex items-center gap-1.5 font-medium transition-all cursor-pointer active:scale-95 ${
+                            className={`text-[10px] sm:text-[11px] px-2.5 py-1 rounded-xl flex items-center gap-1 font-medium transition-all cursor-pointer active:scale-95 ${
                                 showConditions
                                     ? "bg-amber-500/15 text-amber-300 border border-amber-500/30"
                                     : "bg-zinc-900 text-zinc-500 border border-zinc-800"
                             }`}
                         >
-                          <Eye className="w-3 h-3 text-amber-400" />
+                          <Eye className="w-3 h-3 text-amber-400 shrink-0" />
                           <span>{showConditions ? "نمایش روی توکن" : "مخفی از توکن"}</span>
                         </button>
                       </div>
@@ -637,7 +643,7 @@ export const TokenEditorModal = memo(({ roomData }) => {
                 </div>
 
                 {showAddConditionPicker && isGM && (
-                    <div className="p-3.5 bg-zinc-900/95 rounded-2xl border border-amber-500/50 space-y-2.5 animate-fade-in-up shadow-xl">
+                    <div className="p-3 bg-zinc-900/95 rounded-2xl border border-amber-500/50 space-y-2.5 animate-fade-in-up shadow-xl">
                       <div className="flex items-center justify-between text-xs font-bold text-amber-400 pb-2 border-b border-zinc-800">
                         <span>انتخاب وضعیت برای افزودن به بازی:</span>
                         <button
@@ -648,7 +654,7 @@ export const TokenEditorModal = memo(({ roomData }) => {
                           <X className="w-4 h-4" />
                         </button>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 max-h-52 overflow-y-auto pr-1">
+                      <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 max-h-52 overflow-y-auto custom-scrollbar pr-1">
                         {ALL_DND_CONDITIONS.map((cond) => {
                           const isAlreadyInPool = availableConditions.includes(cond.id);
                           return (
@@ -678,9 +684,9 @@ export const TokenEditorModal = memo(({ roomData }) => {
                     </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-2.5 max-h-56 overflow-y-auto pr-1">
+                <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
                   {availableConditions.length === 0 ? (
-                      <div className="col-span-2 text-center py-6 text-xs text-zinc-500 bg-zinc-900/30 rounded-xl border border-dashed border-zinc-800/80">
+                      <div className="col-span-full text-center py-6 text-xs text-zinc-500 bg-zinc-900/30 rounded-xl border border-dashed border-zinc-800/80">
                         {isGM
                             ? "فهرست وضعیت‌ها خالی است. از دکمه «افزودن به فهرست» استفاده کنید."
                             : "هیچ وضعیتی توسط GM برای این بازی تعریف نشده است."}
@@ -716,7 +722,7 @@ export const TokenEditorModal = memo(({ roomData }) => {
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex items-center gap-1.5 shrink-0">
                                 {isSelected && (
                                     <span className="w-5 h-5 rounded-full bg-amber-500 text-zinc-950 flex items-center justify-center text-[10px] shadow">
                                       <Check className="w-3.5 h-3.5 stroke-[3]" />
@@ -741,16 +747,16 @@ export const TokenEditorModal = memo(({ roomData }) => {
               </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
             {!isProp && (isGM || allowPlayerAc || canEditToken) && (
-                <div className="p-4 bg-zinc-950/80 rounded-2xl border border-zinc-800/90 shadow-lg space-y-2.5">
+                <div className="p-3.5 sm:p-4 bg-zinc-950/80 rounded-2xl border border-zinc-800/90 shadow-lg space-y-2.5">
                   <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
                     <label className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
                       <Shield className="w-3.5 h-3.5 text-blue-400" />
                       <span>زره (AC):</span>
                     </label>
                     {isGM && (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
                           <button
                               type="button"
                               onClick={() => setAllowPlayerAc(!allowPlayerAc)}
@@ -780,17 +786,18 @@ export const TokenEditorModal = memo(({ roomData }) => {
                   </div>
                   <input
                       type="number"
+                      inputMode="numeric"
                       value={ac}
                       onChange={(e) => setAc(Number(e.target.value))}
-                      className="w-full h-9 px-3 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs font-mono font-bold text-blue-400 focus:outline-none focus:border-blue-500 shadow-inner"
+                      className="w-full h-10 px-3 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs font-mono font-bold text-blue-400 focus:outline-none focus:border-blue-500 shadow-inner"
                   />
                 </div>
             )}
 
             {(isGM || allowPlayerSize || canEditToken) && (
                 <div
-                    className={`p-4 bg-zinc-950/80 rounded-2xl border border-zinc-800/90 shadow-lg space-y-2.5 ${
-                        isProp || (!allowPlayerAc && !isGM && !canEditToken) ? "col-span-2" : ""
+                    className={`p-3.5 sm:p-4 bg-zinc-950/80 rounded-2xl border border-zinc-800/90 shadow-lg space-y-2.5 ${
+                        isProp || (!allowPlayerAc && !isGM && !canEditToken) ? "xs:col-span-2" : ""
                     }`}
                 >
                   <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
@@ -816,7 +823,7 @@ export const TokenEditorModal = memo(({ roomData }) => {
                   <select
                       value={size}
                       onChange={(e) => setSize(Number(e.target.value))}
-                      className="w-full h-9 px-3 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-amber-500 cursor-pointer shadow-inner"
+                      className="w-full h-10 px-3 bg-zinc-900 border border-zinc-700/80 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-amber-500 cursor-pointer shadow-inner"
                   >
                     <option value={0.5}>0.5x0.5 (Tiny / Prop)</option>
                     <option value={1}>1x1 (Medium)</option>
@@ -829,24 +836,24 @@ export const TokenEditorModal = memo(({ roomData }) => {
           </div>
 
           {isGM && (
-              <div className="p-4 bg-zinc-950/80 rounded-2xl border border-zinc-800/90 shadow-lg space-y-2.5">
-                <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+              <div className="p-3.5 sm:p-4 bg-zinc-950/80 rounded-2xl border border-zinc-800/90 shadow-lg space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-900 pb-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-amber-400/90">
-                    <FileText className="w-4 h-4 text-amber-400" />
+                    <FileText className="w-4 h-4 text-amber-400 shrink-0" />
                     <span>یادداشت محرمانه GM (مخصوص مدیر):</span>
                   </div>
 
                   <button
                       type="button"
                       onClick={() => setShowNotes(!showNotes)}
-                      className={`text-[11px] px-2.5 py-1 rounded-xl flex items-center gap-1.5 font-medium transition-all cursor-pointer active:scale-95 ${
+                      className={`text-[10px] sm:text-[11px] px-2.5 py-1 rounded-xl flex items-center gap-1 font-medium transition-all cursor-pointer active:scale-95 ${
                           showNotes
                               ? "bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-sm shadow-amber-500/10"
                               : "bg-zinc-900 text-zinc-500 border border-zinc-800"
                       }`}
                       title="نمایش یادداشت روی توکن در صفحه بازی"
                   >
-                    <Eye className="w-3 h-3 text-amber-400" />
+                    <Eye className="w-3 h-3 text-amber-400 shrink-0" />
                     <span>{showNotes ? "نمایش روی توکن" : "مخفی از توکن"}</span>
                   </button>
                 </div>
@@ -861,23 +868,23 @@ export const TokenEditorModal = memo(({ roomData }) => {
               </div>
           )}
 
-          <div className="pt-3.5 flex items-center justify-between border-t border-zinc-800/80">
+          <div className="pt-3.5 flex items-center justify-between gap-2 border-t border-zinc-800/80">
             {isGM && (
                 <button
                     type="button"
                     onClick={handleDelete}
-                    className="px-3.5 py-2 text-xs font-medium text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all flex items-center gap-2 cursor-pointer border border-rose-500/20 hover:border-rose-500/40 active:scale-95"
+                    className="h-10 px-3.5 text-xs font-medium text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer border border-rose-500/20 hover:border-rose-500/40 active:scale-95 shrink-0"
                 >
                   <Trash2 className="w-4 h-4" />
-                  حذف توکن
+                  <span>حذف توکن</span>
                 </button>
             )}
 
-            <div className="flex gap-2.5 mr-auto">
-              <Button variant="ghost" onClick={closeEditor} className="active:scale-95">
+            <div className="flex gap-2 mr-auto">
+              <Button variant="ghost" onClick={closeEditor} className="h-10 text-xs active:scale-95">
                 انصراف
               </Button>
-              <Button variant="amber" onClick={handleSave} className="active:scale-95">
+              <Button variant="amber" onClick={handleSave} className="h-10 text-xs font-bold active:scale-95">
                 ذخیره تغییرات
               </Button>
             </div>

@@ -30,6 +30,8 @@ import {
   Scroll,
   Trash2,
   X,
+  Check,
+  Sliders,
 } from "lucide-react";
 
 const generateUUID = () => {
@@ -92,6 +94,7 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
   const setZoom = useCanvasStore((state) => state.setZoom);
   const setStagePos = useCanvasStore((state) => state.setStagePos);
   const clearSelection = useCanvasStore((state) => state.clearSelection);
+  const openTokenEditor = useCanvasStore((state) => state.openTokenEditor);
   const startMeasurement = useCanvasStore((state) => state.startMeasurement);
   const updateMeasurement = useCanvasStore((state) => state.updateMeasurement);
   const addMeasurementWaypoint = useCanvasStore((state) => state.addMeasurementWaypoint);
@@ -113,12 +116,16 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
   const [liveFog, setLiveFog] = useState(null);
   const liveFogRef = useRef(null);
 
-  // نگهداری مختصات میانی ترسیم در Ref جهت جلوگیری از بازتولید هندلرهای Stage در هر فریم حرکت ماوس
+  // نگهداری مختصات میانی ترسیم و ژست‌های دو انگشتی موبایل در Ref جهت حفظ ۶۰ فریم بر ثانیه
   const currentLinePointsRef = useRef([]);
   const shapeStartRef = useRef(null);
   const [polygonVertices, setPolygonVertices] = useState([]);
   const [fogPolygonVertices, setFogPolygonVertices] = useState([]);
   const isInteracting = useRef(false);
+
+  const isPinchingRef = useRef(false);
+  const lastPinchDistRef = useRef(0);
+  const lastPinchCenterRef = useRef(null);
 
   const [inlineTextEditor, setInlineTextEditor] = useState(null);
   const isTextEditorOpenRef = useRef(false);
@@ -133,7 +140,7 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
 
   const normalizedTool = String(activeTool || "").toLowerCase();
   const isSelectMode = normalizedTool === "select";
-  const isStageDraggable = hasActiveMap && normalizedTool === "pan";
+  const isStageDraggable = hasActiveMap && normalizedTool === "pan" && !isPinchingRef.current;
 
   const isEraserActive =
       normalizedTool === "eraser" ||
@@ -167,7 +174,7 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        if (entry.contentRect.width > 300 && entry.contentRect.height > 300) {
+        if (entry.contentRect.width > 240 && entry.contentRect.height > 240) {
           setDimensions({
             width: entry.contentRect.width,
             height: entry.contentRect.height,
@@ -331,6 +338,22 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
     user,
   ]);
 
+  const handleDblClickText = useCallback(
+      (textShape) => {
+        isTextEditorOpenRef.current = false;
+        setInlineTextEditor({
+          id: String(textShape.clientDrawingId || textShape.id || textShape.drawingId),
+          canvasX: textShape.x || 0,
+          canvasY: textShape.y || 0,
+          text: textShape.text || "",
+          fontFamily: textShape.fontFamily || "Vazirmatn",
+          fontSize: textShape.fontSize || 24,
+          fill: textShape.fill || textColor,
+        });
+      },
+      [textColor]
+  );
+
   const selectionInfo = useMemo(() => {
     if (!isSelectMode && normalizedTool !== "fog") return null;
 
@@ -352,13 +375,21 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
           posX = (d.x || 0) + (isFinite(minX) ? minX : 0);
           posY = (d.y || 0) + (isFinite(minY) ? minY : 0);
         }
+        const isTextShape = String(d.type || "").toLowerCase() === "text";
         let label = "ترسیم";
-        if (d.type === "text") label = d.text ? `متن: ${d.text.slice(0, 10)}...` : "متن";
+        if (isTextShape) label = d.text ? `متن: ${d.text.slice(0, 10)}...` : "متن";
         else if (d.type === "rectangle") label = "مستطیل";
         else if (d.type === "circle") label = "دایره";
         else if (d.type === "line") label = "خط";
 
-        return { x: posX, y: posY, label };
+        return {
+          x: posX,
+          y: posY,
+          label,
+          canEdit: isTextShape && (isGM || permissions?.canText || permissions?.canDrawing),
+          canDelete: isGM || permissions?.canDrawing || permissions?.canText,
+          textTarget: isTextShape ? d : null,
+        };
       }
     }
 
@@ -366,10 +397,25 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
       const targetId = String(selectedTokenIds[0]).toLowerCase();
       const t = (currentScene?.tokens || []).find((item) => String(item.id).toLowerCase() === targetId);
       if (t) {
+        const currentUid = String(user?.id || user?.userId || "").toLowerCase().trim();
+        const currentUname = String(user?.username || "").toLowerCase().trim();
+        const currentUserEmail = String(user?.email || "").toLowerCase().trim();
+        const owner = String(t.controlledBy || "").toLowerCase().trim();
+        const tLabel = String(t.label || t.name || "").toLowerCase().trim();
+
+        const isTokenOwner = Boolean(
+            (currentUid && owner === currentUid) ||
+            (currentUname && (owner === currentUname || tLabel === currentUname)) ||
+            (currentUserEmail && (owner === currentUserEmail || tLabel === currentUserEmail))
+        );
+
         return {
           x: t.x || 0,
           y: (t.y || 0) - ((t.size || 1) * 30),
           label: t.name || t.label || "توکن",
+          tokenId: t.id,
+          canEdit: Boolean(isGM || isTokenOwner || permissions?.canEditToken),
+          canDelete: Boolean(isGM || isTokenOwner),
         };
       }
     }
@@ -378,7 +424,13 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
       const targetId = String(selectedFogId).toLowerCase();
       const f = (currentScene?.fogShapes || []).find((item) => String(item.id).toLowerCase() === targetId);
       if (f) {
-        return { x: f.x || 0, y: f.y || 0, label: "مه جنگ" };
+        return {
+          x: f.x || 0,
+          y: f.y || 0,
+          label: "مه جنگ",
+          canEdit: false,
+          canDelete: canUseFog,
+        };
       }
     }
 
@@ -392,7 +444,79 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
     currentScene?.drawings,
     currentScene?.tokens,
     currentScene?.fogShapes,
+    isGM,
+    permissions,
+    user,
+    canUseFog,
   ]);
+
+  const finishPolygonDrawing = useCallback(() => {
+    if (polygonVertices.length >= 6) {
+      const uniqueId = `draw-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+      const finalPolygon = {
+        id: uniqueId,
+        clientDrawingId: uniqueId,
+        type: DRAW_MODES.POLYGON,
+        points: polygonVertices,
+        stroke: drawStrokeColor,
+        strokeWidth: drawStrokeWidth,
+        fill: drawFillColor,
+        isGMLayer: isDrawGMLayer,
+        sceneId: currentScene?.id,
+      };
+      addDrawing(finalPolygon);
+      wsService.send(WS_EVENTS.DRAWING_ADDED || "DRAWING_ADD", finalPolygon);
+    }
+    setPolygonVertices([]);
+    setLiveDrawing(null);
+    liveDrawingRef.current = null;
+  }, [
+    polygonVertices,
+    drawStrokeColor,
+    drawStrokeWidth,
+    drawFillColor,
+    isDrawGMLayer,
+    currentScene?.id,
+    addDrawing,
+  ]);
+
+  const finishFogPolygon = useCallback(() => {
+    if (fogPolygonVertices.length >= 6) {
+      const isCoverAction = fogAction === FOG_ACTIONS.HIDE;
+      const modeName = fogAction === FOG_ACTIONS.SLICE ? "slice" : isCoverAction ? "hide" : "reveal";
+      const uniqueFogId = generateUUID();
+
+      const finalFogShape = {
+        id: uniqueFogId,
+        type: "polygon",
+        mode: modeName,
+        x: 0,
+        y: 0,
+        points: fogPolygonVertices,
+        isCover: isCoverAction,
+        sceneId: currentScene?.id,
+      };
+
+      addFogShape(finalFogShape);
+      wsService.send(WS_EVENTS.FOG_UPDATED || "FOG_UPDATE", {
+        ...finalFogShape,
+        type: isCoverAction ? "HIDE" : "REVEAL",
+        points: finalFogShape,
+      });
+    }
+    setFogPolygonVertices([]);
+    setLiveFog(null);
+    liveFogRef.current = null;
+  }, [fogPolygonVertices, fogAction, currentScene?.id, addFogShape]);
+
+  const cancelActivePolygons = useCallback(() => {
+    setPolygonVertices([]);
+    setFogPolygonVertices([]);
+    setLiveDrawing(null);
+    liveDrawingRef.current = null;
+    setLiveFog(null);
+    liveFogRef.current = null;
+  }, []);
 
   const finishInlineText = useCallback(() => {
     if (!inlineTextEditor) return;
@@ -593,7 +717,7 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
 
   const handleMouseDown = useCallback(
       (e) => {
-        if (!hasActiveMap) return;
+        if (!hasActiveMap || isPinchingRef.current) return;
 
         if (inlineTextEditor) {
           finishInlineText();
@@ -635,14 +759,14 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
         }
 
         if (activeTool === TOOLS.RULER) {
-          if (e.evt.button === 2) {
+          if (e.evt?.button === 2) {
             endMeasurement();
             wsService.send("RULER_CLEAR", { userId: myIdentifier });
             isInteracting.current = false;
             return;
           }
 
-          if (e.evt.button === 0 || e.evt.button === undefined) {
+          if (e.evt?.button === 0 || e.evt?.button === undefined) {
             if (!isInteracting.current) {
               isInteracting.current = true;
               startMeasurement(pos.x, pos.y);
@@ -681,7 +805,7 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
         }
 
         if (activeTool === TOOLS.DRAW && activeDrawShape === DRAW_MODES.POLYGON) {
-          if (e.evt.button === 2) {
+          if (e.evt?.button === 2) {
             setPolygonVertices([]);
             setLiveDrawing(null);
             liveDrawingRef.current = null;
@@ -706,23 +830,7 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
             const distToStart = Math.hypot(pos.x - startX, pos.y - startY);
 
             if (distToStart < 25 && polygonVertices.length >= 6) {
-              const uniqueId = `draw-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-              const finalPolygon = {
-                id: uniqueId,
-                clientDrawingId: uniqueId,
-                type: DRAW_MODES.POLYGON,
-                points: polygonVertices,
-                stroke: drawStrokeColor,
-                strokeWidth: drawStrokeWidth,
-                fill: drawFillColor,
-                isGMLayer: isDrawGMLayer,
-                sceneId: currentScene?.id,
-              };
-              addDrawing(finalPolygon);
-              wsService.send(WS_EVENTS.DRAWING_ADDED || "DRAWING_ADD", finalPolygon);
-              setPolygonVertices([]);
-              setLiveDrawing(null);
-              liveDrawingRef.current = null;
+              finishPolygonDrawing();
             } else {
               const nextPoints = [...polygonVertices, pos.x, pos.y];
               setPolygonVertices(nextPoints);
@@ -742,7 +850,7 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
         }
 
         if (activeTool === TOOLS.FOG && canUseFog && fogBrushShape === FOG_BRUSH_SHAPES.POLYGON) {
-          if (e.evt.button === 2) {
+          if (e.evt?.button === 2) {
             setFogPolygonVertices([]);
             setLiveFog(null);
             liveFogRef.current = null;
@@ -768,28 +876,7 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
             const distToStart = Math.hypot(pos.x - startX, pos.y - startY);
 
             if (distToStart < 25 && fogPolygonVertices.length >= 6) {
-              const uniqueFogId = generateUUID();
-              const finalFogShape = {
-                id: uniqueFogId,
-                type: "polygon",
-                mode: modeName,
-                x: 0,
-                y: 0,
-                points: fogPolygonVertices,
-                isCover: isCoverAction,
-                sceneId: currentScene?.id,
-              };
-
-              addFogShape(finalFogShape);
-              wsService.send(WS_EVENTS.FOG_UPDATED || "FOG_UPDATE", {
-                ...finalFogShape,
-                type: isCoverAction ? "HIDE" : "REVEAL",
-                points: finalFogShape,
-              });
-
-              setFogPolygonVertices([]);
-              setLiveFog(null);
-              liveFogRef.current = null;
+              finishFogPolygon();
             } else {
               const nextPoints = [...fogPolygonVertices, pos.x, pos.y];
               setFogPolygonVertices(nextPoints);
@@ -936,18 +1023,18 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
         drawFillColor,
         isDrawGMLayer,
         currentScene?.id,
-        addDrawing,
         canUseFog,
         fogBrushShape,
         fogAction,
         fogPolygonVertices,
-        addFogShape,
         measurement,
+        finishPolygonDrawing,
+        finishFogPolygon,
       ]
   );
 
   const handleMouseMove = useCallback(() => {
-    if (!hasActiveMap) return;
+    if (!hasActiveMap || isPinchingRef.current) return;
     const pos = getPointerCanvasPos();
 
     if (activeTool === TOOLS.LASER) {
@@ -983,6 +1070,19 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
           });
         }
       }
+    }
+
+    // پشتیبانی از پاک‌کن لمسی هنگام کشیدن انگشت روی خطوط
+    if (isEraserActive && isInteracting.current && stageRef.current) {
+      const pointer = stageRef.current.getPointerPosition();
+      if (pointer) {
+        const hitShape = stageRef.current.getIntersection(pointer);
+        const drawNodeId = hitShape?.attrs?.["data-draw-id"];
+        if (drawNodeId) {
+          handleEraseDrawing(drawNodeId);
+        }
+      }
+      return;
     }
 
     if (activeTool === TOOLS.DRAW && activeDrawShape === DRAW_MODES.POLYGON && polygonVertices.length > 0) {
@@ -1142,6 +1242,8 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
     isGM,
     updateMeasurement,
     rulerType,
+    isEraserActive,
+    handleEraseDrawing,
     activeDrawShape,
     polygonVertices,
     drawStrokeColor,
@@ -1234,6 +1336,130 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
     addFogShape,
   ]);
 
+  // مدیریت ژست‌های لمسی موبایل (Pinch-to-Zoom دو انگشتی و ترسیم تک‌انگشتی)
+  const handleTouchStart = useCallback(
+      (e) => {
+        if (!hasActiveMap) return;
+        const touches = e.evt?.touches;
+
+        if (touches && touches.length >= 2) {
+          e.evt.preventDefault();
+          isPinchingRef.current = true;
+
+          // لغو ترسیم تک‌انگشتی ناتمام در صورت قرار گرفتن انگشت دوم
+          if (isInteracting.current) {
+            isInteracting.current = false;
+            shapeStartRef.current = null;
+            currentLinePointsRef.current = [];
+            liveDrawingRef.current = null;
+            setLiveDrawing(null);
+            liveFogRef.current = null;
+            setLiveFog(null);
+          }
+
+          if (stageRef.current?.isDragging()) {
+            stageRef.current.stopDrag();
+          }
+
+          const p1 = { x: touches[0].clientX, y: touches[0].clientY };
+          const p2 = { x: touches[1].clientX, y: touches[1].clientY };
+          lastPinchDistRef.current = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+          lastPinchCenterRef.current = {
+            x: (p1.x + p2.x) / 2,
+            y: (p1.y + p2.y) / 2,
+          };
+          return;
+        }
+
+        if (touches && touches.length === 1 && !isPinchingRef.current) {
+          handleMouseDown(e);
+        }
+      },
+      [hasActiveMap, handleMouseDown]
+  );
+
+  const handleTouchMove = useCallback(
+      (e) => {
+        if (!hasActiveMap) return;
+        const touches = e.evt?.touches;
+
+        if (touches && touches.length >= 2) {
+          e.evt.preventDefault();
+          const stage = stageRef.current;
+          if (!stage) return;
+
+          if (stage.isDragging()) {
+            stage.stopDrag();
+          }
+
+          const p1 = { x: touches[0].clientX, y: touches[0].clientY };
+          const p2 = { x: touches[1].clientX, y: touches[1].clientY };
+          const newDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+          const newCenter = {
+            x: (p1.x + p2.x) / 2,
+            y: (p1.y + p2.y) / 2,
+          };
+
+          if (!lastPinchDistRef.current || !lastPinchCenterRef.current) {
+            lastPinchDistRef.current = newDist;
+            lastPinchCenterRef.current = newCenter;
+            return;
+          }
+
+          const oldScale = stage.scaleX();
+          const pointTo = {
+            x: (newCenter.x - stage.x()) / oldScale,
+            y: (newCenter.y - stage.y()) / oldScale,
+          };
+
+          const scaleRatio = newDist / Math.max(lastPinchDistRef.current, 1);
+          const newScale = Math.min(Math.max(oldScale * scaleRatio, MIN_ZOOM), MAX_ZOOM);
+
+          const dx = newCenter.x - lastPinchCenterRef.current.x;
+          const dy = newCenter.y - lastPinchCenterRef.current.y;
+
+          const newPos = {
+            x: newCenter.x - pointTo.x * newScale + dx,
+            y: newCenter.y - pointTo.y * newScale + dy,
+          };
+
+          lastPinchDistRef.current = newDist;
+          lastPinchCenterRef.current = newCenter;
+
+          setZoom(newScale);
+          setStagePos(newPos.x, newPos.y);
+          return;
+        }
+
+        if (!isPinchingRef.current) {
+          handleMouseMove();
+        }
+      },
+      [hasActiveMap, setZoom, setStagePos, handleMouseMove]
+  );
+
+  const handleTouchEnd = useCallback(
+      (e) => {
+        const touches = e.evt?.touches;
+        if (isPinchingRef.current) {
+          if (!touches || touches.length < 2) {
+            isPinchingRef.current = false;
+            lastPinchDistRef.current = 0;
+            lastPinchCenterRef.current = null;
+          }
+          return;
+        }
+
+        if (activeTool === TOOLS.LASER) {
+          setLaserPosition(null);
+          wsService.send("LASER_CLEAR", { userId: myIdentifier });
+        }
+
+        handleMouseUp();
+      },
+      [activeTool, setLaserPosition, myIdentifier, handleMouseUp]
+  );
+
   const handleMouseLeave = useCallback(() => {
     if (activeTool === TOOLS.LASER) {
       setLaserPosition(null);
@@ -1243,30 +1469,14 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
 
   const handleDblClick = useCallback(
       (e) => {
-        if (!hasActiveMap) return;
+        if (!hasActiveMap || isPinchingRef.current) return;
 
         if (
             activeTool === TOOLS.DRAW &&
             activeDrawShape === DRAW_MODES.POLYGON &&
             polygonVertices.length >= 6
         ) {
-          const uniqueId = `draw-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-          const finalPolygon = {
-            id: uniqueId,
-            clientDrawingId: uniqueId,
-            type: DRAW_MODES.POLYGON,
-            points: polygonVertices,
-            stroke: drawStrokeColor,
-            strokeWidth: drawStrokeWidth,
-            fill: drawFillColor,
-            isGMLayer: isDrawGMLayer,
-            sceneId: currentScene?.id,
-          };
-          addDrawing(finalPolygon);
-          wsService.send(WS_EVENTS.DRAWING_ADDED || "DRAWING_ADD", finalPolygon);
-          setPolygonVertices([]);
-          setLiveDrawing(null);
-          liveDrawingRef.current = null;
+          finishPolygonDrawing();
           return;
         }
 
@@ -1276,29 +1486,7 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
             fogBrushShape === FOG_BRUSH_SHAPES.POLYGON &&
             fogPolygonVertices.length >= 6
         ) {
-          const isCoverAction = fogAction === FOG_ACTIONS.HIDE;
-          const modeName = fogAction === FOG_ACTIONS.SLICE ? "slice" : isCoverAction ? "hide" : "reveal";
-          const uniqueFogId = generateUUID();
-
-          const finalFogShape = {
-            id: uniqueFogId,
-            type: "polygon",
-            mode: modeName,
-            points: fogPolygonVertices,
-            isCover: isCoverAction,
-            sceneId: currentScene?.id,
-          };
-
-          addFogShape(finalFogShape);
-          wsService.send(WS_EVENTS.FOG_UPDATED || "FOG_UPDATE", {
-            ...finalFogShape,
-            type: isCoverAction ? "HIDE" : "REVEAL",
-            points: finalFogShape,
-          });
-
-          setFogPolygonVertices([]);
-          setLiveFog(null);
-          liveFogRef.current = null;
+          finishFogPolygon();
           return;
         }
 
@@ -1322,18 +1510,12 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
         isSelectMode,
         normalizedTool,
         activeDrawShape,
-        polygonVertices,
-        drawStrokeColor,
-        drawStrokeWidth,
-        drawFillColor,
-        isDrawGMLayer,
-        currentScene?.id,
-        addDrawing,
+        polygonVertices.length,
+        finishPolygonDrawing,
         canUseFog,
         fogBrushShape,
-        fogPolygonVertices,
-        fogAction,
-        addFogShape,
+        fogPolygonVertices.length,
+        finishFogPolygon,
         getPointerCanvasPos,
         user?.id,
         user?.username,
@@ -1351,28 +1533,19 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
       [isStageDraggable, setStagePos]
   );
 
-  const handleDblClickText = useCallback(
-      (textShape) => {
-        isTextEditorOpenRef.current = false;
-        setInlineTextEditor({
-          id: String(textShape.clientDrawingId || textShape.id || textShape.drawingId),
-          canvasX: textShape.x || 0,
-          canvasY: textShape.y || 0,
-          text: textShape.text || "",
-          fontFamily: textShape.fontFamily || "Vazirmatn",
-          fontSize: textShape.fontSize || 24,
-          fill: textShape.fill || textColor,
-        });
-      },
-      [textColor]
-  );
+  const hasActivePolygon =
+      (activeTool === TOOLS.DRAW && activeDrawShape === DRAW_MODES.POLYGON && polygonVertices.length > 0) ||
+      (activeTool === TOOLS.FOG && fogBrushShape === FOG_BRUSH_SHAPES.POLYGON && fogPolygonVertices.length > 0);
+
+  const canFinishPolygon =
+      polygonVertices.length >= 6 || fogPolygonVertices.length >= 6;
 
   return (
       <div
           ref={containerRef}
           id="vtt-game-canvas-container"
           dir="ltr"
-          className={`relative w-full h-full overflow-hidden select-none ${
+          className={`relative w-full h-full overflow-hidden select-none touch-none ${
               activeTool === TOOLS.TEXT ? "cursor-text" : ""
           }`}
           style={{
@@ -1389,47 +1562,116 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
             }}
         />
 
+        {/* نوار اکشن شناور بالای آیتم انتخابی (پشتیبانی از ویرایش سریع توکن/متن و حذف در موبایل و دسکتاپ) */}
         {selectionInfo && (isSelectMode || normalizedTool === "fog") && (
             <div
-                className="absolute z-40 pointer-events-auto flex items-center gap-2 px-3 py-1.5 bg-zinc-950/95 border border-zinc-700/80 rounded-2xl shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150"
+                className="absolute z-40 pointer-events-auto flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 bg-zinc-950/95 border border-zinc-700/80 rounded-2xl shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 max-w-[92vw]"
                 style={{
-                  left: `${Math.max(80, Math.min(dimensions.width - 120, stageX + selectionInfo.x * zoom))}px`,
-                  top: `${Math.max(70, Math.min(dimensions.height - 80, stageY + selectionInfo.y * zoom - 18))}px`,
+                  left: `${Math.max(90, Math.min(dimensions.width - 90, stageX + selectionInfo.x * zoom))}px`,
+                  top: `${Math.max(76, Math.min(dimensions.height - 96, stageY + selectionInfo.y * zoom - 18))}px`,
                   transform: "translate(-50%, -100%)",
                 }}
                 dir="rtl"
                 onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                <span className="text-[11px] font-bold text-zinc-200 max-w-[140px] truncate select-none">
+              <div className="flex items-center gap-1.5 px-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                <span className="text-[11px] font-bold text-zinc-200 max-w-[110px] sm:max-w-[140px] truncate select-none">
                   {selectionInfo.label}
                 </span>
               </div>
 
-              <div className="w-px h-3.5 bg-zinc-800 mx-0.5" />
+              {selectionInfo.canEdit && (
+                  <>
+                    <div className="w-px h-4 bg-zinc-800" />
+                    <button
+                        type="button"
+                        onClick={() => {
+                          if (selectionInfo.tokenId) {
+                            openTokenEditor(selectionInfo.tokenId);
+                          } else if (selectionInfo.textTarget) {
+                            handleDblClickText(selectionInfo.textTarget);
+                          }
+                        }}
+                        className="flex items-center gap-1 px-2.5 py-1.5 min-h-[34px] rounded-xl text-xs font-bold text-amber-300 hover:text-zinc-950 bg-amber-500/15 hover:bg-amber-500 border border-amber-500/30 transition-all cursor-pointer active:scale-95 shadow-sm"
+                        title="ویرایش مشخصات"
+                    >
+                      <Sliders className="w-3.5 h-3.5 stroke-[2.2]" />
+                      <span>ویرایش</span>
+                    </button>
+                  </>
+              )}
+
+              {selectionInfo.canDelete && (
+                  <>
+                    <div className="w-px h-4 bg-zinc-800" />
+                    <button
+                        type="button"
+                        onClick={handleDeleteSelected}
+                        className="flex items-center gap-1 px-2.5 py-1.5 min-h-[34px] rounded-xl text-xs font-bold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/30 transition-all cursor-pointer active:scale-95 shadow-sm"
+                        title="حذف آیتم انتخابی"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 stroke-[2.2]" />
+                      <span>حذف</span>
+                    </button>
+                  </>
+              )}
+            </div>
+        )}
+
+        {/* نوار شناور تکمیل یا لغو چندضلعی (جایگزین دابل‌کلیک و کلیک راست در موبایل) */}
+        {hasActivePolygon && (
+            <div
+                className="fixed top-16 sm:top-20 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex items-center gap-2 px-3 py-1.5 bg-zinc-950/95 border border-amber-500/40 rounded-2xl shadow-2xl backdrop-blur-xl text-xs font-fa animate-fade-in-up"
+                dir="rtl"
+                onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+            >
+              <span className="text-[11px] text-zinc-300 font-bold pl-1">
+                رسم چندضلعی ({Math.floor((polygonVertices.length || fogPolygonVertices.length) / 2)} نقطه)
+              </span>
+
+              {canFinishPolygon && (
+                  <button
+                      type="button"
+                      onClick={() => {
+                        if (polygonVertices.length >= 6) finishPolygonDrawing();
+                        else if (fogPolygonVertices.length >= 6) finishFogPolygon();
+                      }}
+                      className="flex items-center gap-1 px-3 py-1.5 min-h-[34px] rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs transition-all cursor-pointer active:scale-95 shadow-sm"
+                  >
+                    <Check className="w-3.5 h-3.5 stroke-[2.8]" />
+                    <span>تکمیل شکل</span>
+                  </button>
+              )}
 
               <button
                   type="button"
-                  onClick={handleDeleteSelected}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/30 transition-all cursor-pointer active:scale-95 shadow-sm"
-                  title="حذف آیتم انتخابی"
+                  onClick={cancelActivePolygons}
+                  className="flex items-center gap-1 px-2.5 py-1.5 min-h-[34px] rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 font-bold text-xs transition-all cursor-pointer active:scale-95"
               >
-                <Trash2 className="w-3.5 h-3.5 stroke-[2.2]" />
-                <span>حذف</span>
+                <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>لغو</span>
               </button>
             </div>
         )}
 
         {measurement && (
             <div
-                className="absolute z-40 pointer-events-auto flex items-center gap-1.5 px-2.5 py-1 bg-zinc-950/95 border border-zinc-700/80 rounded-xl shadow-2xl backdrop-blur-xl text-xs text-zinc-300 cursor-pointer hover:border-rose-500/80 hover:text-rose-400 active:scale-95 animate-in fade-in duration-100"
+                className="absolute z-40 pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] bg-zinc-950/95 border border-zinc-700/80 rounded-xl shadow-2xl backdrop-blur-xl text-xs text-zinc-300 cursor-pointer hover:border-rose-500/80 hover:text-rose-400 active:scale-95 animate-in fade-in duration-100"
                 style={{
-                  left: `${Math.max(60, Math.min(dimensions.width - 80, stageX + (measurement.currentX ?? measurement.startX) * zoom))}px`,
-                  top: `${Math.max(60, Math.min(dimensions.height - 40, stageY + (measurement.currentY ?? measurement.startY) * zoom - 40))}px`,
+                  left: `${Math.max(70, Math.min(dimensions.width - 80, stageX + (measurement.currentX ?? measurement.startX) * zoom))}px`,
+                  top: `${Math.max(70, Math.min(dimensions.height - 60, stageY + (measurement.currentY ?? measurement.startY) * zoom - 44))}px`,
                   transform: "translate(-50%, -100%)",
                 }}
                 onClick={(e) => {
+                  e.stopPropagation();
+                  endMeasurement();
+                  wsService.send("RULER_CLEAR", { userId: myIdentifier });
+                  isInteracting.current = false;
+                }}
+                onTouchStart={(e) => {
                   e.stopPropagation();
                   endMeasurement();
                   wsService.send("RULER_CLEAR", { userId: myIdentifier });
@@ -1451,6 +1693,7 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
                   transform: "translate(0, 0)",
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
                 onDoubleClick={(e) => e.stopPropagation()}
             >
@@ -1475,7 +1718,7 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
                   className="bg-transparent border-0 outline-0 p-0 m-0 shadow-none ring-0 focus:ring-0 focus:outline-none"
                   style={{
                     fontFamily: inlineTextEditor.fontFamily || textFontFamily,
-                    fontSize: `${Math.max(14, (inlineTextEditor.fontSize || textFontSize) * zoom)}px`,
+                    fontSize: `${Math.max(16, (inlineTextEditor.fontSize || textFontSize) * zoom)}px`,
                     color: inlineTextEditor.fill || textColor,
                     caretColor: inlineTextEditor.fill || textColor,
                     fontWeight: textIsBold ? "bold" : "normal",
@@ -1486,7 +1729,7 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
                     lineHeight: "1.0",
                     height: "auto",
                     width: `${Math.max(
-                        40,
+                        48,
                         (inlineTextEditor.text.length + 2) *
                         (inlineTextEditor.fontSize || textFontSize) *
                         zoom *
@@ -1504,33 +1747,33 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
 
         {!hasActiveMap && (
             <div
-                className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center overflow-y-auto custom-scrollbar pointer-events-auto"
+                className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 sm:p-6 pt-16 pb-24 sm:py-6 text-center overflow-y-auto custom-scrollbar pointer-events-auto"
                 dir="rtl"
             >
-              <div className="relative z-10 max-w-2xl w-full bg-zinc-950/80 border border-zinc-800/80 rounded-3xl p-6 md:p-8 shadow-2xl shadow-black/80 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex flex-col items-center mb-6">
-                  <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-3 shadow-xl shadow-amber-500/10">
-                    <Compass className="w-8 h-8 animate-spin-slow stroke-[1.8]" />
+              <div className="relative z-10 max-w-2xl w-full bg-zinc-950/85 border border-zinc-800/80 rounded-3xl p-5 sm:p-6 md:p-8 shadow-2xl shadow-black/80 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 my-auto">
+                <div className="flex flex-col items-center mb-4 sm:mb-6">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-2.5 sm:mb-3 shadow-xl shadow-amber-500/10">
+                    <Compass className="w-7 h-7 sm:w-8 sm:h-8 animate-spin-slow stroke-[1.8]" />
                   </div>
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-semibold mb-2">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[11px] sm:text-xs font-semibold mb-1.5 sm:mb-2">
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>میز مجازی Titipool</span>
                   </div>
-                  <h1 className="text-xl md:text-2xl font-black text-zinc-100">
+                  <h1 className="text-lg sm:text-xl md:text-2xl font-black text-zinc-100">
                     به ماجراجویی خوش آمدید!
                   </h1>
-                  <p className="text-xs text-zinc-400 mt-1 max-w-md">
+                  <p className="text-xs text-zinc-400 mt-1 max-w-md leading-relaxed">
                     این صحنه آماده شروع بازی شماست. راهنمای زیر را برای آغاز نبرد و کاوش دنبال کنید:
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6 text-right">
-                  <div className="p-4 rounded-2xl bg-zinc-900/60 border border-amber-500/20 flex flex-col gap-2.5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5 sm:mb-6 text-right">
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-zinc-900/60 border border-amber-500/20 flex flex-col gap-2">
                     <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
-                      <Scroll className="w-4 h-4" />
+                      <Scroll className="w-4 h-4 shrink-0" />
                       <span>راهنمای دانجن‌مستر (GM)</span>
                     </div>
-                    <ul className="text-xs text-zinc-300 space-y-2 leading-relaxed">
+                    <ul className="text-xs text-zinc-300 space-y-1.5 sm:space-y-2 leading-relaxed">
                       <li className="flex items-start gap-2">
                         <MapIcon className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                         <span>
@@ -1552,12 +1795,12 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
                     </ul>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex flex-col gap-2.5">
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex flex-col gap-2">
                     <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
-                      <Dices className="w-4 h-4" />
+                      <Dices className="w-4 h-4 shrink-0" />
                       <span>راهنمای قهرمانان و بازیکنان</span>
                     </div>
-                    <ul className="text-xs text-zinc-300 space-y-2 leading-relaxed">
+                    <ul className="text-xs text-zinc-300 space-y-1.5 sm:space-y-2 leading-relaxed">
                       <li className="flex items-start gap-2">
                         <UserCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                         <span>
@@ -1583,15 +1826,16 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
                 <div className="flex items-center justify-center">
                   {isGM || permissions?.canAssets ? (
                       <button
+                          type="button"
                           onClick={() => toggleMenu("asset")}
-                          className="px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black text-xs md:text-sm flex items-center gap-2.5 shadow-xl shadow-amber-500/20 transition-all cursor-pointer hover:scale-105 active:scale-95"
+                          className="w-full sm:w-auto min-h-[46px] px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black text-xs md:text-sm flex items-center justify-center gap-2.5 shadow-xl shadow-amber-500/20 transition-all cursor-pointer hover:scale-105 active:scale-95"
                       >
-                        <ImagePlus className="w-4 h-4 stroke-[2.5]" />
+                        <ImagePlus className="w-4 h-4 stroke-[2.5] shrink-0" />
                         <span>انتخاب یا بارگذاری نقشه در صحنه</span>
                       </button>
                   ) : (
-                      <div className="flex items-center gap-2.5 text-xs text-zinc-400 bg-zinc-900/80 px-5 py-2.5 rounded-2xl border border-zinc-800 shadow-inner">
-                        <Lock className="w-4 h-4 text-amber-400 animate-pulse" />
+                      <div className="flex items-center gap-2.5 text-xs text-zinc-400 bg-zinc-900/80 px-4 sm:px-5 py-3 rounded-2xl border border-zinc-800 shadow-inner">
+                        <Lock className="w-4 h-4 text-amber-400 animate-pulse shrink-0" />
                         <span>در انتظار بارگذاری نقشه صحنه توسط دانجن‌مستر (GM)...</span>
                       </div>
                   )}
@@ -1614,7 +1858,11 @@ export const GameCanvas = memo(({ isGM = false, permissions = {} }) => {
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseLeave}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
             onDblClick={handleDblClick}
+            onDblTap={handleDblClick}
             onContextMenu={(e) => e.evt.preventDefault()}
             onDragEnd={handleStageDragEnd}
         >

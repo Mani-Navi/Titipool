@@ -67,14 +67,14 @@ export const FogLayer = memo(
         const isFogRevealedGlobally = useCanvasStore((state) => state.isFogRevealedGlobally);
         const gmFogBlend = useCanvasStore((state) => state.gmFogBlend) ?? 0.45;
 
-        const { isGM } = usePermissions();
+        const { isGM, canManageFog } = usePermissions();
 
         const transformerRef = useRef(null);
         const shapeRefs = useRef(new Map());
         const lastBroadcastTime = useRef(0);
         const draggingFogId = useRef(null);
 
-        const isSelectMode = (activeTool === TOOLS.SELECT || activeTool === TOOLS.FOG) && isGM;
+        const isSelectMode = (activeTool === TOOLS.SELECT || activeTool === TOOLS.FOG) && (isGM || canManageFog);
 
         const handleShapeDragStart = useCallback((fog) => {
             draggingFogId.current = String(fog.id);
@@ -342,7 +342,7 @@ export const FogLayer = memo(
                                 stroke: isSelected ? "#f59e0b" : "rgba(245, 158, 11, 0.4)",
                                 strokeWidth: isSelected ? 2 : 1,
                                 dash: isSelected ? [4, 4] : undefined,
-                                hitStrokeWidth: 25,
+                                hitStrokeWidth: 28,
                                 onClick: (e) => {
                                     e.cancelBubble = true;
                                     setSelectedFogId(fogIdStr);
@@ -405,9 +405,9 @@ export const FogLayer = memo(
                             anchorFill="#f59e0b"
                             anchorStroke="#090a0f"
                             anchorStrokeWidth={1.5}
-                            anchorSize={9}
-                            anchorCornerRadius={2}
-                            rotateAnchorOffset={24}
+                            anchorSize={11}
+                            anchorCornerRadius={3}
+                            rotateAnchorOffset={28}
                             rotateEnabled={true}
                             boundBoxFunc={(oldBox, newBox) => {
                                 if (newBox.width < 20 || newBox.height < 20) return oldBox;
@@ -439,7 +439,7 @@ export const FogLayer = memo(
                                     key={`fog-node-${idx}`}
                                     x={x}
                                     y={y}
-                                    radius={isStart ? 6 : 4}
+                                    radius={isStart ? 7 : 5}
                                     fill={isStart ? "#10b981" : "#f59e0b"}
                                     stroke="#090a0f"
                                     strokeWidth={1.5}
