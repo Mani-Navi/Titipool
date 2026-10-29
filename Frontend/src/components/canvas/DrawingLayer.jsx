@@ -140,6 +140,7 @@ const SingleDrawingShape = memo(
 
         const commonProps = {
             ref: shapeRef,
+            "data-draw-id": drawId,
             x: draw.x || 0,
             y: draw.y || 0,
             scaleX: scaleX,
@@ -154,6 +155,9 @@ const SingleDrawingShape = memo(
             onMouseDown: (e) => {
                 if (isEraser && canModify) handleEraseAction(e);
             },
+            onTouchStart: (e) => {
+                if (isEraser && canModify) handleEraseAction(e);
+            },
             onMouseEnter: (e) => {
                 if (isEraser && canModify && e.evt && (e.evt.buttons === 1 || e.evt.which === 1)) {
                     handleEraseAction(e);
@@ -161,7 +165,7 @@ const SingleDrawingShape = memo(
             },
             onDragEnd: handleDragEnd,
             onTransformEnd: handleTransformEnd,
-            hitStrokeWidth: Math.max(strokeWidth + 14, 24),
+            hitStrokeWidth: Math.max(strokeWidth + 20, 28),
         };
 
         let renderedElement = null;
@@ -357,7 +361,9 @@ const SingleDrawingShape = memo(
                         anchorFill="#f59e0b"
                         anchorStroke="#090a0f"
                         anchorCornerRadius={3}
-                        anchorSize={8}
+                        anchorSize={11}
+                        rotateAnchorOffset={28}
+                        padding={4}
                         borderStroke="#f59e0b"
                         borderDash={TRANSFORMER_BORDER_DASH}
                     />
