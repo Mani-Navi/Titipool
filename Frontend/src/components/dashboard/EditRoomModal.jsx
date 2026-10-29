@@ -8,12 +8,12 @@ import { Input } from "../ui/Input.jsx";
 import { Eye, EyeOff, FileText, Check } from "lucide-react";
 
 const editRoomSchema = z.object({
-    name: z
+    roomTitle: z
         .string()
         .min(2, "نام اتاق باید حداقل ۲ حرف باشد")
         .max(100, "نام اتاق حداکثر ۱۰۰ حرف است"),
     description: z.string().max(500, "توضیحات حداکثر ۵۰۰ حرف است").optional(),
-    password: z.string().max(30, "رمز عبور حداکثر ۳۰ کاراکتر است").optional(),
+    roomPasscode: z.string().max(30, "رمز عبور حداکثر ۳۰ کاراکتر است").optional(),
 });
 
 export const EditRoomModal = memo(({ isOpen, onClose, onUpdate, room }) => {
@@ -29,21 +29,21 @@ export const EditRoomModal = memo(({ isOpen, onClose, onUpdate, room }) => {
     } = useForm({
         resolver: zodResolver(editRoomSchema),
         defaultValues: {
-            name: "",
+            roomTitle: "",
             description: "",
-            password: "",
+            roomPasscode: "",
         },
     });
 
-    const nameValue = watch("name") || "";
+    const nameValue = watch("roomTitle") || "";
     const descValue = watch("description") || "";
 
     useEffect(() => {
         if (room && isOpen) {
             reset({
-                name: room.name || "",
+                roomTitle: room.name || "",
                 description: room.description || "",
-                password: "",
+                roomPasscode: "",
             });
             setServerError("");
             setShowPassword(false);
@@ -54,9 +54,9 @@ export const EditRoomModal = memo(({ isOpen, onClose, onUpdate, room }) => {
         setServerError("");
         try {
             await onUpdate(room.id, {
-                name: data.name.trim(),
+                name: data.roomTitle.trim(),
                 description: data.description?.trim() || null,
-                password: data.password !== undefined ? data.password.trim() : null,
+                password: data.roomPasscode !== undefined ? data.roomPasscode.trim() : null,
             });
             onClose();
         } catch {
@@ -72,7 +72,13 @@ export const EditRoomModal = memo(({ isOpen, onClose, onUpdate, room }) => {
             titleFa="ویرایش مشخصات اتاق بازی"
             maxWidth="md"
         >
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5 font-fa" dir="rtl">
+            <form
+                onSubmit={handleSubmit(onSubmit)}
+                autoComplete="off"
+                data-form-type="other"
+                className="space-y-3.5 font-fa"
+                dir="rtl"
+            >
                 {serverError && (
                     <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs text-center font-medium animate-shake-subtle">
                         {serverError}
@@ -88,11 +94,14 @@ export const EditRoomModal = memo(({ isOpen, onClose, onUpdate, room }) => {
                     </div>
                     <Input
                         placeholder="نام ماجرا..."
-                        error={errors.name?.message}
+                        error={errors.roomTitle?.message}
                         disabled={isSubmitting}
                         maxLength={100}
+                        autoComplete="off"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
                         className="h-10 text-sm"
-                        {...register("name")}
+                        {...register("roomTitle")}
                     />
                 </div>
 
@@ -108,6 +117,7 @@ export const EditRoomModal = memo(({ isOpen, onClose, onUpdate, room }) => {
                             rows={2}
                             placeholder="توضیحات..."
                             maxLength={500}
+                            autoComplete="off"
                             className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-3.5 py-2 pl-9 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/30 transition-all resize-none"
                             disabled={isSubmitting}
                             {...register("description")}
@@ -127,12 +137,16 @@ export const EditRoomModal = memo(({ isOpen, onClose, onUpdate, room }) => {
                     </label>
                     <div className="relative">
                         <input
-                            type={showPassword ? "text" : "password"}
+                            type="text"
                             placeholder="تغییر یا حذف رمز..."
                             maxLength={30}
+                            autoComplete="off"
+                            data-lpignore="true"
+                            data-1p-ignore="true"
+                            style={!showPassword ? { WebkitTextSecurity: "disc" } : undefined}
                             className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-3.5 py-2.5 pl-10 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/30 transition-all h-10"
                             disabled={isSubmitting}
-                            {...register("password")}
+                            {...register("roomPasscode")}
                         />
                         <button
                             type="button"
