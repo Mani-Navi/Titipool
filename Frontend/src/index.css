@@ -8,6 +8,19 @@
         user-select: auto;
         min-height: 100vh;
         text-rendering: optimizeLegibility;
+        input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([dir="ltr"]),
+        textarea:not([dir="ltr"]) {
+            unicode-bidi: plaintext;
+            text-align: start;
+        }
+
+        input[dir="ltr"],
+        input[type="email"],
+        input[type="password"],
+        input[type="url"] {
+            direction: ltr;
+            text-align: left;
+        }
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         background-image:
