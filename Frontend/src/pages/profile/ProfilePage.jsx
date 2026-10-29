@@ -27,18 +27,8 @@ import {
     Timer,
     Award,
     ShieldCheck,
+    KeyRound,
 } from "lucide-react";
-
-const passwordSchema = z
-    .object({
-        currentPassword: z.string().min(1, "رمز عبور فعلی را وارد کنید"),
-        newPassword: z.string().min(8, "حداقل ۸ کاراکتر").max(72, "حداکثر ۷۲ کاراکتر"),
-        confirmPassword: z.string(),
-    })
-    .refine((data) => data.newPassword === data.confirmPassword, {
-        message: "رمز جدید و تکرار آن یکسان نیستند",
-        path: ["confirmPassword"],
-    });
 
 const emailSchema = z.object({
     newEmail: z.string().email("ایمیل معتبر وارد کنید"),
@@ -59,6 +49,25 @@ export const ProfilePage = () => {
     const updateUser = useAuthStore((state) => state.updateUser);
     const setAuth = useAuthStore((state) => state.setAuth);
     const logout = useAuthStore((state) => state.logout);
+
+    const hasPassword = user?.hasPassword !== false;
+
+    const passwordSchema = useMemo(
+        () =>
+            z
+                .object({
+                    currentPassword: hasPassword
+                        ? z.string().min(1, "رمز عبور فعلی را وارد کنید")
+                        : z.string().optional(),
+                    newPassword: z.string().min(8, "حداقل ۸ کاراکتر").max(72, "حداکثر ۷۲ کاراکتر"),
+                    confirmPassword: z.string(),
+                })
+                .refine((data) => data.newPassword === data.confirmPassword, {
+                    message: "رمز جدید و تکرار آن یکسان نیستند",
+                    path: ["confirmPassword"],
+                }),
+        [hasPassword]
+    );
 
     const [activeTab, setActiveTab] = useState("overview");
     const [statusMsg, setStatusMsg] = useState({ type: "", text: "" });
@@ -86,11 +95,7 @@ export const ProfilePage = () => {
                 updateUser(data);
                 setUsernameInput(data.username);
             })
-            .catch((err) => {
-                if (import.meta.env.DEV) {
-                    console.warn("[Profile] Failed to fetch fresh profile:", err);
-                }
-            });
+            .catch(() => {});
     }, [updateUser]);
 
     useEffect(() => {
@@ -180,12 +185,22 @@ export const ProfilePage = () => {
 
     const onSubmitPassword = async (data) => {
         try {
-            await userApi.changePassword({
-                currentPassword: data.currentPassword,
+            const updatedUser = await userApi.changePassword({
+                currentPassword: hasPassword ? data.currentPassword : null,
                 newPassword: data.newPassword,
             });
+            if (updatedUser) {
+                updateUser(updatedUser);
+            } else {
+                updateUser({ hasPassword: true });
+            }
             resetPassForm();
-            showFeedback("success", "رمز عبور با موفقیت تغییر کرد.");
+            showFeedback(
+                "success",
+                hasPassword
+                    ? "رمز عبور با موفقیت تغییر کرد."
+                    : "رمز عبور با موفقیت تعیین شد! اکنون می‌توانید مستقیماً با ایمیل و رمز عبور نیز وارد شوید."
+            );
         } catch (err) {
             showFeedback("error", getErrorMsg(err, "رمز عبور فعلی اشتباه است."));
         }
@@ -369,6 +384,9 @@ export const ProfilePage = () => {
                             >
                                 <Shield className="w-3.5 h-3.5" />
                                 امنیت و پسورد
+                                {!hasPassword && (
+                                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                                )}
                             </button>
 
                             <button
@@ -454,36 +472,48 @@ export const ProfilePage = () => {
 
                         {activeTab === "security" && (
                             <form onSubmit={handlePassSubmit(onSubmitPassword)} className="space-y-3.5 max-w-md animate-fade-in-up">
-                                <div>
-                                    <h3 className="text-sm font-bold text-zinc-100">تغییر رمز عبور</h3>
-                                    <p className="text-xs text-zinc-400 mt-0.5">رمز عبور فعلی و رمز جدید را وارد کنید</p>
-                                </div>
+                                {!hasPassword ? (
+                                    <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs leading-relaxed flex items-start gap-2.5">
+                                        <KeyRound className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                                        <div>
+                                            <strong className="block text-amber-200 mb-0.5">تعیین رمز عبور اولیه (ورود مستقل از گوگل)</strong>
+                                            حساب شما با گوگل ساخته شده است. با تعیین یک رمز عبور در فرم زیر، می‌توانید در مواقع عدم دسترسی به گوگل، مستقیماً با ایمیل و رمز عبور خود وارد شوید.
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <h3 className="text-sm font-bold text-zinc-100">تغییر رمز عبور</h3>
+                                        <p className="text-xs text-zinc-400 mt-0.5">رمز عبور فعلی و رمز جدید را وارد کنید</p>
+                                    </div>
+                                )}
 
-                                <div className="relative">
-                                    <Input
-                                        label="رمز عبور فعلی"
-                                        type={showCurrentPass ? "text" : "password"}
-                                        placeholder="••••••••"
-                                        error={passErrors.currentPassword?.message}
-                                        disabled={isPassSubmitting}
-                                        className="h-10 text-sm pl-11"
-                                        {...registerPass("currentPassword")}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowCurrentPass(!showCurrentPass)}
-                                        className="absolute left-2.5 top-[38px] -translate-y-1/2 text-zinc-400 hover:text-zinc-200 active:text-amber-400 p-1.5 cursor-pointer rounded-lg active:scale-90 transition-all flex items-center justify-center focus-visible:outline-none"
-                                        tabIndex={-1}
-                                        aria-label="تغییر وضعیت نمایش رمز فعلی"
-                                    >
-                                        {showCurrentPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                    </button>
-                                </div>
+                                {hasPassword && (
+                                    <div className="relative">
+                                        <Input
+                                            label="رمز عبور فعلی"
+                                            type={showCurrentPass ? "text" : "password"}
+                                            placeholder="••••••••"
+                                            error={passErrors.currentPassword?.message}
+                                            disabled={isPassSubmitting}
+                                            className="h-10 text-sm pl-11"
+                                            {...registerPass("currentPassword")}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowCurrentPass(!showCurrentPass)}
+                                            className="absolute left-2.5 top-[38px] -translate-y-1/2 text-zinc-400 hover:text-zinc-200 active:text-amber-400 p-1.5 cursor-pointer rounded-lg active:scale-90 transition-all flex items-center justify-center focus-visible:outline-none"
+                                            tabIndex={-1}
+                                            aria-label="تغییر وضعیت نمایش رمز فعلی"
+                                        >
+                                            {showCurrentPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                )}
 
                                 <div className="space-y-1.5">
                                     <div className="relative">
                                         <Input
-                                            label="رمز عبور جدید"
+                                            label={hasPassword ? "رمز عبور جدید" : "تعیین رمز عبور"}
                                             type={showNewPass ? "text" : "password"}
                                             placeholder="••••••••"
                                             error={passErrors.newPassword?.message}
@@ -505,7 +535,7 @@ export const ProfilePage = () => {
                                     {newPasswordValue.length > 0 && (
                                         <div className="p-2.5 rounded-xl bg-zinc-900/90 border border-zinc-800 text-[10px] space-y-1.5 animate-fade-in-up">
                                             <div className="flex items-center justify-between text-[11px]">
-                                                <span className="text-zinc-400">قدرت رمز جدید:</span>
+                                                <span className="text-zinc-400">قدرت رمز:</span>
                                                 <span
                                                     className={`font-bold ${
                                                         passedCriteriaCount <= 1
@@ -550,7 +580,7 @@ export const ProfilePage = () => {
 
                                 <div className="relative">
                                     <Input
-                                        label="تکرار رمز عبور جدید"
+                                        label={hasPassword ? "تکرار رمز عبور جدید" : "تکرار رمز عبور"}
                                         type={showConfirmPass ? "text" : "password"}
                                         placeholder="••••••••"
                                         error={passErrors.confirmPassword?.message}
@@ -576,7 +606,7 @@ export const ProfilePage = () => {
                                     isLoading={isPassSubmitting}
                                     className="font-bold text-xs w-full sm:w-auto h-10 mt-1 active:scale-[0.98] transition-transform"
                                 >
-                                    ثبت رمز عبور جدید
+                                    {hasPassword ? "ثبت رمز عبور جدید" : "تعیین رمز عبور و فعال‌سازی ورود ایمیلی"}
                                 </Button>
                             </form>
                         )}
