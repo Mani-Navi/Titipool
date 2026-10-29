@@ -1,4 +1,4 @@
-import React, { useState, memo } from "react";
+import React, { useState, useEffect, memo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,7 +12,6 @@ import { roomApi } from "../../api/room.api";
 const PERSIAN_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
 const ARABIC_DIGITS = "٠١٢٣٤٥٦٧٨٩";
 
-// نگاشت هوشمند کلیدهای کیبورد فارسی به حروف انگلیسی متناظر (در صورت فراموشی تغییر زبان)
 const FA_TO_EN_KEYBOARD_MAP = Object.freeze({
   'ض': 'Q', 'ص': 'W', 'ث': 'E', 'ق': 'R', 'ف': 'T', 'غ': 'Y', 'ع': 'U', 'ه': 'I', 'خ': 'O', 'ح': 'P',
   'ش': 'A', 'س': 'S', 'ی': 'D', 'ب': 'F', 'ل': 'G', 'ا': 'H', 'ت': 'J', 'ن': 'K', 'م': 'L',
@@ -20,7 +19,6 @@ const FA_TO_EN_KEYBOARD_MAP = Object.freeze({
   'و': 'V', 'ژ': 'C', 'آ': 'H', 'ي': 'D', 'ك': 'K',
 });
 
-// تبدیل درلحظه هرگونه ورودی فارسی/عربی به کد انگلیسی استاندارد
 const normalizeRoomCode = (rawInput = "") => {
   let result = "";
   for (const char of String(rawInput || "")) {
@@ -49,8 +47,8 @@ const normalizeRoomCode = (rawInput = "") => {
 };
 
 const joinRoomSchema = z.object({
-  code: z.string().length(6, "کد اتاق باید دقیقاً ۶ کاراکتر باشد").toUpperCase(),
-  password: z.string().optional(),
+  inviteCode: z.string().length(6, "کد اتاق باید دقیقاً ۶ کاراکتر باشد").toUpperCase(),
+  roomPasscode: z.string().optional(),
 });
 
 export const JoinRoomModal = memo(({ isOpen, onClose }) => {
@@ -67,10 +65,21 @@ export const JoinRoomModal = memo(({ isOpen, onClose }) => {
   } = useForm({
     resolver: zodResolver(joinRoomSchema),
     defaultValues: {
-      code: "",
-      password: "",
+      inviteCode: "",
+      roomPasscode: "",
     },
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      reset({
+        inviteCode: "",
+        roomPasscode: "",
+      });
+      setServerError("");
+      setShowPassword(false);
+    }
+  }, [isOpen, reset]);
 
   const handleClose = () => {
     reset();
@@ -81,9 +90,9 @@ export const JoinRoomModal = memo(({ isOpen, onClose }) => {
 
   const onSubmit = async (data) => {
     setServerError("");
-    const cleanedCode = normalizeRoomCode(data.code);
+    const cleanedCode = normalizeRoomCode(data.inviteCode);
     try {
-      const res = await roomApi.joinRoom(cleanedCode, data.password || null);
+      const res = await roomApi.joinRoom(cleanedCode, data.roomPasscode || null);
       handleClose();
       navigate(`/room/${res.roomId || res.id}`);
     } catch (err) {
@@ -92,7 +101,7 @@ export const JoinRoomModal = memo(({ isOpen, onClose }) => {
       } else if (err.response?.status === 404) {
         setServerError("اتاقی با این کد یافت نشد یا منقضی شده است.");
       } else {
-        setServerError("خطا در ورود به اتاق بازی.");
+        setServerError(err.response?.data?.error || err.response?.data?.message || "خطا در ورود به اتاق بازی.");
       }
     }
   };
@@ -105,18 +114,27 @@ export const JoinRoomModal = memo(({ isOpen, onClose }) => {
           titleFa="ورود به اتاق با کد دعوت"
           maxWidth="sm"
       >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5 font-fa" dir="rtl">
+        <form
+            onSubmit={handleSubmit(onSubmit)}
+            autoComplete="off"
+            data-form-type="other"
+            className="space-y-3.5 font-fa"
+            dir="rtl"
+        >
           <Input
               label="کد ۶ حرفی اتاق بازی (پشتیبانی از اعداد فارسی و انگلیسی)"
               placeholder="مثلا: OWL772 یا ۷۵B4EE"
-              error={errors.code?.message}
+              error={errors.inviteCode?.message}
               disabled={isSubmitting}
               dir="ltr"
+              autoComplete="off"
+              data-lpignore="true"
+              data-1p-ignore="true"
               className="uppercase font-mono text-center tracking-widest text-base font-bold h-11"
-              {...register("code", {
+              {...register("inviteCode", {
                 onChange: (e) => {
                   const cleaned = normalizeRoomCode(e.target.value);
-                  setValue("code", cleaned, { shouldValidate: true });
+                  setValue("inviteCode", cleaned, { shouldValidate: true });
                 },
               })}
           />
@@ -127,11 +145,15 @@ export const JoinRoomModal = memo(({ isOpen, onClose }) => {
             </label>
             <div className="relative">
               <input
-                  type={showPassword ? "text" : "password"}
+                  type="text"
                   placeholder="اگر اتاق رمز دارد، وارد کنید"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  style={!showPassword ? { WebkitTextSecurity: "disc" } : undefined}
                   className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-3.5 py-2.5 pl-10 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/30 transition-all h-10"
                   disabled={isSubmitting}
-                  {...register("password")}
+                  {...register("roomPasscode")}
               />
               <button
                   type="button"

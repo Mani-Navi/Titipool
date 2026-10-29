@@ -19,12 +19,12 @@ import { Input } from "../ui/Input.jsx";
 import { roomApi } from "../../api/room.api";
 
 const createRoomSchema = z.object({
-  name: z
+  roomTitle: z
       .string()
       .min(2, "نام اتاق باید حداقل ۲ حرف باشد")
       .max(100, "نام اتاق نمی‌تواند بیشتر از ۱۰۰ حرف باشد"),
   description: z.string().max(500, "توضیحات اتاق نمی‌تواند بیشتر از ۵۰۰ حرف باشد").optional(),
-  password: z.string().max(30, "رمز عبور حداکثر ۳۰ کاراکتر است").optional(),
+  roomPasscode: z.string().max(30, "رمز عبور حداکثر ۳۰ کاراکتر است").optional(),
 });
 
 export const CreateRoomModal = memo(({ isOpen, onClose, onCreate }) => {
@@ -45,14 +45,27 @@ export const CreateRoomModal = memo(({ isOpen, onClose, onCreate }) => {
   } = useForm({
     resolver: zodResolver(createRoomSchema),
     defaultValues: {
-      name: "",
+      roomTitle: "",
       description: "",
-      password: "",
+      roomPasscode: "",
     },
   });
 
-  const nameValue = watch("name") || "";
+  const nameValue = watch("roomTitle") || "";
   const descValue = watch("description") || "";
+
+  useEffect(() => {
+    if (isOpen) {
+      reset({
+        roomTitle: "",
+        description: "",
+        roomPasscode: "",
+      });
+      setSelectedTemplate(null);
+      setShowPassword(false);
+      setServerError("");
+    }
+  }, [isOpen, reset]);
 
   useEffect(() => {
     let isMounted = true;
@@ -79,7 +92,7 @@ export const CreateRoomModal = memo(({ isOpen, onClose, onCreate }) => {
 
   const handleSelectTemplate = (tpl) => {
     setSelectedTemplate(tpl);
-    setValue("name", tpl.title || "");
+    setValue("roomTitle", tpl.title || "");
     setValue("description", tpl.description || "");
   };
 
@@ -87,9 +100,9 @@ export const CreateRoomModal = memo(({ isOpen, onClose, onCreate }) => {
     setTab(newTab);
     setServerError("");
     setSelectedTemplate(null);
-    setValue("name", "");
+    setValue("roomTitle", "");
     setValue("description", "");
-    setValue("password", "");
+    setValue("roomPasscode", "");
   };
 
   const handleClose = () => {
@@ -105,9 +118,9 @@ export const CreateRoomModal = memo(({ isOpen, onClose, onCreate }) => {
     setServerError("");
     try {
       const payload = {
-        name: data.name.trim(),
+        name: data.roomTitle.trim(),
         description: data.description?.trim() || null,
-        password: data.password?.trim() || null,
+        password: data.roomPasscode?.trim() || null,
         templateId: tab === "template" ? selectedTemplate?.id : null,
       };
       await onCreate(payload);
@@ -241,6 +254,8 @@ export const CreateRoomModal = memo(({ isOpen, onClose, onCreate }) => {
           {shouldShowForm && (
               <form
                   onSubmit={handleSubmit(onSubmit)}
+                  autoComplete="off"
+                  data-form-type="other"
                   className="space-y-3 transition-all duration-300 animate-fade-in-up"
               >
                 <div className="space-y-1">
@@ -252,11 +267,14 @@ export const CreateRoomModal = memo(({ isOpen, onClose, onCreate }) => {
                   </div>
                   <Input
                       placeholder="مثلا: دخمه اشباح سرخ"
-                      error={errors.name?.message}
+                      error={errors.roomTitle?.message}
                       disabled={isSubmitting}
                       maxLength={100}
+                      autoComplete="off"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
                       className="h-10 text-sm"
-                      {...register("name")}
+                      {...register("roomTitle")}
                   />
                 </div>
 
@@ -272,6 +290,7 @@ export const CreateRoomModal = memo(({ isOpen, onClose, onCreate }) => {
                         rows={2}
                         placeholder="توضیحات کوتاه درباره سناریو، اهداف یا قوانین..."
                         maxLength={500}
+                        autoComplete="off"
                         className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-3.5 py-2 pl-9 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/30 transition-all resize-none"
                         disabled={isSubmitting}
                         {...register("description")}
@@ -291,12 +310,16 @@ export const CreateRoomModal = memo(({ isOpen, onClose, onCreate }) => {
                   </label>
                   <div className="relative">
                     <input
-                        type={showPassword ? "text" : "password"}
+                        type="text"
                         placeholder="در صورت تمایل یک رمز تعیین کنید"
                         maxLength={30}
+                        autoComplete="off"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
+                        style={!showPassword ? { WebkitTextSecurity: "disc" } : undefined}
                         className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-3.5 py-2.5 pl-10 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/30 transition-all h-10"
                         disabled={isSubmitting}
-                        {...register("password")}
+                        {...register("roomPasscode")}
                     />
                     <button
                         type="button"
@@ -307,8 +330,8 @@ export const CreateRoomModal = memo(({ isOpen, onClose, onCreate }) => {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                  {errors.password && (
-                      <p className="text-[11px] text-rose-400 font-medium">{errors.password.message}</p>
+                  {errors.roomPasscode && (
+                      <p className="text-[11px] text-rose-400 font-medium">{errors.roomPasscode.message}</p>
                   )}
                 </div>
 
