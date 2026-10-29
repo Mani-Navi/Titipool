@@ -43,9 +43,11 @@ export const DashboardPage = () => {
 
   useEffect(() => {
     const inviteCode = searchParams.get("join");
-    if (inviteCode) {
+    const actionParam = searchParams.get("action");
+    if (inviteCode || actionParam === "join") {
       setIsJoinOpen(true);
       searchParams.delete("join");
+      searchParams.delete("action");
       setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams, setSearchParams]);
@@ -144,7 +146,7 @@ export const DashboardPage = () => {
 
   return (
       <div
-          className="fixed inset-0 w-full h-[100dvh] bg-[#090a0f] text-zinc-100 flex flex-col font-fa select-none overflow-y-auto overflow-x-hidden"
+          className="fixed inset-0 w-full h-[100dvh] bg-[#090a0f] text-zinc-100 flex flex-col font-fa select-none overflow-y-auto overflow-x-hidden pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:pb-0"
           style={{ WebkitOverflowScrolling: "touch" }}
           dir="rtl"
       >
@@ -164,14 +166,13 @@ export const DashboardPage = () => {
 
         {/* هدر ناوبری اصلی */}
         <header
-            className="h-16 shrink-0 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 transition-all"
+            className="min-h-16 shrink-0 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur-xl px-3.5 sm:px-6 pt-[env(safe-area-inset-top,0px)] flex items-center justify-between sticky top-0 z-30 transition-all"
             role="banner"
         >
-          <div className="flex items-center gap-3">
-            {/* لوگو و نام پلتفرم با قابلیت هدایت به لندینگ‌پیج */}
+          <div className="flex items-center gap-3 min-w-0">
             <Link
                 to="/"
-                className="flex items-center gap-3 group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-400 rounded-xl transition-all"
+                className="flex items-center gap-2.5 sm:gap-3 group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-400 rounded-xl transition-all min-w-0"
                 title="بازگشت به صفحه اصلی"
             >
               <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.12)] shrink-0 transition-transform duration-200 group-hover:scale-105 group-active:scale-95" aria-hidden="true">
@@ -205,7 +206,7 @@ export const DashboardPage = () => {
             </Link>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             <Button
                 type="button"
                 variant="secondary"
@@ -239,7 +240,7 @@ export const DashboardPage = () => {
             <button
                 type="button"
                 onClick={() => navigate("/profile")}
-                className="w-8 h-8 rounded-xl bg-zinc-900 border border-zinc-700/80 overflow-hidden flex items-center justify-center hover:border-amber-500/60 active:scale-90 transition-all duration-150 cursor-pointer p-0.5 shrink-0 hover:shadow-[0_0_12px_rgba(251,191,36,0.2)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-400"
+                className="w-9 h-9 sm:w-8 sm:h-8 rounded-xl bg-zinc-900 border border-zinc-700/80 overflow-hidden flex items-center justify-center hover:border-amber-500/60 active:scale-90 transition-all duration-150 cursor-pointer p-0.5 shrink-0 hover:shadow-[0_0_12px_rgba(251,191,36,0.2)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-400"
                 aria-label="مشاهده و ویرایش تنظیمات پروفایل"
             >
               <RpgAvatar avatarId={user?.avatarUrl || "cowboy"} className="w-full h-full" />
@@ -248,7 +249,7 @@ export const DashboardPage = () => {
             <button
                 type="button"
                 onClick={logout}
-                className="p-2 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl active:scale-90 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose-400"
+                className="w-9 h-9 sm:w-auto sm:h-auto sm:p-2 flex items-center justify-center text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl active:scale-90 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose-400"
                 aria-label="خروج از حساب کاربری"
             >
               <LogOut className="w-4 h-4" aria-hidden="true" />
@@ -257,7 +258,7 @@ export const DashboardPage = () => {
         </header>
 
         {/* محتوای اصلی داشبورد */}
-        <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8 pb-20 sm:pb-8 animate-fade-in-up" role="main">
+        <main className="flex-1 max-w-6xl w-full mx-auto p-3.5 sm:p-6 md:p-8 space-y-6 sm:space-y-8 animate-fade-in-up" role="main">
           {rooms.length > 0 && (
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-zinc-950/70 border border-zinc-800/80 p-3 rounded-2xl backdrop-blur-md">
                 <div className="relative w-full sm:w-80">
@@ -267,7 +268,7 @@ export const DashboardPage = () => {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       aria-label="جستجو در بین اتاق‌ها بر اساس عنوان یا کد"
-                      className="w-full bg-zinc-900/90 border border-zinc-700/70 rounded-xl px-3.5 py-2 pl-9 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all duration-150"
+                      className="w-full h-10 bg-zinc-900/90 border border-zinc-700/70 rounded-xl px-3.5 pl-9 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all duration-150"
                   />
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" aria-hidden="true" />
                 </div>
@@ -393,31 +394,31 @@ export const DashboardPage = () => {
           )}
         </main>
 
-        {/* دکمه‌های شناور موبایل */}
-        <div className="sm:hidden fixed bottom-5 left-4 z-40 flex items-center gap-2">
+        {/* فوتر حقوقی و پشتیبانی */}
+        <Footer />
+
+        {/* داک پایین ارگونومیک موبایل بدون همپوشانی با کارت‌ها و فوتر */}
+        <div className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-zinc-950/92 backdrop-blur-xl border-t border-zinc-800/90 px-3.5 py-2.5 pb-[max(0.65rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(0,0,0,0.6)] flex items-center gap-2.5">
           <button
               type="button"
               onClick={() => setIsJoinOpen(true)}
-              className="h-11 px-3.5 rounded-2xl bg-zinc-900/95 border border-zinc-700/80 text-amber-400 shadow-2xl backdrop-blur-xl flex items-center gap-1.5 active:scale-95 transition-all duration-150 cursor-pointer font-bold text-xs"
+              className="flex-1 min-h-[44px] px-3 rounded-2xl bg-zinc-900 border border-zinc-700/80 text-amber-400 shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all duration-150 cursor-pointer font-bold text-xs"
               aria-label="ورود به اتاق با کد دعوت"
           >
-            <KeyRound className="w-3.5 h-3.5" aria-hidden="true" />
+            <KeyRound className="w-4 h-4 shrink-0" aria-hidden="true" />
             <span>ورود با کد</span>
           </button>
 
           <button
               type="button"
               onClick={() => setIsCreateOpen(true)}
-              className="h-11 px-4 rounded-2xl bg-amber-500 text-zinc-950 font-black text-xs shadow-xl shadow-amber-500/25 flex items-center gap-1.5 active:scale-95 transition-all duration-150 border border-amber-400 cursor-pointer"
+              className="flex-[1.35] min-h-[44px] px-4 rounded-2xl bg-amber-500 text-zinc-950 font-black text-xs shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5 active:scale-95 transition-all duration-150 border border-amber-400 cursor-pointer"
               aria-label="ایجاد اتاق ماجرای جدید"
           >
-            <Plus className="w-4 h-4 stroke-[3]" aria-hidden="true" />
+            <Plus className="w-4 h-4 stroke-[3] shrink-0" aria-hidden="true" />
             <span>ایجاد ماجرا</span>
           </button>
         </div>
-
-        {/* فوتر حقوقی و پشتیبانی */}
-        <Footer />
 
         <CreateRoomModal
             isOpen={isCreateOpen}
