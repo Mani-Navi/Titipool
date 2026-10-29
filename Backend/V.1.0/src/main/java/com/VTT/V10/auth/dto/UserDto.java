@@ -25,6 +25,14 @@ public class UserDto {
     @JsonProperty("isPremium")
     private boolean isPremium;
 
+    @JsonProperty("hasPassword")
+    @Builder.Default
+    private boolean hasPassword = true;
+
+    @JsonProperty("hasGoogle")
+    @Builder.Default
+    private boolean hasGoogle = false;
+
     private long roomsCount;
     private LocalDateTime createdAt;
 }

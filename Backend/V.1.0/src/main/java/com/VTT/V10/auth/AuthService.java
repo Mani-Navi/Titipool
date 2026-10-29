@@ -18,18 +18,25 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Authentication service handling credentials validation, Google OAuth verification, token refresh, and account creation.
+ * Authentication service supporting hybrid Email/Password and Google OAuth accounts.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+    public static final String OAUTH_NO_PASSWORD_MARKER = "OAUTH_NO_PASSWORD";
 
     private final UserRepository userRepository;
     private final RoomMemberRepository roomMemberRepository;
@@ -41,6 +48,15 @@ public class AuthService {
 
     private GoogleIdTokenVerifier verifier;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .build();
+
+    public static boolean hasUsablePassword(User user) {
+        if (user == null || user.getPassword() == null) return false;
+        String hash = user.getPassword();
+        return hash.startsWith("$2a$") || hash.startsWith("$2b$") || hash.startsWith("$2y$");
+    }
 
     @PostConstruct
     public void initGoogleVerifier() {
@@ -51,9 +67,9 @@ public class AuthService {
             )
                     .setAudience(Collections.singletonList(googleClientId.trim()))
                     .build();
-            log.info("Google Token Verifier initialized successfully with audience verification.");
+            log.info("Google Token Verifier initialized successfully.");
         } else {
-            log.warn("GOOGLE_CLIENT_ID is not configured. Google Sign-In will be disabled until set.");
+            log.warn("GOOGLE_CLIENT_ID is not configured.");
         }
     }
 
@@ -98,7 +114,14 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "ایمیل یا رمز عبور اشتباه است"));
 
-        if (user.getPassword() == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (!hasUsablePassword(user)) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "این حساب با گوگل ساخته شده و هنوز رمز عبوری ندارد. لطفاً با گوگل وارد شوید و در پروفایل رمز عبور تعیین کنید."
+            );
+        }
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "ایمیل یا رمز عبور اشتباه است");
         }
 
@@ -114,9 +137,6 @@ public class AuthService {
                 .build();
     }
 
-    /**
-     * Validates a refresh token and issues a fresh access token.
-     */
     @Transactional(readOnly = true)
     public AuthResponse refreshAccessToken(String refreshToken) {
         if (refreshToken == null || refreshToken.isBlank() || !jwtService.validateToken(refreshToken)) {
@@ -154,102 +174,146 @@ public class AuthService {
         return jwtService.getRefreshExpirationSeconds();
     }
 
-    /**
-     * Resolves or provisions user account based on verified Google OAuth ID Token.
-     */
     @Transactional
     public AuthResponse loginWithGoogle(GoogleAuthRequest request) {
-        if (verifier == null) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "ورود با گوگل در حال حاضر فعال نیست (Client ID در سرور تنظیم نشده است)");
+        if (googleClientId == null || googleClientId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "ورود با گوگل در سرور تنظیم نشده است");
         }
 
         if (request.getIdToken() == null || request.getIdToken().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "توکن گوگل نمی‌تواند خالی باشد");
         }
 
-        try {
-            GoogleIdToken idToken = verifier.verify(request.getIdToken());
-
-            if (idToken == null) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "توکن گوگل نامعتبر یا منقضی شده است");
-            }
-
-            GoogleIdToken.Payload payload = idToken.getPayload();
-            String email = payload.getEmail().trim().toLowerCase();
-            String name = (String) payload.get("name");
-            String pictureUrl = (String) payload.get("picture");
-            String googleSub = payload.getSubject();
-
-            Optional<User> existingUserOpt = userRepository.findByEmail(email);
-            User user;
-
-            if (existingUserOpt.isPresent()) {
-                user = existingUserOpt.get();
-                boolean shouldUpdate = false;
-
-                if (user.getGoogleId() == null) {
-                    user.setGoogleId(googleSub);
-                    shouldUpdate = true;
-                }
-                if (!user.isEmailVerified()) {
-                    user.setEmailVerified(true);
-                    shouldUpdate = true;
-                }
-                if (user.getAvatarUrl() == null && pictureUrl != null) {
-                    user.setAvatarUrl(pictureUrl);
-                    shouldUpdate = true;
-                }
-
-                if (shouldUpdate) {
-                    user = userRepository.save(user);
-                }
-                log.info("Google Sign-In: Existing account found for email: [{}]. Logged in successfully.", email);
-            } else {
-                String baseUsername = (name != null ? name.replaceAll("[^a-zA-Z0-9_]", "_").toLowerCase() : email.split("@")[0].replaceAll("[^a-zA-Z0-9_]", "_"));
-                if (baseUsername.length() < 3) {
-                    baseUsername = "user_" + baseUsername;
-                }
-                if (baseUsername.length() > 30) {
-                    baseUsername = baseUsername.substring(0, 30);
-                }
-
-                String generatedUsername = baseUsername + "_" + (1000 + SECURE_RANDOM.nextInt(9000));
-                if (userRepository.existsByUsername(generatedUsername)) {
-                    generatedUsername = "user_" + UUID.randomUUID().toString().substring(0, 8);
-                }
-
-                User newUser = User.builder()
-                        .email(email)
-                        .username(generatedUsername)
-                        .avatarUrl(pictureUrl)
-                        .googleId(googleSub)
-                        .isEmailVerified(true)
-                        .isPremium(false)
-                        .password(passwordEncoder.encode(UUID.randomUUID().toString()))
-                        .build();
-
-                user = userRepository.save(newUser);
-                log.info("Google Sign-In: New account created for email: [{}], username: [{}].", email, generatedUsername);
-            }
-
-            String token = jwtService.generateToken(user);
-            UserDto userDto = buildUserDto(user);
-
-            return AuthResponse.builder()
-                    .token(token)
-                    .userId(user.getId())
-                    .username(user.getUsername())
-                    .email(user.getEmail())
-                    .user(userDto)
-                    .build();
-
-        } catch (ResponseStatusException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Google Auth verification failed: {}", e.getMessage());
+        VerifiedGoogleUser googleUser = verifyGoogleToken(request.getIdToken());
+        if (googleUser == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "اعتبارسنجی حساب گوگل ناموفق بود");
         }
+
+        String email = googleUser.email().trim().toLowerCase();
+        Optional<User> existingUserOpt = userRepository.findByEmail(email);
+        User user;
+
+        if (existingUserOpt.isPresent()) {
+            user = existingUserOpt.get();
+            boolean shouldUpdate = false;
+
+            if (user.getGoogleId() == null) {
+                user.setGoogleId(googleUser.sub());
+                shouldUpdate = true;
+            }
+            if (!user.isEmailVerified()) {
+                user.setEmailVerified(true);
+                shouldUpdate = true;
+            }
+            if (user.getAvatarUrl() == null && googleUser.picture() != null) {
+                user.setAvatarUrl(googleUser.picture());
+                shouldUpdate = true;
+            }
+
+            if (shouldUpdate) {
+                user = userRepository.save(user);
+            }
+        } else {
+            String baseUsername = (googleUser.name() != null
+                    ? googleUser.name().replaceAll("[^a-zA-Z0-9_]", "_").toLowerCase()
+                    : email.split("@")[0].replaceAll("[^a-zA-Z0-9_]", "_"));
+            if (baseUsername.length() < 3) {
+                baseUsername = "user_" + baseUsername;
+            }
+            if (baseUsername.length() > 30) {
+                baseUsername = baseUsername.substring(0, 30);
+            }
+
+            String generatedUsername = baseUsername + "_" + (1000 + SECURE_RANDOM.nextInt(9000));
+            if (userRepository.existsByUsername(generatedUsername)) {
+                generatedUsername = "user_" + UUID.randomUUID().toString().substring(0, 8);
+            }
+
+            User newUser = User.builder()
+                    .email(email)
+                    .username(generatedUsername)
+                    .avatarUrl(googleUser.picture())
+                    .googleId(googleUser.sub())
+                    .isEmailVerified(true)
+                    .isPremium(false)
+                    .password(OAUTH_NO_PASSWORD_MARKER)
+                    .build();
+
+            user = userRepository.save(newUser);
+        }
+
+        String token = jwtService.generateToken(user);
+        UserDto userDto = buildUserDto(user);
+
+        return AuthResponse.builder()
+                .token(token)
+                .userId(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .user(userDto)
+                .build();
     }
+
+    private VerifiedGoogleUser verifyGoogleToken(String idTokenString) {
+        if (verifier != null) {
+            try {
+                GoogleIdToken idToken = verifier.verify(idTokenString);
+                if (idToken != null) {
+                    GoogleIdToken.Payload payload = idToken.getPayload();
+                    return new VerifiedGoogleUser(
+                            payload.getEmail(),
+                            (String) payload.get("name"),
+                            (String) payload.get("picture"),
+                            payload.getSubject()
+                    );
+                }
+            } catch (Exception e) {
+                log.warn("GoogleIdTokenVerifier failed: {} - Attempting tokeninfo fallback...", e.getMessage());
+            }
+        }
+
+        try {
+            HttpRequest tokenInfoReq = HttpRequest.newBuilder()
+                    .uri(URI.create("https://oauth2.googleapis.com/tokeninfo?id_token=" + idTokenString.trim()))
+                    .timeout(Duration.ofSeconds(5))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> resp = httpClient.send(tokenInfoReq, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() == 200 && resp.body() != null) {
+                String body = resp.body();
+                if (body.contains("\"aud\":\"" + googleClientId.trim() + "\"") || body.contains("\"aud\": \"" + googleClientId.trim() + "\"")) {
+                    String email = extractJsonField(body, "email");
+                    String name = extractJsonField(body, "name");
+                    String picture = extractJsonField(body, "picture");
+                    String sub = extractJsonField(body, "sub");
+
+                    if (email != null && !email.isBlank()) {
+                        return new VerifiedGoogleUser(email, name, picture, sub);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            log.error("Google tokeninfo fallback failed: {}", ex.getMessage());
+        }
+
+        return null;
+    }
+
+    private String extractJsonField(String json, String field) {
+        String pattern = "\"" + field + "\"";
+        int idx = json.indexOf(pattern);
+        if (idx == -1) return null;
+        int colon = json.indexOf(':', idx + pattern.length());
+        if (colon == -1) return null;
+        int quoteStart = json.indexOf('"', colon + 1);
+        if (quoteStart == -1) return null;
+        int quoteEnd = json.indexOf('"', quoteStart + 1);
+        if (quoteEnd == -1) return null;
+        return json.substring(quoteStart + 1, quoteEnd);
+    }
+
+    private record VerifiedGoogleUser(String email, String name, String picture, String sub) {}
 
     private UserDto buildUserDto(User user) {
         long rooms = roomMemberRepository.countByUserId(user.getId());
@@ -261,6 +325,8 @@ public class AuthService {
                 .avatarUrl(user.getAvatarUrl())
                 .isEmailVerified(user.isEmailVerified())
                 .isPremium(user.isPremium())
+                .hasPassword(hasUsablePassword(user))
+                .hasGoogle(user.getGoogleId() != null && !user.getGoogleId().isBlank())
                 .roomsCount(rooms)
                 .createdAt(user.getCreatedAt())
                 .build();

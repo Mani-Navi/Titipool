@@ -1,5 +1,6 @@
 package com.VTT.V10.user;
 
+import com.VTT.V10.auth.AuthService;
 import com.VTT.V10.auth.JwtService;
 import com.VTT.V10.auth.dto.AuthResponse;
 import com.VTT.V10.auth.dto.UserDto;
@@ -20,9 +21,6 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-/**
- * Service handling user profiles, credentials updates, and email verification workflows.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -65,28 +63,41 @@ public class UserService {
         return toDto(user);
     }
 
+    /**
+     * Supports both initial password provisioning for OAuth-only users (no currentPassword needed)
+     * and standard password rotation for users who already have a password.
+     */
     @Transactional
-    public void changePassword(String userEmail, ChangePasswordRequest request) {
+    public UserDto changePassword(String userEmail, ChangePasswordRequest request) {
         User user = getByEmail(userEmail);
+        boolean alreadyHasPassword = AuthService.hasUsablePassword(user);
 
-        // اگر کاربر رمز فعلی را ارسال کرده یا حساب عادی (غیر گوگل) دارد، رمز فعلی بررسی می‌شود
-        if (request.getCurrentPassword() != null && !request.getCurrentPassword().isBlank()) {
-            if (user.getPassword() == null || !passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+        if (alreadyHasPassword) {
+            if (request.getCurrentPassword() == null || request.getCurrentPassword().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "وارد کردن رمز عبور فعلی الزامی است");
+            }
+            if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "رمز عبور فعلی اشتباه است");
             }
-        } else if (user.getGoogleId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "وارد کردن رمز عبور فعلی الزامی است");
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        userRepository.save(user);
+        user = userRepository.save(user);
+        return toDto(user);
     }
 
     @Transactional
     public AuthResponse changeEmail(String userEmail, ChangeEmailRequest request) {
         User user = getByEmail(userEmail);
 
-        if (user.getPassword() == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (!AuthService.hasUsablePassword(user)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "لطفاً ابتدا از تب «امنیت و پسورد» برای حساب خود یک رمز عبور تعیین کنید"
+            );
+        }
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "رمز عبور نادرست است");
         }
 
@@ -180,6 +191,8 @@ public class UserService {
                 .avatarUrl(user.getAvatarUrl())
                 .isEmailVerified(user.isEmailVerified())
                 .isPremium(user.isPremium())
+                .hasPassword(AuthService.hasUsablePassword(user))
+                .hasGoogle(user.getGoogleId() != null && !user.getGoogleId().isBlank())
                 .roomsCount(rooms)
                 .createdAt(user.getCreatedAt())
                 .build();
