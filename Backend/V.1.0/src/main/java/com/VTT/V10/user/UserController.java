@@ -38,13 +38,12 @@ public class UserController {
     }
 
     @PostMapping("/change-password")
-    public ResponseEntity<Void> changePassword(
+    public ResponseEntity<UserDto> changePassword(
             Authentication auth,
             @Valid @RequestBody ChangePasswordRequest request
     ) {
         validateAuth(auth);
-        userService.changePassword(auth.getName(), request);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(userService.changePassword(auth.getName(), request));
     }
 
     @PostMapping("/change-email")
