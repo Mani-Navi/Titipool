@@ -115,50 +115,200 @@ export const SceneBar = memo(({ isGM = false, roomId = null }) => {
 
     return (
         <>
-            <div className="sm:hidden fixed top-3 left-[54%] -translate-x-1/2 z-30 font-fa select-none" dir="rtl">
+            {/* نوار صحنه‌ها در موبایل با پشتیبانی کامل از ساخت، ویرایش نام، سوییچ و حذف صحنه */}
+            <div
+                className="sm:hidden fixed top-[max(0.625rem,env(safe-area-inset-top))] left-1/2 -translate-x-1/2 z-30 font-fa select-none"
+                dir="rtl"
+            >
                 <div className="relative">
                     <button
                         type="button"
                         onClick={() => setIsMobileOpen(!isMobileOpen)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-950/90 border border-zinc-800/90 shadow-xl backdrop-blur-xl text-xs font-bold cursor-pointer text-zinc-200 active:scale-95 transition-all max-w-[170px]"
+                        aria-expanded={isMobileOpen}
+                        aria-label="مدیریت و تغییر صحنه بازی"
+                        className="flex items-center gap-1.5 px-2.5 h-9 rounded-2xl bg-zinc-950/90 border border-zinc-800/90 shadow-xl backdrop-blur-xl text-xs font-bold cursor-pointer text-zinc-200 active:scale-95 transition-all max-w-[138px] xs:max-w-[165px]"
                     >
                         <Layers className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                         <span className="truncate">{currentScene?.name || "صحنه"}</span>
-                        <ChevronDown className={cn("w-3.5 h-3.5 text-zinc-400 shrink-0 transition-transform duration-200", isMobileOpen ? "rotate-180" : "")} />
+                        <ChevronDown
+                            className={cn(
+                                "w-3.5 h-3.5 text-zinc-400 shrink-0 transition-transform duration-200",
+                                isMobileOpen ? "rotate-180" : ""
+                            )}
+                        />
                     </button>
 
                     {isMobileOpen && (
-                        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-52 bg-zinc-950/95 border border-zinc-800 rounded-2xl shadow-2xl backdrop-blur-2xl p-2 z-50 flex flex-col gap-1 animate-fade-in-up">
-                            <span className="text-[10px] text-zinc-500 font-bold px-2 py-1">سوییچ بین صحنه‌ها:</span>
-                            <div className="max-h-48 overflow-y-auto space-y-1">
-                                {scenes.map((scene) => {
-                                    const isActive = String(currentScene?.id || "").toLowerCase() === String(scene.id || "").toLowerCase();
-                                    return (
-                                        <button
-                                            key={scene.id}
-                                            type="button"
-                                            onClick={() => {
-                                                if (isGM) switchScene(scene.id, true, roomId);
-                                                setIsMobileOpen(false);
-                                            }}
-                                            className={cn(
-                                                "w-full text-right px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between active:scale-[0.98]",
-                                                isActive
-                                                    ? "bg-amber-500 text-zinc-950 shadow-md font-black"
-                                                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
-                                            )}
-                                        >
-                                            <span className="truncate">{scene.name}</span>
-                                            {isActive && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
-                                        </button>
-                                    );
-                                })}
+                        <>
+                            <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => {
+                                    setIsMobileOpen(false);
+                                    setEditingSceneId(null);
+                                    setIsCreating(false);
+                                }}
+                                aria-hidden="true"
+                            />
+                            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-64 max-w-[88vw] bg-zinc-950/98 border border-zinc-800 rounded-2xl shadow-2xl backdrop-blur-2xl p-2.5 z-50 flex flex-col gap-1.5 animate-fade-in-up">
+                                <div className="flex items-center justify-between px-1.5 py-0.5">
+                                    <span className="text-[10px] text-zinc-400 font-bold">
+                                        {isGM ? "مدیریت و سوییچ صحنه‌ها:" : "صحنه فعال اتاق:"}
+                                    </span>
+                                    <span className="text-[10px] font-mono text-amber-400">{scenes.length} صحنه</span>
+                                </div>
+
+                                <div className="max-h-52 overflow-y-auto custom-scrollbar space-y-1">
+                                    {scenes.map((scene) => {
+                                        const isActive =
+                                            String(currentScene?.id || "").toLowerCase() ===
+                                            String(scene.id || "").toLowerCase();
+                                        const isEditingThis = editingSceneId === scene.id;
+
+                                        if (isEditingThis && isGM) {
+                                            return (
+                                                <form
+                                                    key={scene.id}
+                                                    onSubmit={(e) => saveRename(scene.id, e)}
+                                                    className="flex items-center gap-1 bg-zinc-900 p-1.5 rounded-xl border border-amber-500/80"
+                                                >
+                                                    <input
+                                                        type="text"
+                                                        value={editingName}
+                                                        onChange={(e) => setEditingName(e.target.value)}
+                                                        autoFocus
+                                                        className="flex-1 min-w-0 px-2 py-1 bg-transparent text-xs text-zinc-100 font-medium focus:outline-none"
+                                                    />
+                                                    <button
+                                                        type="submit"
+                                                        className="w-7 h-7 rounded-lg bg-amber-500 text-zinc-950 flex items-center justify-center shrink-0"
+                                                        aria-label="ذخیره نام صحنه"
+                                                    >
+                                                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEditingSceneId(null)}
+                                                        className="w-7 h-7 rounded-lg bg-zinc-800 text-zinc-400 flex items-center justify-center shrink-0"
+                                                        aria-label="انصراف"
+                                                    >
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </form>
+                                            );
+                                        }
+
+                                        return (
+                                            <div
+                                                key={scene.id}
+                                                onClick={() => {
+                                                    if (isGM && !isActive) {
+                                                        switchScene(scene.id, true, roomId);
+                                                        setIsMobileOpen(false);
+                                                    }
+                                                }}
+                                                className={cn(
+                                                    "w-full text-right px-2.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between gap-2 min-h-[40px]",
+                                                    isActive
+                                                        ? "bg-amber-500 text-zinc-950 shadow-md font-black"
+                                                        : isGM
+                                                            ? "text-zinc-300 hover:bg-zinc-900 cursor-pointer active:scale-[0.98]"
+                                                            : "text-zinc-500"
+                                                )}
+                                            >
+                                                <span className="truncate flex-1">{scene.name}</span>
+
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    {isGM && (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => startEditing(scene, e)}
+                                                                className={cn(
+                                                                    "w-6 h-6 rounded-lg flex items-center justify-center transition-colors",
+                                                                    isActive
+                                                                        ? "hover:bg-amber-600 text-zinc-950"
+                                                                        : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100"
+                                                                )}
+                                                                aria-label="ویرایش نام صحنه"
+                                                            >
+                                                                <Edit2 className="w-3 h-3" />
+                                                            </button>
+
+                                                            {scenes.length > 1 && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => handleDeleteScene(scene.id, e)}
+                                                                    className={cn(
+                                                                        "w-6 h-6 rounded-lg flex items-center justify-center transition-colors",
+                                                                        isActive
+                                                                            ? "hover:bg-rose-600 text-zinc-950"
+                                                                            : "hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400"
+                                                                    )}
+                                                                    aria-label="حذف صحنه"
+                                                                >
+                                                                    <Trash2 className="w-3 h-3" />
+                                                                </button>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                    {isActive && !isGM && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {isGM && (
+                                    <div className="pt-1.5 border-t border-zinc-800/80">
+                                        {!isCreating ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsCreating(true)}
+                                                className="w-full py-2 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-amber-400 flex items-center justify-center gap-1.5 text-xs font-bold active:scale-95 transition-all cursor-pointer"
+                                            >
+                                                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                                                <span>ایجاد صحنه جدید</span>
+                                            </button>
+                                        ) : (
+                                            <form
+                                                onSubmit={handleCreateScene}
+                                                className="flex items-center gap-1 bg-zinc-900 p-1.5 rounded-xl border border-amber-500/70"
+                                            >
+                                                <input
+                                                    type="text"
+                                                    value={newSceneName}
+                                                    onChange={(e) => setNewSceneName(e.target.value)}
+                                                    placeholder="نام صحنه جدید..."
+                                                    autoFocus
+                                                    className="flex-1 min-w-0 px-2 py-1 bg-transparent text-xs text-zinc-100 font-medium focus:outline-none"
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    disabled={isSubmitting}
+                                                    className="w-7 h-7 rounded-lg bg-amber-500 text-zinc-950 flex items-center justify-center shrink-0"
+                                                    aria-label="تایید ساخت صحنه"
+                                                >
+                                                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsCreating(false)}
+                                                    className="w-7 h-7 rounded-lg bg-zinc-800 text-zinc-400 flex items-center justify-center shrink-0"
+                                                    aria-label="انصراف"
+                                                >
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            </form>
+                                        )}
+                                    </div>
+                                )}
                             </div>
-                        </div>
+                        </>
                     )}
                 </div>
             </div>
 
+            {/* نوار صحنه‌ها در دسکتاپ */}
             <div
                 className="hidden sm:flex fixed top-4 left-1/2 -translate-x-1/2 z-30 items-center gap-2.5 px-3 py-1.5 bg-zinc-950/85 border border-zinc-800/80 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-2xl font-fa select-none pointer-events-auto animate-fade-in-up"
                 dir="rtl"

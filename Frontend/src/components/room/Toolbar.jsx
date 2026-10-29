@@ -249,9 +249,13 @@ export const Toolbar = memo(({ isGM: propIsGM, permissions = {} }) => {
     },
   ];
 
+  const hasSubToolbarOpen =
+      hasActiveMap &&
+      (activeTool === TOOLS.DRAW || activeTool === TOOLS.TEXT || activeTool === TOOLS.FOG);
+
   return (
       <>
-        <div className="fixed bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-2 pointer-events-auto max-w-[98vw] overflow-visible">
+        <div className="fixed bottom-[max(0.65rem,env(safe-area-inset-bottom))] sm:bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-2 pointer-events-auto max-w-[96vw] overflow-visible">
           {hasActiveMap && (
               <div className="w-full flex justify-center overflow-visible z-50 animate-fade-in-up">
                 <DrawSubToolbar />
@@ -263,9 +267,9 @@ export const Toolbar = memo(({ isGM: propIsGM, permissions = {} }) => {
           <div
               role="toolbar"
               aria-label="نوار ابزار اصلی میز بازی"
-              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-zinc-950/90 border border-zinc-800/80 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.7)] backdrop-blur-2xl text-zinc-200 transition-all overflow-visible"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-1.5 sm:py-2 bg-zinc-950/92 border border-zinc-800/80 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.7)] backdrop-blur-2xl text-zinc-200 transition-all max-w-[96vw] overflow-x-auto sm:overflow-visible no-scrollbar"
           >
-            <div className="flex items-center gap-0.5 sm:gap-1">
+            <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
               {primaryTools.map((t) => {
                 if (!t.allowed) return null;
                 const Icon = t.icon;
@@ -286,7 +290,7 @@ export const Toolbar = memo(({ isGM: propIsGM, permissions = {} }) => {
                           aria-label={`${t.labelFa} (کلید ${t.shortcut})`}
                           aria-pressed={isActive}
                           className={cn(
-                              "w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all duration-150 shrink-0",
+                              "w-9.5 h-9.5 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all duration-150 shrink-0",
                               isDisabled
                                   ? "text-zinc-600 opacity-40 cursor-not-allowed"
                                   : isActive
@@ -307,7 +311,7 @@ export const Toolbar = memo(({ isGM: propIsGM, permissions = {} }) => {
                   type="button"
                   onClick={() => useDiceStore.getState().setOpen(true)}
                   aria-label="پرتاب تاس سه‌بعدی فیزیکی (کلید B)"
-                  className="w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/20 active:scale-95 transition-all duration-150 cursor-pointer shrink-0 shadow-sm shadow-amber-500/5"
+                  className="w-9.5 h-9.5 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/20 active:scale-95 transition-all duration-150 cursor-pointer shrink-0 shadow-sm shadow-amber-500/5"
               >
                 <Dices className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
               </button>
@@ -329,7 +333,7 @@ export const Toolbar = memo(({ isGM: propIsGM, permissions = {} }) => {
                         onClick={handleMyCharacterClick}
                         aria-label={myExistingToken ? "نمایش و تمرکز بر کاراکتر شما" : "افزودن کاراکتر من به نقشه"}
                         className={cn(
-                            "w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer shrink-0 active:scale-95",
+                            "w-9.5 h-9.5 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer shrink-0 active:scale-95",
                             myExistingToken
                                 ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20"
                                 : "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/40 shadow-sm"
@@ -351,7 +355,7 @@ export const Toolbar = memo(({ isGM: propIsGM, permissions = {} }) => {
                       aria-label="کتابخانه منابع و نقشه‌ها (کلید A)"
                       aria-expanded={isAssetOpen}
                       className={cn(
-                          "w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer shrink-0 active:scale-95",
+                          "w-9.5 h-9.5 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer shrink-0 active:scale-95",
                           isAssetOpen
                               ? "bg-amber-500 text-zinc-950 font-bold shadow-md shadow-amber-500/25"
                               : !hasActiveMap
@@ -372,7 +376,7 @@ export const Toolbar = memo(({ isGM: propIsGM, permissions = {} }) => {
                       aria-label="تنظیمات اتاق و گرید نقشه"
                       aria-expanded={isSettingsOpen}
                       className={cn(
-                          "w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer shrink-0 active:scale-95",
+                          "w-9.5 h-9.5 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer shrink-0 active:scale-95",
                           isSettingsOpen
                               ? "bg-amber-500 text-zinc-950 font-bold shadow-md shadow-amber-500/25"
                               : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
@@ -385,18 +389,23 @@ export const Toolbar = memo(({ isGM: propIsGM, permissions = {} }) => {
           </div>
         </div>
 
-        {/* نوار کنترل بزرگ‌نمایی */}
+        {/* نوار کنترل بزرگ‌نمایی با جابجایی هوشمند در موبایل هنگام باز شدن زیرمنوها */}
         <div
             role="toolbar"
             aria-label="کنترل بزرگ‌نمایی نقشه"
-            className="fixed bottom-18 sm:bottom-6 right-3 sm:right-6 z-30 flex items-center gap-1 p-1 sm:p-1.5 bg-zinc-950/85 border border-zinc-800/80 rounded-xl shadow-[0_8px_25px_rgba(0,0,0,0.5)] backdrop-blur-xl text-xs text-zinc-300"
+            className={cn(
+                "fixed right-2.5 sm:right-6 sm:bottom-6 z-30 flex items-center gap-0.5 sm:gap-1 p-1 sm:p-1.5 bg-zinc-950/85 border border-zinc-800/80 rounded-xl shadow-[0_8px_25px_rgba(0,0,0,0.5)] backdrop-blur-xl text-xs text-zinc-300 transition-all duration-200",
+                hasSubToolbarOpen
+                    ? "bottom-[calc(7.75rem+env(safe-area-inset-bottom,0px))]"
+                    : "bottom-[calc(4.35rem+env(safe-area-inset-bottom,0px))]"
+            )}
         >
           <button
               type="button"
               disabled={!hasActiveMap}
               onClick={() => setZoom((z) => Math.max(z - 0.15, MIN_ZOOM))}
               className={cn(
-                  "w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all duration-150",
+                  "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150",
                   !hasActiveMap
                       ? "text-zinc-700 cursor-not-allowed"
                       : "text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-100 active:scale-90 cursor-pointer"
@@ -411,7 +420,7 @@ export const Toolbar = memo(({ isGM: propIsGM, permissions = {} }) => {
               disabled={!hasActiveMap}
               onClick={resetView}
               className={cn(
-                  "px-1.5 sm:px-2 h-7 sm:h-8 rounded-lg font-mono text-[10px] sm:text-xs transition-all duration-150",
+                  "px-1.5 sm:px-2 h-8 rounded-lg font-mono text-[10px] sm:text-xs transition-all duration-150",
                   !hasActiveMap
                       ? "text-zinc-700 cursor-not-allowed"
                       : "text-zinc-300 hover:bg-zinc-800/80 hover:text-amber-400 active:scale-95 cursor-pointer font-bold"
@@ -426,7 +435,7 @@ export const Toolbar = memo(({ isGM: propIsGM, permissions = {} }) => {
               disabled={!hasActiveMap}
               onClick={() => setZoom((z) => Math.min(z + 0.15, MAX_ZOOM))}
               className={cn(
-                  "w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all duration-150",
+                  "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150",
                   !hasActiveMap
                       ? "text-zinc-700 cursor-not-allowed"
                       : "text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-100 active:scale-90 cursor-pointer"
