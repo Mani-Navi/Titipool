@@ -145,36 +145,36 @@ export const DiceOverlay = memo(() => {
             </div>
 
             {results.length > 0 && (
-                <div className="absolute top-12 sm:top-14 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-1.5 max-w-[95vw] sm:max-w-2xl w-auto animate-fade-in-up">
+                <div className="absolute top-[calc(3.35rem+env(safe-area-inset-top,0px))] sm:top-14 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-1.5 w-[92vw] sm:w-auto max-w-[94vw] sm:max-w-2xl animate-fade-in-up">
                     <div
                         className={cn(
-                            "flex flex-col gap-2.5 p-3.5 sm:p-4 rounded-3xl backdrop-blur-2xl transition-all duration-300 shadow-2xl w-full border",
+                            "flex flex-col gap-2 sm:gap-2.5 p-3 sm:p-4 rounded-3xl backdrop-blur-2xl transition-all duration-300 shadow-2xl w-full border",
                             isAnyCritical
                                 ? "bg-gradient-to-b from-amber-950/95 via-zinc-950/95 to-zinc-950/95 border-amber-400 shadow-[0_0_35px_rgba(245,158,11,0.45)]"
                                 : "bg-zinc-950/95 border-zinc-800 shadow-[0_12px_45px_rgba(0,0,0,0.8)]"
                         )}
                     >
-                        <div className="flex items-center justify-between gap-3 border-b border-zinc-800/80 pb-2">
-                            <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between gap-2 sm:gap-3 border-b border-zinc-800/80 pb-2">
+                            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                                 {isAnyCritical && (
-                                    <div className="flex items-center gap-1 text-amber-300 text-[11px] font-black px-2.5 py-0.5 rounded-lg bg-amber-500/20 border border-amber-400/50 animate-pulse">
+                                    <div className="flex items-center gap-1 text-amber-300 text-[10px] sm:text-[11px] font-black px-2 py-0.5 rounded-lg bg-amber-500/20 border border-amber-400/50 animate-pulse shrink-0">
                                         <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-spin" />
                                         <span>کریتیکال!</span>
                                     </div>
                                 )}
 
                                 {isRemoteRoll && rollerName ? (
-                                    <div className="flex items-center gap-1 text-amber-300 text-xs font-bold">
-                                        <User className="w-3.5 h-3.5 text-amber-400" />
-                                        <span>{rollerName}:</span>
+                                    <div className="flex items-center gap-1 text-amber-300 text-xs font-bold truncate">
+                                        <User className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                        <span className="truncate">{rollerName}:</span>
                                     </div>
                                 ) : (
-                                    <span className="text-zinc-400 text-xs font-semibold">مجموع امتیاز:</span>
+                                    <span className="text-zinc-400 text-xs font-semibold shrink-0">مجموع امتیاز:</span>
                                 )}
 
                                 <span
                                     className={cn(
-                                        "text-2xl sm:text-3xl font-black font-mono tracking-tight",
+                                        "text-xl sm:text-3xl font-black font-mono tracking-tight shrink-0",
                                         isRolling
                                             ? "text-zinc-500 animate-pulse"
                                             : isAnyCritical
@@ -186,12 +186,12 @@ export const DiceOverlay = memo(() => {
                                 </span>
                             </div>
 
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1 shrink-0">
                                 {!isRemoteRoll && (
                                     <button
                                         type="button"
                                         onClick={handleReRoll}
-                                        className="p-1.5 text-zinc-400 hover:text-amber-300 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
+                                        className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-amber-300 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
                                         title="پرتاب مجدد"
                                         aria-label="پرتاب مجدد"
                                     >
@@ -202,7 +202,7 @@ export const DiceOverlay = memo(() => {
                                 <button
                                     type="button"
                                     onClick={() => clearDice()}
-                                    className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
+                                    className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-rose-400 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
                                     title="بستن"
                                     aria-label="بستن نتایج"
                                 >
@@ -211,7 +211,7 @@ export const DiceOverlay = memo(() => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-[38vh] overflow-y-auto pr-1 custom-scrollbar">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 sm:gap-2 max-h-[24vh] sm:max-h-[38vh] overflow-y-auto pr-1 custom-scrollbar">
                             {results.map((r) => {
                                 const themeCfg = DICE_THEMES[r.theme] || DICE_THEMES.midnight;
                                 const cfg = ALL_DICE_BUTTONS.find((d) => d.type === r.type);
@@ -222,7 +222,7 @@ export const DiceOverlay = memo(() => {
                                         key={r.id}
                                         dir="ltr"
                                         className={cn(
-                                            "flex items-center justify-between px-3 py-2 rounded-2xl border transition-all select-none gap-2.5",
+                                            "flex items-center justify-between px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-2xl border transition-all select-none gap-2",
                                             isCritDie
                                                 ? "bg-amber-500/20 border-amber-400 text-amber-200 shadow-[0_0_12px_rgba(251,191,36,0.3)] ring-1 ring-amber-400/40"
                                                 : "bg-zinc-900/90 border-zinc-800 text-zinc-200"
@@ -234,12 +234,12 @@ export const DiceOverlay = memo(() => {
                                                 style={{ background: themeCfg.bgCenter }}
                                                 title={`تم: ${themeCfg.name}`}
                                             />
-                                            <span className="font-mono font-bold text-[11px] text-zinc-400 uppercase tracking-wider bg-zinc-950/70 px-2 py-0.5 rounded-lg border border-zinc-800/80">
+                                            <span className="font-mono font-bold text-[10px] sm:text-[11px] text-zinc-400 uppercase tracking-wider bg-zinc-950/70 px-1.5 sm:px-2 py-0.5 rounded-lg border border-zinc-800/80">
                                                 {r.type}
                                             </span>
                                         </div>
 
-                                        <span className="font-mono font-black text-base text-amber-400 shrink-0">
+                                        <span className="font-mono font-black text-sm sm:text-base text-amber-400 shrink-0">
                                             {formatDieDisplayValue(r)}
                                         </span>
                                     </div>
@@ -251,11 +251,11 @@ export const DiceOverlay = memo(() => {
             )}
 
             {isOpen && !isRemoteRoll && (
-                <div className="absolute bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 sm:left-6 sm:translate-x-0 pointer-events-auto flex flex-col items-center sm:items-start gap-1.5 max-w-[96vw] sm:max-w-xl z-20 animate-fade-in-up">
+                <div className="absolute bottom-[calc(4.4rem+env(safe-area-inset-bottom,0px))] sm:bottom-6 left-1/2 -translate-x-1/2 sm:left-6 sm:translate-x-0 pointer-events-auto flex flex-col items-center sm:items-start gap-1.5 w-[94vw] sm:w-auto max-w-[96vw] sm:max-w-xl z-20 animate-fade-in-up">
                     <button
                         type="button"
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="px-3.5 py-1 rounded-full bg-zinc-950/90 hover:bg-zinc-900 border border-zinc-800 hover:border-amber-500/50 text-zinc-300 hover:text-amber-400 text-[10px] font-bold flex items-center gap-1.5 shadow-lg backdrop-blur-md active:scale-95 transition-all cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-full bg-zinc-950/90 hover:bg-zinc-900 border border-zinc-800 hover:border-amber-500/50 text-zinc-300 hover:text-amber-400 text-[10px] font-bold flex items-center gap-1.5 shadow-lg backdrop-blur-md active:scale-95 transition-all cursor-pointer"
                     >
                         <span>{isMenuOpen ? 'بستن منو' : 'باز کردن منوی تاس'}</span>
                         {isMenuOpen ? <ChevronDown className="w-3.5 h-3.5 text-amber-400" /> : <ChevronUp className="w-3.5 h-3.5 text-amber-400" />}
@@ -264,8 +264,8 @@ export const DiceOverlay = memo(() => {
                     {isMenuOpen && (
                         <div className="flex flex-col gap-2 w-full animate-fade-in-up">
                             {mode === 'pool' && dicePool.length > 0 && (
-                                <div className="bg-zinc-950/95 border border-amber-500/30 p-2 sm:p-2.5 rounded-2xl shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-3 w-full animate-fade-in-up">
-                                    <div className="flex items-center gap-1.5 flex-wrap overflow-x-auto max-h-24 pr-1 custom-scrollbar" dir="ltr">
+                                <div className="bg-zinc-950/95 border border-amber-500/30 p-2 sm:p-2.5 rounded-2xl shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-2 sm:gap-3 w-full animate-fade-in-up">
+                                    <div className="flex items-center gap-1.5 flex-wrap overflow-x-auto max-h-20 sm:max-h-24 pr-1 custom-scrollbar" dir="ltr">
                                         {dicePool.map((item, idx) => {
                                             const tCfg = DICE_THEMES[item.theme] || DICE_THEMES.midnight;
                                             return (
@@ -290,11 +290,11 @@ export const DiceOverlay = memo(() => {
                                         })}
                                     </div>
 
-                                    <div className="flex items-center gap-2 shrink-0 border-r border-zinc-800/80 pr-2.5 mr-0.5">
+                                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 border-r border-zinc-800/80 pr-2 mr-0.5">
                                         <button
                                             type="button"
                                             onClick={handleClearPool}
-                                            className="p-2 text-zinc-400 hover:text-rose-400 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
+                                            className="w-9 h-9 flex items-center justify-center text-zinc-400 hover:text-rose-400 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
                                             title="پاکسازی تمام استخر"
                                             aria-label="پاکسازی تمام استخر"
                                         >
@@ -304,17 +304,17 @@ export const DiceOverlay = memo(() => {
                                         <button
                                             type="button"
                                             onClick={handleRollPool}
-                                            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 text-zinc-950 font-black text-xs shadow-lg shadow-amber-500/25 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer border border-amber-300"
+                                            className="px-3.5 sm:px-4 h-9.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 text-zinc-950 font-black text-xs shadow-lg shadow-amber-500/25 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer border border-amber-300 whitespace-nowrap"
                                         >
-                                            <Dices className="w-4 h-4" />
+                                            <Dices className="w-4 h-4 shrink-0" />
                                             <span>پرتاب ({dicePool.length})</span>
                                         </button>
                                     </div>
                                 </div>
                             )}
 
-                            <div className="w-full bg-zinc-950/95 border border-zinc-800/90 p-2 sm:p-2.5 rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.85)] backdrop-blur-2xl flex flex-col gap-2.5">
-                                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5" dir="ltr">
+                            <div className="w-full bg-zinc-950/95 border border-zinc-800/90 p-2 sm:p-2.5 rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.85)] backdrop-blur-2xl flex flex-col gap-2">
+                                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" dir="ltr">
                                     {ALL_DICE_BUTTONS.map((d) => {
                                         const inPoolCount = dicePool.filter((item) => item.type === d.type).length;
                                         const IconComp = d.icon;
@@ -331,12 +331,12 @@ export const DiceOverlay = memo(() => {
                                                     }
                                                 }}
                                                 aria-label={`تاس ${d.label}`}
-                                                className="relative py-2 px-2.5 sm:px-3 rounded-2xl bg-zinc-900/90 hover:bg-zinc-850 border border-zinc-800 hover:border-amber-500/50 text-amber-300 font-mono text-[11px] sm:text-xs font-bold transition-all shrink-0 active:scale-90 cursor-pointer flex items-center gap-1 shadow-sm"
+                                                className="relative min-h-[38px] py-2 px-3 rounded-2xl bg-zinc-900/90 hover:bg-zinc-850 border border-zinc-800 hover:border-amber-500/50 text-amber-300 font-mono text-xs font-bold transition-all shrink-0 active:scale-90 cursor-pointer flex items-center gap-1 shadow-sm"
                                             >
                                                 <span>{d.label}</span>
                                                 {IconComp && <IconComp className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
                                                 {mode === 'pool' && inPoolCount > 0 && (
-                                                    <span className="w-3.5 h-3.5 bg-amber-500 text-zinc-950 text-[9px] font-sans font-black rounded-full flex items-center justify-center -mr-1 shadow-sm">
+                                                    <span className="w-4 h-4 bg-amber-500 text-zinc-950 text-[9px] font-sans font-black rounded-full flex items-center justify-center -mr-1 shadow-sm">
                                                         {inPoolCount}
                                                     </span>
                                                 )}
@@ -345,8 +345,8 @@ export const DiceOverlay = memo(() => {
                                     })}
                                 </div>
 
-                                <div className="flex items-center justify-between pt-0.5 px-1" dir="ltr">
-                                    <div className="flex items-center gap-1.5 bg-zinc-900/90 p-1 rounded-2xl border border-zinc-800/80">
+                                <div className="flex items-center justify-between gap-2 pt-0.5 px-0.5 overflow-x-auto no-scrollbar" dir="ltr">
+                                    <div className="flex items-center gap-1.5 bg-zinc-900/90 p-1.5 rounded-2xl border border-zinc-800/80 shrink-0">
                                         {Object.values(DICE_THEMES).map((t) => (
                                             <button
                                                 key={t.id}
@@ -355,7 +355,7 @@ export const DiceOverlay = memo(() => {
                                                 title={`تم ${t.name}`}
                                                 aria-label={`انتخاب تم ${t.name}`}
                                                 className={cn(
-                                                    "w-5 h-5 rounded-full transition-all duration-150 relative cursor-pointer active:scale-75",
+                                                    "w-5.5 h-5.5 sm:w-5 sm:h-5 rounded-full transition-all duration-150 relative cursor-pointer active:scale-75 shrink-0",
                                                     selectedTheme === t.id
                                                         ? "ring-2 ring-amber-400 scale-110 shadow-[0_0_10px_rgba(251,191,36,0.6)] z-10"
                                                         : "opacity-60 hover:opacity-100"
@@ -368,14 +368,14 @@ export const DiceOverlay = memo(() => {
                                         ))}
                                     </div>
 
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1.5 shrink-0">
                                         <div className="flex items-center bg-zinc-900/90 p-0.5 rounded-xl border border-zinc-800">
                                             <button
                                                 type="button"
                                                 onClick={() => setMode('quick')}
                                                 aria-label="پرتاب سریع تکی"
                                                 className={cn(
-                                                    "p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer active:scale-95",
+                                                    "w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all cursor-pointer active:scale-95",
                                                     mode === 'quick' ? "bg-amber-500 text-zinc-950 shadow-sm" : "text-zinc-400 hover:text-zinc-200"
                                                 )}
                                                 title="پرتاب سریع تکی"
@@ -387,7 +387,7 @@ export const DiceOverlay = memo(() => {
                                                 onClick={() => setMode('pool')}
                                                 aria-label="پرتاب استخر چندتایی"
                                                 className={cn(
-                                                    "p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer active:scale-95",
+                                                    "w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all cursor-pointer active:scale-95",
                                                     mode === 'pool' ? "bg-amber-500 text-zinc-950 shadow-sm" : "text-zinc-400 hover:text-zinc-200"
                                                 )}
                                                 title="استخر پرتاب همزمان چند تاس"
@@ -402,7 +402,7 @@ export const DiceOverlay = memo(() => {
                                                 clearDice();
                                                 setDicePool([]);
                                             }}
-                                            className="p-2 text-zinc-400 hover:text-rose-400 rounded-xl bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700 active:scale-90 transition-all cursor-pointer"
+                                            className="w-8.5 h-8.5 flex items-center justify-center text-zinc-400 hover:text-rose-400 rounded-xl bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700 active:scale-90 transition-all cursor-pointer"
                                             title="پاکسازی میز"
                                             aria-label="پاکسازی میز"
                                         >
@@ -415,11 +415,11 @@ export const DiceOverlay = memo(() => {
                                                 clearDice();
                                                 setOpen(false);
                                             }}
-                                            className="p-2 text-zinc-400 hover:text-rose-400 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
+                                            className="w-8.5 h-8.5 flex items-center justify-center text-zinc-400 hover:text-rose-400 rounded-xl hover:bg-zinc-900 active:scale-90 transition-all cursor-pointer"
                                             title="بستن داک"
                                             aria-label="بستن داک"
                                         >
-                                            <X className="w-3.5 h-3.5" />
+                                            <X className="w-4 h-4" />
                                         </button>
                                     </div>
                                 </div>

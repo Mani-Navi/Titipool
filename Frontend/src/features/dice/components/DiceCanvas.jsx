@@ -50,6 +50,23 @@ function ClickThroughManager() {
             }
         };
 
+        const checkIntersectsAt = (clientX, clientY) => {
+            if (!gl.domElement) return false;
+            const meshes = diceMeshesRef.current;
+            if (!meshes || meshes.length === 0) return false;
+
+            const rect = rectRef.current || gl.domElement.getBoundingClientRect();
+            if (!rectRef.current) rectRef.current = rect;
+            if (rect.width === 0 || rect.height === 0) return false;
+
+            mouseRef.current.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+            mouseRef.current.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycasterRef.current.setFromCamera(mouseRef.current, camera);
+            const intersects = raycasterRef.current.intersectObjects(meshes, false);
+            return intersects.length > 0;
+        };
+
         const processRaycast = () => {
             rafId = null;
             if (!gl.domElement) return;
@@ -61,24 +78,7 @@ function ClickThroughManager() {
                 return;
             }
 
-            const meshes = diceMeshesRef.current;
-            if (!meshes || meshes.length === 0) {
-                if (gl.domElement.style.pointerEvents !== 'none') {
-                    gl.domElement.style.pointerEvents = 'none';
-                }
-                return;
-            }
-
-            const rect = rectRef.current || gl.domElement.getBoundingClientRect();
-            if (!rectRef.current) rectRef.current = rect;
-            if (rect.width === 0 || rect.height === 0) return;
-
-            mouseRef.current.x = ((lastClientX - rect.left) / rect.width) * 2 - 1;
-            mouseRef.current.y = -((lastClientY - rect.top) / rect.height) * 2 + 1;
-
-            raycasterRef.current.setFromCamera(mouseRef.current, camera);
-            const intersects = raycasterRef.current.intersectObjects(meshes, false);
-            const hitsDie = intersects.length > 0;
+            const hitsDie = checkIntersectsAt(lastClientX, lastClientY);
 
             if (hitsDie) {
                 if (!isHoveredOnDie) {
@@ -99,9 +99,51 @@ function ClickThroughManager() {
             }
         };
 
+        // پشتیبانی از لمس مستقیم تاس در موبایل (بدون نیاز به هاور قبلی ماوس)
+        const handlePointerDownCapture = (e) => {
+            if (!gl.domElement) return;
+            if (e.target === gl.domElement) return;
+
+            const hitsDie = checkIntersectsAt(e.clientX, e.clientY);
+            if (hitsDie) {
+                isHoveredOnDie = true;
+                gl.domElement.style.pointerEvents = 'auto';
+                e.stopPropagation();
+
+                try {
+                    const clonedEvent = new PointerEvent('pointerdown', {
+                        bubbles: true,
+                        cancelable: true,
+                        clientX: e.clientX,
+                        clientY: e.clientY,
+                        pointerId: e.pointerId,
+                        pointerType: e.pointerType,
+                        isPrimary: e.isPrimary,
+                        button: e.button ?? 0,
+                        buttons: e.buttons || 1,
+                    });
+                    gl.domElement.dispatchEvent(clonedEvent);
+                } catch {
+                    // Fallback for older mobile WebViews
+                }
+            }
+        };
+
+        const handlePointerUpOrCancel = () => {
+            if (document.body.style.cursor !== 'grabbing' && isHoveredOnDie) {
+                isHoveredOnDie = false;
+                if (gl.domElement) {
+                    gl.domElement.style.pointerEvents = 'none';
+                }
+            }
+        };
+
         gl.domElement.style.pointerEvents = 'none';
 
+        window.addEventListener('pointerdown', handlePointerDownCapture, { capture: true });
         window.addEventListener('pointermove', handlePointerMove, { passive: true });
+        window.addEventListener('pointerup', handlePointerUpOrCancel, { passive: true });
+        window.addEventListener('pointercancel', handlePointerUpOrCancel, { passive: true });
         window.addEventListener('resize', updateRect, { passive: true });
         window.addEventListener('scroll', updateRect, { passive: true });
 
@@ -109,7 +151,10 @@ function ClickThroughManager() {
             if (rafId !== null) {
                 window.cancelAnimationFrame(rafId);
             }
+            window.removeEventListener('pointerdown', handlePointerDownCapture, { capture: true });
             window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerup', handlePointerUpOrCancel);
+            window.removeEventListener('pointercancel', handlePointerUpOrCancel);
             window.removeEventListener('resize', updateRect);
             window.removeEventListener('scroll', updateRect);
             if (gl.domElement) {
@@ -140,6 +185,7 @@ export const DiceCanvas = memo(({ overlayMode = false }) => {
     return (
         <Canvas
             shadows
+            dpr={[1, 2]}
             gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
             camera={{ position: [0, 16, 0.01], fov: 45 }}
             style={{
