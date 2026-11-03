@@ -15,7 +15,7 @@ import { useSceneStore } from "../../stores/scene.store";
 import { useAuthStore } from "../../stores/auth.store";
 import { assetApi, getAssetUrl } from "../../api/asset.api";
 import { MAP_PRESETS } from "../../constants/mapPresets";
-import { TOKEN_PRESETS } from "../../constants/tokenPresets";
+import { TOKEN_PRESETS, TOKEN_CATEGORIES } from "../../constants/tokenPresets";
 import { Button } from "../ui/Button";
 import { cn } from "../../utils/cn";
 import { uiAudio } from "../../utils/uiAudio";
@@ -34,10 +34,12 @@ const resolveAssetUrl = (asset) => {
   if (!asset) return "";
   if (typeof asset === "string") return getAssetUrl(asset);
   const raw =
+      asset.imageUrl ||
       asset.avatarUrl ||
       asset.assetUrl ||
       asset.url ||
       asset.fileUrl ||
+      asset.thumbnail ||
       asset.thumbnailUrl ||
       asset.filePath ||
       asset.path ||
@@ -57,6 +59,7 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
   const fileInputRef = useRef(null);
 
   const [activeTab, setActiveTab] = useState("maps");
+  const [tokenCategory, setTokenCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [userAssets, setUserAssets] = useState([]);
@@ -106,10 +109,11 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
     const fullUrl = getAssetUrl(rawTokenUrl);
     const validAssetId = isValidUUID(extraData.id) ? extraData.id : null;
     const ownerId = currentUser?.id ? String(currentUser.id) : null;
+    const isPropItem = Boolean(extraData.isProp || extraData.category === "props");
 
     const newToken = {
-      name: tokenName || "توکن جدید",
-      label: tokenName || "توکن جدید",
+      name: tokenName || (isPropItem ? "شیء جدید" : "توکن جدید"),
+      label: tokenName || (isPropItem ? "شیء جدید" : "توکن جدید"),
       avatarUrl: fullUrl,
       assetUrl: fullUrl,
       assetId: validAssetId,
@@ -119,7 +123,9 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
       hp: extraData.hp || extraData.maxHp || 20,
       maxHp: extraData.maxHp || 20,
       ac: extraData.ac || 12,
-      isProp: false,
+      isProp: isPropItem,
+      showHp: !isPropItem,
+      showAc: !isPropItem,
       goldValue: extraData.goldValue || 0,
       xpValue: extraData.xpValue || 0,
       controlledBy: ownerId,
@@ -219,13 +225,14 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
               (m.nameFa || "").includes(searchQuery)
       );
     }
-    return (TOKEN_PRESETS || []).filter(
-        (t) =>
-            t.category !== "props" &&
-            ((t.name || "").toLowerCase().includes(q) ||
-                (t.nameFa || "").includes(searchQuery))
-    );
-  }, [activeTab, searchQuery]);
+    return (TOKEN_PRESETS || []).filter((t) => {
+      const matchesCategory = tokenCategory === "all" || t.category === tokenCategory;
+      const matchesSearch =
+          (t.name || "").toLowerCase().includes(q) ||
+          (t.nameFa || "").includes(searchQuery);
+      return matchesCategory && matchesSearch;
+    });
+  }, [activeTab, tokenCategory, searchQuery]);
 
   const filteredUserAssets = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -292,7 +299,7 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
               </div>
               <div>
                 <h4 className="text-xs sm:text-sm font-bold">کتابخانه منابع (Asset Library)</h4>
-                <p className="text-[10px] sm:text-[11px] text-zinc-400">مدیریت نقشه‌ها و توکن‌ها</p>
+                <p className="text-[10px] sm:text-[11px] text-zinc-400">مدیریت نقشه‌ها، هیولاها، NPCها و اشیاء</p>
               </div>
             </div>
             <button
@@ -308,7 +315,7 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
           <div className="grid grid-cols-2 gap-1.5 bg-zinc-950 p-1 rounded-xl border border-zinc-800 my-3 shrink-0">
             {[
               { id: "maps", label: "نقشه‌ها", icon: MapPin },
-              { id: "tokens", label: "توکن‌ها", icon: Sparkles },
+              { id: "tokens", label: "توکن‌ها و اشیاء", icon: Sparkles },
             ].map((tab) => {
               const TabIcon = tab.icon;
               return (
@@ -334,14 +341,14 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
             })}
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 mb-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-2.5 shrink-0">
             <div className="relative flex-1 min-w-0">
               <Search className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
               <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="جستجو..."
+                  placeholder="جستجو در نام فارسی یا انگلیسی..."
                   className="w-full h-9.5 pl-3 pr-8 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-amber-500 transition-colors"
               />
             </div>
@@ -377,6 +384,30 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
               <span>آپلود {activeTab === "maps" ? "نقشه" : "توکن"}</span>
             </Button>
           </div>
+
+          {/* تب‌های دسته‌بندی ۳گانه توکن‌ها: Monster | NPC | Props */}
+          {activeTab === "tokens" && (
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-2 mb-1 border-b border-zinc-800/70 shrink-0">
+                {TOKEN_CATEGORIES.map((cat) => {
+                  const isSelected = tokenCategory === cat.id;
+                  return (
+                      <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setTokenCategory(cat.id)}
+                          className={cn(
+                              "px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 active:scale-95 border",
+                              isSelected
+                                  ? "bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-sm"
+                                  : "bg-zinc-950/80 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700"
+                          )}
+                      >
+                        {cat.label}
+                      </button>
+                  );
+                })}
+              </div>
+          )}
 
           {showUrlInput && (
               <form
@@ -434,7 +465,7 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
                             )}
                         >
                           <img
-                              src={resolveAssetUrl(map)}
+                              src={getAssetUrl(map.thumbnail || map.imageUrl)}
                               alt={map.nameFa ? `نقشه بازی ${map.nameFa}` : `نقشه بازی ${map.name}`}
                               crossOrigin="anonymous"
                               className="w-full h-24 object-cover group-hover:brightness-105 transition-all"
@@ -455,7 +486,7 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
                   <span className="text-[11px] font-bold text-zinc-400 mb-2 block">
                     {!hasActiveMap
                         ? "ابتدا نقشه را انتخاب کنید تا بتوانید توکن اضافه نمایید."
-                        : "برای افزودن، روی توکن کلیک یا لمس کنید:"}
+                        : "برای افزودن به مرکز نقشه، روی مورد دلخواه کلیک کنید:"}
                   </span>
                   <div className="grid grid-cols-2 xs:grid-cols-3 gap-2">
                     {filteredPresets.map((token) => (
@@ -463,21 +494,29 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
                             key={token.id}
                             onClick={() => handleAddToken(resolveAssetUrl(token), token.nameFa || token.name, token)}
                             className={cn(
-                                "group p-2.5 rounded-2xl border border-zinc-800 bg-zinc-950 transition-all duration-150 flex flex-col items-center gap-1.5 active:scale-95",
+                                "group relative p-2.5 rounded-2xl border border-zinc-800 bg-zinc-950 transition-all duration-150 flex flex-col items-center gap-1.5 active:scale-95",
                                 !hasActiveMap
                                     ? "opacity-50 cursor-not-allowed"
                                     : "hover:border-amber-500 cursor-pointer hover:bg-zinc-900"
                             )}
                         >
+                          {token.size && token.size !== 1 && (
+                              <span className="absolute top-1.5 left-1.5 text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-zinc-900/90 text-amber-400 border border-zinc-700">
+                                {token.size}x
+                              </span>
+                          )}
                           <img
                               src={resolveAssetUrl(token)}
-                              alt={token.nameFa ? `توکن کاراکتر ${token.nameFa}` : `توکن کاراکتر ${token.name}`}
+                              alt={token.nameFa ? `توکن ${token.nameFa}` : `توکن ${token.name}`}
                               crossOrigin="anonymous"
-                              className="w-12 h-12 rounded-full object-cover border-2 border-amber-500/40 shadow-md group-hover:border-amber-400 transition-all"
+                              className="w-13 h-13 rounded-full object-contain drop-shadow-md group-hover:scale-105 transition-transform"
                               loading="lazy"
                           />
-                          <span className="text-[11px] font-bold text-zinc-300 truncate max-w-full">
+                          <span className="text-[11px] font-bold text-zinc-200 truncate max-w-full text-center">
                             {token.nameFa || token.name}
+                          </span>
+                          <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full">
+                            {token.name}
                           </span>
                         </div>
                     ))}
@@ -531,7 +570,6 @@ export const AssetMenu = memo(({ isGM = false, permissions = {} }) => {
                               {asset.name}
                             </span>
 
-                            {/* دکمه حذف در موبایل همیشه نمایان است و در دسکتاپ با هاور ظاهر می‌شود */}
                             <button
                                 type="button"
                                 onClick={(e) => handleDeleteAsset(e, asset.id)}
