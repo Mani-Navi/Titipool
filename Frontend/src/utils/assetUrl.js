@@ -35,7 +35,13 @@ export function getFullAssetUrl(url) {
         return trimmed;
     }
 
-    // نرمال‌سازی مسیر آدرس‌های آپلودشده محلی سرور
     const cleanPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+
+    // فایل‌های استاتیک پیش‌فرض داخل پوشه public فرانت‌اند (/presets/ و /images/)
+    if (cleanPath.startsWith("/presets/") || cleanPath.startsWith("/images/")) {
+        return cleanPath;
+    }
+
+    // نرمال‌سازی مسیر آدرس‌های آپلودشده کاربران روی بک‌اند (/uploads/)
     return `${BACKEND_BASE}${cleanPath}`;
 }
