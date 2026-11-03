@@ -37,9 +37,13 @@ export function getFullAssetUrl(url) {
 
     const cleanPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 
-    // فایل‌های استاتیک پیش‌فرض داخل پوشه public فرانت‌اند (/presets/ و /images/)
+    // فایل‌های استاتیک پیش‌فرض داخل پوشه public فرانت‌اند (/presets/ و /images/) با کدگذاری امن فاصله‌ها
     if (cleanPath.startsWith("/presets/") || cleanPath.startsWith("/images/")) {
-        return cleanPath;
+        try {
+            return encodeURI(decodeURI(cleanPath));
+        } catch {
+            return encodeURI(cleanPath);
+        }
     }
 
     // نرمال‌سازی مسیر آدرس‌های آپلودشده کاربران روی بک‌اند (/uploads/)

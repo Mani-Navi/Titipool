@@ -6,6 +6,8 @@ import com.VTT.V10.user.User;
 import com.VTT.V10.user.UserRepository;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.googleapis.auth.oauth2.GooglePublicKeysManager;
+import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import jakarta.annotation.PostConstruct;
@@ -27,6 +29,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Authentication service supporting hybrid Email/Password and Google OAuth accounts.
@@ -47,9 +50,10 @@ public class AuthService {
     private String googleClientId;
 
     private GoogleIdTokenVerifier verifier;
+    private GooglePublicKeysManager publicKeysManager;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(5))
+            .connectTimeout(Duration.ofSeconds(4))
             .build();
 
     public static boolean hasUsablePassword(User user) {
@@ -61,13 +65,25 @@ public class AuthService {
     @PostConstruct
     public void initGoogleVerifier() {
         if (googleClientId != null && !googleClientId.isBlank()) {
-            this.verifier = new GoogleIdTokenVerifier.Builder(
-                    new NetHttpTransport(),
+            HttpTransport transport = new NetHttpTransport.Builder().build();
+            this.publicKeysManager = new GooglePublicKeysManager.Builder(
+                    transport,
                     GsonFactory.getDefaultInstance()
-            )
+            ).build();
+
+            this.verifier = new GoogleIdTokenVerifier.Builder(this.publicKeysManager)
                     .setAudience(Collections.singletonList(googleClientId.trim()))
                     .build();
-            log.info("Google Token Verifier initialized successfully.");
+
+            // Pre-warm Google public keys in background on startup to avoid cold-start latency on first login
+            CompletableFuture.runAsync(() -> {
+                try {
+                    this.publicKeysManager.refresh();
+                    log.info("Google OAuth public certificates pre-warmed and cached in memory.");
+                } catch (Exception e) {
+                    log.warn("Could not pre-warm Google certificates on startup: {}", e.getMessage());
+                }
+            });
         } else {
             log.warn("GOOGLE_CLIENT_ID is not configured.");
         }
@@ -275,7 +291,7 @@ public class AuthService {
         try {
             HttpRequest tokenInfoReq = HttpRequest.newBuilder()
                     .uri(URI.create("https://oauth2.googleapis.com/tokeninfo?id_token=" + idTokenString.trim()))
-                    .timeout(Duration.ofSeconds(5))
+                    .timeout(Duration.ofSeconds(4))
                     .GET()
                     .build();
 

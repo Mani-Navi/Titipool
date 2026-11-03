@@ -17,6 +17,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class Application {
 
 	public static void main(String[] args) {
+		// Force IPv4 stack in Docker/Linux to prevent 20-second IPv6 DNS/socket timeouts on outbound Google OAuth calls
+		System.setProperty("java.net.preferIPv4Stack", "true");
 		SpringApplication.run(Application.class, args);
 	}
 }
