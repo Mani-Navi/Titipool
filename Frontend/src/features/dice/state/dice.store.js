@@ -15,7 +15,7 @@ const getCurrentUser = () => {
     try {
         const stored = localStorage.getItem('vtt_user');
         if (stored) return JSON.parse(stored);
-    } catch (e) {}
+    } catch {}
     return { username: 'بازیکن' };
 };
 
@@ -23,7 +23,7 @@ const getSavedTheme = () => {
     try {
         const saved = localStorage.getItem('vtt_dice_theme');
         if (saved) return saved;
-    } catch (e) {}
+    } catch {}
     return 'midnight';
 };
 
@@ -43,7 +43,7 @@ export const useDiceStore = create((set, get) => ({
     setSelectedTheme: (theme) => {
         try {
             localStorage.setItem('vtt_dice_theme', theme);
-        } catch (e) {}
+        } catch {}
         set({ selectedTheme: theme });
     },
 
@@ -56,7 +56,6 @@ export const useDiceStore = create((set, get) => ({
         const defaultTheme = get().selectedTheme;
         const rollTimestamp = Date.now();
 
-        // در هر پرتاب برای تمام تاس‌ها شناسه کاملاً جدید تولید می‌شود تا نمونه‌های قبلی Re-mount شوند
         const newDice = diceSpecs.map((item, idx) => {
             const type = typeof item === 'string' ? item : item.type || 'd20';
             const theme = typeof item === 'object' && item.theme ? item.theme : defaultTheme;
@@ -217,30 +216,37 @@ export const useDiceStore = create((set, get) => ({
 
         const allSettled = updatedDice.every((d) => d.settled);
 
-        // محاسبه دقیق درصدگان D&D (جفت کردن d100 دهگان با d10 یکان)
+        // محاسبه دقیق امتیاز برای سه‌تایی‌های D1000 (d1000 + d100 + d10) و دوتایی‌های D100 (d100 + d10)
         let sum = 0;
+        const d1000List = newResults.filter((r) => r.type === 'd1000');
         const d100List = newResults.filter((r) => r.type === 'd100');
         const d10List = newResults.filter((r) => r.type === 'd10');
+        const pairedIds = new Set();
 
-        if (d100List.length > 0 && d10List.length > 0) {
-            const pairCount = Math.min(d100List.length, d10List.length);
-            const pairedIds = new Set();
+        const tripletCount = Math.min(d1000List.length, d100List.length, d10List.length);
+        for (let i = 0; i < tripletCount; i++) {
+            const hundredsVal = Number(d1000List[i].value) || 0;
+            const tensVal = Number(d100List[i].value) || 0;
+            const onesVal = Number(d10List[i].value) || 0;
+            sum += (hundredsVal === 0 && tensVal === 0 && onesVal === 0)
+                ? 1000
+                : (hundredsVal + tensVal + onesVal);
+            pairedIds.add(d1000List[i].id);
+            pairedIds.add(d100List[i].id);
+            pairedIds.add(d10List[i].id);
+        }
 
-            for (let i = 0; i < pairCount; i++) {
-                const tensVal = Number(d100List[i].value) || 0;
-                const onesVal = Number(d10List[i].value) || 0;
-                sum += (tensVal === 0 && onesVal === 0 ? 100 : tensVal + onesVal);
-                pairedIds.add(d100List[i].id);
-                pairedIds.add(d10List[i].id);
-            }
+        const pairCount = Math.min(d100List.length, d10List.length);
+        for (let i = tripletCount; i < pairCount; i++) {
+            const tensVal = Number(d100List[i].value) || 0;
+            const onesVal = Number(d10List[i].value) || 0;
+            sum += (tensVal === 0 && onesVal === 0) ? 100 : (tensVal + onesVal);
+            pairedIds.add(d100List[i].id);
+            pairedIds.add(d10List[i].id);
+        }
 
-            for (let i = 0; i < newResults.length; i++) {
-                if (!pairedIds.has(newResults[i].id)) {
-                    sum += Number(newResults[i].value) || 0;
-                }
-            }
-        } else {
-            for (let i = 0; i < newResults.length; i++) {
+        for (let i = 0; i < newResults.length; i++) {
+            if (!pairedIds.has(newResults[i].id)) {
                 sum += Number(newResults[i].value) || 0;
             }
         }

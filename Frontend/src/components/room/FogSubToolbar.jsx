@@ -113,11 +113,24 @@ export const FogSubToolbar = memo(() => {
         });
     };
 
+    const unfillFog = useSceneStore((state) => state.unfillFog);
+
     const handleToggleFillFog = () => {
         if (!currentScene) return;
 
         if (isFogFilled) {
-            handleClearAll();
+            unfillFog();
+
+            const payload = {
+                sceneId: currentScene.id,
+                type: "UNFILL_ALL",
+                fogFilled: false,
+                mode: "unfill_all",
+                points: { mode: "unfill_all", isCover: false },
+            };
+
+            wsService.send(WS_EVENTS.FOG_UPDATED || "FOG_UPDATE", payload);
+            wsService.send("FOG_UNFILL", payload);
         } else {
             fillFog();
 

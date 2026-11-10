@@ -16,6 +16,7 @@ public class RoomMemberResponse {
     private UUID userId;
     private String username;
     private String email;
+    private String avatarUrl;
     private String role;
     private String roleTitle;
     private Boolean isOwner;

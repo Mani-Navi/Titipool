@@ -41,7 +41,7 @@ class WebSocketService {
             try {
                 this.clearSubscriptions();
                 this.client.deactivate();
-            } catch (ignored) {}
+            } catch {}
             this.client = null;
         }
 
@@ -131,7 +131,7 @@ class WebSocketService {
         for (let i = 0; i < this.subscriptions.length; i++) {
             try {
                 this.subscriptions[i].unsubscribe();
-            } catch (ignored) {}
+            } catch {}
         }
         this.subscriptions = [];
     }
@@ -152,7 +152,7 @@ class WebSocketService {
                     destination: `/app/room/${this.currentRoomId}/presence/leave`,
                     body: JSON.stringify({}),
                 });
-            } catch (ignored) {}
+            } catch {}
         }
     }
 
@@ -162,7 +162,7 @@ class WebSocketService {
         if (this.client) {
             try {
                 this.client.deactivate();
-            } catch (ignored) {}
+            } catch {}
             this.client = null;
         }
         this.isConnected = false;
@@ -212,6 +212,8 @@ class WebSocketService {
             case WS_EVENTS.FOG_UPDATED:
             case "FOG_UPDATE":
             case "FOG_CLEAR":
+            case "FOG_FILL":
+            case "FOG_UNFILL":
                 destination = `/app/room/${this.currentRoomId}/fog`;
                 action = type;
                 break;
@@ -364,8 +366,14 @@ class WebSocketService {
                 }
                 break;
             case "FOG_CLEAR":
+                // فقط مه پاک می‌شود و به هیچ وجه به ترسیمات (DRAWINGS_CLEARED) دست زده نمی‌شود
                 this.trigger("FOG_CLEAR", eventData);
-                this.trigger(WS_EVENTS.DRAWINGS_CLEARED, eventData);
+                break;
+            case "FOG_FILL":
+                this.trigger("FOG_FILL", eventData);
+                break;
+            case "FOG_UNFILL":
+                this.trigger("FOG_UNFILL", eventData);
                 break;
             case "FOG_LIVE":
                 this.trigger("FOG_LIVE", eventData);
