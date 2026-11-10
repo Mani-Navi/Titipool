@@ -2,16 +2,16 @@ package com.VTT.V10.room;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * High-performance repository for Token entities utilizing eager EntityGraphs
- * to eliminate N+1 queries during real-time movement and scene state loading.
- */
 @Repository
 public interface TokenRepository extends JpaRepository<Token, UUID> {
 
@@ -23,5 +23,8 @@ public interface TokenRepository extends JpaRepository<Token, UUID> {
 
     boolean existsBySceneIdAndControlledBy(UUID sceneId, String controlledBy);
 
-    void deleteBySceneId(UUID sceneId);
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional
+    @Query("DELETE FROM Token t WHERE t.scene.id = :sceneId")
+    void deleteBySceneId(@Param("sceneId") UUID sceneId);
 }
