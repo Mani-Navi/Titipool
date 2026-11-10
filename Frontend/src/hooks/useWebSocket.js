@@ -396,7 +396,6 @@ export function useWebSocket(roomId, onMessage = null) {
     });
 
     return () => {
-      unsubFogUnfill();
       unsubUsers();
       unsubRoomClosed();
       unsubRoomDeleted();
@@ -422,7 +421,6 @@ export function useWebSocket(roomId, onMessage = null) {
       unsubFogClear();
       unsubFogCleared();
       unsubFogFill();
-      unsubFogFilled();
       unsubFogLive();
       unsubFogLiveEnd();
       unsubFogGlobalReveal();
