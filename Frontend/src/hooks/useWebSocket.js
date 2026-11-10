@@ -129,9 +129,19 @@ export function useWebSocket(roomId, onMessage = null) {
       const type = String(data.type || data.mode || "").toUpperCase();
 
       if (
+          type === "CLEAR_ALL" ||
+          type === "CLEAR" ||
+          data.mode === "clear_all" ||
+          data.fogCleared === true
+      ) {
+        store.clearFog();
+        if (onMessageRef.current) onMessageRef.current(data);
+        return;
+      }
+
+      if (
           type === "UNFILL_ALL" ||
-          data.mode === "unfill_all" ||
-          data.fogFilled === false && type !== "CLEAR_ALL" && type !== "CLEAR"
+          data.mode === "unfill_all"
       ) {
         store.unfillFog?.();
         if (onMessageRef.current) onMessageRef.current(data);
@@ -187,6 +197,9 @@ export function useWebSocket(roomId, onMessage = null) {
       useSceneStore.getState().clearFog();
     });
     const unsubFogFill = wsService.on("FOG_FILL", () => {
+      useSceneStore.getState().fillFog();
+    });
+    const unsubFogFilled = wsService.on("FOG_FILLED", () => {
       useSceneStore.getState().fillFog();
     });
     const unsubFogUnfill = wsService.on("FOG_UNFILL", () => {
@@ -421,6 +434,8 @@ export function useWebSocket(roomId, onMessage = null) {
       unsubFogClear();
       unsubFogCleared();
       unsubFogFill();
+      unsubFogFilled();
+      unsubFogUnfill();
       unsubFogLive();
       unsubFogLiveEnd();
       unsubFogGlobalReveal();
