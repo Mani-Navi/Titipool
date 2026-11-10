@@ -163,8 +163,13 @@ public class FogService {
         }
 
         if ("FILL_ALL".equalsIgnoreCase(eventType)) {
-            fogRepository.deleteBySceneId(event.getSceneId());
             scene.setFogFilled(true);
+            sceneRepository.saveAndFlush(scene);
+            return;
+        }
+
+        if ("UNFILL_ALL".equalsIgnoreCase(eventType)) {
+            scene.setFogFilled(false);
             sceneRepository.saveAndFlush(scene);
             return;
         }
