@@ -27,7 +27,7 @@ const normalizeFogRegion = (fog) => {
     if (!fog) return null;
 
     const rawType = String(fog.type || fog.mode || "").toUpperCase();
-    if (rawType === "CLEAR_ALL" || rawType === "FILL_ALL") {
+    if (rawType === "CLEAR_ALL" || rawType === "FILL_ALL" || rawType === "UNFILL_ALL") {
         return null;
     }
 
@@ -712,9 +712,23 @@ export const useSceneStore = create((set, get) => ({
             return {
                 currentScene: {
                     ...state.currentScene,
-                    fogShapes: [],
                     fogEnabled: true,
                     fogFilled: true,
+                },
+                remoteLiveFog: null,
+            };
+        });
+    },
+
+    unfillFog: () => {
+        set((state) => {
+            if (!state.currentScene) return state;
+            const existingShapes = state.currentScene.fogShapes || [];
+            return {
+                currentScene: {
+                    ...state.currentScene,
+                    fogEnabled: existingShapes.length > 0,
+                    fogFilled: false,
                 },
                 remoteLiveFog: null,
             };

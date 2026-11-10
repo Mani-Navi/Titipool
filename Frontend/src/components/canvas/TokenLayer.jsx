@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
+import Konva from "konva";
 import { Group, Circle, Text, Rect, Image as KonvaImage } from "react-konva";
 import { useCanvasStore } from "../../stores/canvas.store";
 import { useSceneStore } from "../../stores/scene.store";
@@ -10,6 +11,11 @@ import { useAuthStore } from "../../stores/auth.store";
 import { useRoomStore } from "../../stores/room.store";
 import { snapToGrid } from "../../utils/grid";
 import { WS_EVENTS } from "../../constants/wsEvents.js";
+import { isRpgAvatarId, loadRpgAvatarCanvasImage } from "../profile/RpgAvatar";
+
+// جلوگیری از حرکت ناخواسته توکن هنگام کلیک عادی (درگ فقط با کشیدن حداقل ۸ پیکسل فعال می‌شود)
+Konva.dragDistance = 8;
+Konva.dragButtons = [0];
 
 const MAX_TOKEN_CACHE_ENTRIES = 150;
 const tokenImageCache = new Map();
@@ -59,6 +65,7 @@ const SingleToken = memo(
          canEdit,
          isGM,
          fallbackUsername = "",
+         fallbackAvatar = "cowboy",
          clusterOffset = DEFAULT_CLUSTER_OFFSET,
          clusterScale = 1,
          onSelect,
@@ -69,24 +76,49 @@ const SingleToken = memo(
         const moveToken = useSceneStore((state) => state.moveToken);
         const groupRef = useRef(null);
 
-        const rawUrl = token.avatarUrl || token.assetUrl || "";
+        const rawUrl = token.avatarUrl || token.assetUrl || (!token.isProp ? fallbackAvatar : "");
         const tokenPixelSize = (token.size || 1) * gridSize;
         const radius = Math.max(16, tokenPixelSize / 2);
 
         useEffect(() => {
-            if (!rawUrl || rawUrl.trim() === "" || rawUrl.length < 4) {
+            if (!rawUrl || rawUrl.trim() === "") {
+                setImageObj(null);
+                return;
+            }
+
+            let isMounted = true;
+
+            // ۱. اگر آواتار از نوع شناسه‌های شیت آواتار RPG پروفایل باشد (مثل cowboy, wizard, warrior)
+            if (isRpgAvatarId(rawUrl)) {
+                loadRpgAvatarCanvasImage(rawUrl)
+                    .then((croppedImg) => {
+                        if (isMounted) setImageObj(croppedImg);
+                    })
+                    .catch(() => {
+                        if (isMounted) setImageObj(null);
+                    });
+                return () => {
+                    isMounted = false;
+                };
+            }
+
+            // ۲. اگر لینک تصویر معمولی یا آپلودی باشد
+            if (rawUrl.length < 4) {
                 setImageObj(null);
                 return;
             }
 
             const fullUrl = getFullAssetUrl(rawUrl);
+            if (!fullUrl) {
+                setImageObj(null);
+                return;
+            }
 
             if (tokenImageCache.has(fullUrl)) {
                 setImageObj(tokenImageCache.get(fullUrl));
                 return;
             }
 
-            let isMounted = true;
             const img = new window.Image();
             if (!fullUrl.startsWith("data:") && !fullUrl.startsWith("blob:")) {
                 img.crossOrigin = "anonymous";
@@ -106,27 +138,46 @@ const SingleToken = memo(
             };
         }, [rawUrl]);
 
+        const stopAnyActiveDrag = useCallback(() => {
+            if (groupRef.current && groupRef.current.isDragging()) {
+                groupRef.current.stopDrag();
+            }
+            setIsDragging(false);
+        }, []);
+
         const handleOpenEdit = useCallback(
             (e) => {
                 if (e) {
                     if (e.evt) e.evt.preventDefault();
                     e.cancelBubble = true;
                 }
+                stopAnyActiveDrag();
                 if (canEdit || canControl || isGM) {
                     onOpenEditor(token.id);
                 }
             },
-            [canEdit, canControl, isGM, onOpenEditor, token.id]
+            [canEdit, canControl, isGM, onOpenEditor, token.id, stopAnyActiveDrag]
         );
 
         const handleDragStart = useCallback((e) => {
+            // اگر دکمه چپ ماوس نگه داشته نشده است، درگ کاذب متوقف شود
+            if (e?.evt && e.evt.buttons !== undefined && (e.evt.buttons & 1) === 0) {
+                e.target.stopDrag();
+                return;
+            }
             if (e) {
                 e.cancelBubble = true;
-                if (e.evt) e.evt.cancelBubble = true;
             }
             setIsDragging(true);
-            onSelect(token.id, false);
-        }, [onSelect, token.id]);
+        }, []);
+
+        const handleDragMove = useCallback((e) => {
+            // گارد قطعی ضد چسبندگی: اگر کاربر دکمه چپ ماوس را رها کرده باشد، بلافاصله درگ قطع شود
+            if (e?.evt && e.evt.buttons !== undefined && (e.evt.buttons & 1) === 0) {
+                e.target.stopDrag();
+                setIsDragging(false);
+            }
+        }, []);
 
         let rawName = token.label || token.name;
         if (!rawName || rawName === "کاراکتر" || rawName === "توکن" || rawName === "توکن جدید") {
@@ -138,7 +189,6 @@ const SingleToken = memo(
             (e) => {
                 if (e) {
                     e.cancelBubble = true;
-                    if (e.evt) e.evt.cancelBubble = true;
                 }
                 setIsDragging(false);
                 const rawX = e.target.x();
@@ -177,11 +227,11 @@ const SingleToken = memo(
             (e) => {
                 if (e) {
                     e.cancelBubble = true;
-                    if (e.evt) e.evt.cancelBubble = true;
                 }
+                stopAnyActiveDrag();
                 onSelect(token.id, Boolean(e?.evt?.shiftKey || e?.evt?.ctrlKey));
             },
-            [onSelect, token.id]
+            [onSelect, token.id, stopAnyActiveDrag]
         );
 
         if (token.isHidden && !isGM) return null;
@@ -234,15 +284,13 @@ const SingleToken = memo(
                 onClick={handleSelectClick}
                 onTap={handleSelectClick}
                 onMouseDown={(e) => {
-                    if (e) {
-                        e.cancelBubble = true;
-                        if (e.evt) e.evt.cancelBubble = true;
-                    }
+                    if (e) e.cancelBubble = true;
                 }}
                 onContextMenu={handleOpenEdit}
                 onDblClick={handleOpenEdit}
                 onDblTap={handleOpenEdit}
                 onDragStart={handleDragStart}
+                onDragMove={handleDragMove}
                 onDragEnd={handleDragEnd}
             >
                 {isSelected && (
@@ -551,7 +599,6 @@ export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
         propIsGM || hookIsGM || isRoomHost || currentUser?.role === "GM" || currentUser?.role === "ADMIN"
     );
 
-    // پیش‌محاسبه O(N) پارامترهای خوشه‌بندی با رفرنس پایدار جهت جلوگیری از رندر مجدد توکن‌های ثابت
     const clusterParamsMap = useMemo(() => {
         const groups = new Map();
         for (let i = 0; i < userTokens.length; i++) {
@@ -640,19 +687,16 @@ export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
                 const userEmail = currentUser?.email ? String(currentUser.email).toLowerCase().trim() : "";
                 const tokenLabel = String(token.label || token.name || "").toLowerCase().trim();
 
-                const isOwner = Boolean(
-                    !isGM
-                        ? Boolean(
-                            (tokenOwner && userId && tokenOwner === userId) ||
-                            (tokenOwner && userAltId && tokenOwner === userAltId) ||
-                            (tokenOwner && userName && tokenOwner === userName) ||
-                            (tokenOwner && userEmail && tokenOwner === userEmail) ||
-                            (tokenLabel && userName && tokenLabel === userName) ||
-                            (tokenLabel && userEmail && tokenLabel === userEmail)
-                        )
-                        : true
+                const isMyToken = Boolean(
+                    (tokenOwner && userId && tokenOwner === userId) ||
+                    (tokenOwner && userAltId && tokenOwner === userAltId) ||
+                    (tokenOwner && userName && tokenOwner === userName) ||
+                    (tokenOwner && userEmail && tokenOwner === userEmail) ||
+                    (tokenLabel && userName && tokenLabel === userName) ||
+                    (tokenLabel && userEmail && tokenLabel === userEmail)
                 );
 
+                const isOwner = Boolean(isGM || isMyToken);
                 const canControl = Boolean(isGM || isOwner);
                 const canEdit = Boolean(isGM || isOwner || permissions?.canEditToken);
 
@@ -674,6 +718,7 @@ export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
                         canEdit={canEdit}
                         isGM={isGM}
                         fallbackUsername={currentUser?.username || "بازیکن"}
+                        fallbackAvatar={isMyToken ? (currentUser?.avatarUrl || "cowboy") : "cowboy"}
                         clusterOffset={clusterParam.offset}
                         clusterScale={clusterParam.scale}
                         onSelect={handleSelectToken}

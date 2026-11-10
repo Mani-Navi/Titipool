@@ -75,7 +75,13 @@ export const DiceSection = memo(() => {
 
     const handleQuickRoll = useCallback((type) => {
         let specs = [];
-        if (type === 'd100') {
+        if (type === 'd1000') {
+            specs = [
+                { type: 'd1000', theme: selectedTheme },
+                { type: 'd100', theme: selectedTheme },
+                { type: 'd10', theme: selectedTheme },
+            ];
+        } else if (type === 'd100') {
             specs = [
                 { type: 'd100', theme: selectedTheme },
                 { type: 'd10', theme: selectedTheme },
@@ -113,7 +119,13 @@ export const DiceSection = memo(() => {
         const expandedPool = [];
         for (let i = 0; i < dicePool.length; i++) {
             const item = dicePool[i];
-            if (item.type === 'd100') {
+            if (item.type === 'd1000') {
+                expandedPool.push(
+                    { type: 'd1000', theme: item.theme },
+                    { type: 'd100', theme: item.theme },
+                    { type: 'd10', theme: item.theme }
+                );
+            } else if (item.type === 'd100') {
                 expandedPool.push(
                     { type: 'd100', theme: item.theme },
                     { type: 'd10', theme: item.theme }

@@ -156,14 +156,12 @@ export const Toolbar = memo(({ isGM: propIsGM, permissions = {} }) => {
     }
 
     const charName = currentUser?.username || "قهرمان من";
-    const avatar = `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(
-        charName
-    )}&backgroundColor=b6e3f4`;
+    const userSelectedAvatar = currentUser?.avatarUrl || "cowboy";
 
     addToken({
       name: charName,
       label: charName,
-      avatarUrl: avatar,
+      avatarUrl: userSelectedAvatar,
       controlledBy: currentUserId || currentUsername,
       x: mapW / 2,
       y: mapH / 2,
@@ -180,6 +178,7 @@ export const Toolbar = memo(({ isGM: propIsGM, permissions = {} }) => {
     hasActiveMap,
     myExistingToken,
     currentUser?.username,
+    currentUser?.avatarUrl,
     mapW,
     mapH,
     addToken,
