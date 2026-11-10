@@ -396,7 +396,7 @@ export function useWebSocket(roomId, onMessage = null) {
     });
 
     return () => {
-      unsubFog();
+      unsubFogUnfill();
       unsubUsers();
       unsubRoomClosed();
       unsubRoomDeleted();
