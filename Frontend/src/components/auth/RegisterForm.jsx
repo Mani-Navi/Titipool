@@ -7,6 +7,7 @@ import { Button } from "../ui/Button.jsx";
 import { Input } from "../ui/Input.jsx";
 import { useAuth } from "../../hooks/useAuth";
 import { ENV } from "../../config/validateEnv";
+import { isValidRealEmail, REAL_EMAIL_ERROR_MSG } from "../../utils/emailValidator";
 
 const registerSchema = z
     .object({
@@ -15,8 +16,7 @@ const registerSchema = z
             .min(3, "حداقل ۳ کاراکتر")
             .max(50, "حداکثر ۵۰ کاراکتر")
             .regex(/^[a-zA-Z0-9_]+$/, "فقط حروف انگلیسی، عدد و _"),
-        email: z.string().email("ایمیل معتبر وارد کنید"),
-        password: z.string().min(8, "حداقل ۸ کاراکتر").max(72, "حداکثر ۷۲ کاراکتر"),
+        email: z.string().email("فرمت ایمیل معتبر نیست").refine(isValidRealEmail, { message: REAL_EMAIL_ERROR_MSG }),        password: z.string().min(8, "حداقل ۸ کاراکتر").max(72, "حداکثر ۷۲ کاراکتر"),
         confirmPassword: z.string(),
         acceptTerms: z.boolean().refine((val) => val === true, {
             message: "پذیرش قوانین و مقررات الزامی است",

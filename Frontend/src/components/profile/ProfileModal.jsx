@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 
 const emailSchema = z.object({
-    newEmail: z.string().email("ایمیل معتبر وارد کنید"),
+    newEmail: z.string().email("فرمت ایمیل معتبر نیست").refine(isValidRealEmail, { message: REAL_EMAIL_ERROR_MSG }),
     password: z.string().min(1, "رمز عبور را وارد کنید"),
 });
 

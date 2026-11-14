@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { LoginForm } from "../../components/auth/LoginForm";
 import { Footer } from "../../components/layout/Footer.jsx";
 import { useAuthStore } from "../../stores/auth.store";
@@ -12,6 +12,7 @@ export const LoginPage = () => {
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const token = useAuthStore((state) => state.token);
+  const location = useLocation();
 
   const isSessionValid = Boolean(isAuthenticated && token && !isTokenExpired(token));
 
@@ -116,7 +117,23 @@ export const LoginPage = () => {
                   </p>
                 </div>
 
-                <LoginForm onSuccess={() => navigate("/dashboard", { replace: true })} />
+                <LoginForm
+                    onSuccess={() => {
+                      const pendingRoom = sessionStorage.getItem("vtt_pending_room_path");
+                      if (pendingRoom) {
+                        sessionStorage.removeItem("vtt_pending_room_path");
+                        navigate(pendingRoom, { replace: true });
+                        return;
+                      }
+                      const pendingJoin = sessionStorage.getItem("vtt_pending_join");
+                      if (pendingJoin) {
+                        navigate(`/dashboard?join=${encodeURIComponent(pendingJoin)}`, { replace: true });
+                        return;
+                      }
+                      const targetFrom = location.state?.from || "/dashboard";
+                      navigate(targetFrom, { replace: true });
+                    }}
+                />
               </div>
 
               <div className="mt-5 sm:mt-6 text-center text-xs text-zinc-400 pt-3 border-t border-zinc-800/80">

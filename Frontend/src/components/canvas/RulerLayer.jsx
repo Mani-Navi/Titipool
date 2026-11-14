@@ -14,12 +14,16 @@ export const RulerLayer = memo(() => {
     const clearRemoteMeasurement = useCanvasStore((state) => state.clearRemoteMeasurement);
     const rulerType = useCanvasStore((state) => state.rulerType) || "dnd5e_5105";
     const rulerUnit = useCanvasStore((state) => state.rulerUnit) || "ft";
+    const zoom = useCanvasStore((state) => state.zoom) || 1;
 
     const gridSize = useSceneStore((state) => state.currentScene?.grid?.size) || 60;
     const currentUser = useAuthStore((state) => state.user);
     const currentUserId = String(currentUser?.id || currentUser?.userId || currentUser?.username || "");
 
     const scaleValue = 5;
+
+    // جبران کوچک‌نمایی دوربین تا کادر و عدد خط‌کش در حالت عادی و دور کاملاً درشت و خوانا بماند
+    const uiScale = 1 / Math.min(Math.max(zoom, 0.25), 1.15);
 
     const remoteMeasurementsRef = useRef(remoteMeasurements);
     useEffect(() => {
@@ -62,15 +66,15 @@ export const RulerLayer = memo(() => {
         }
         allPoints.push(current.x, current.y);
 
-        const bubbleX = current.x + 16;
-        const bubbleY = current.y - 32;
+        const bubbleX = current.x + 18 * uiScale;
+        const bubbleY = current.y - 48 * uiScale;
 
         return (
             <Group key={isLocal ? "local-ruler" : `ruler-${meas.userId || name}`} listening={false}>
                 <Line
                     points={allPoints}
                     stroke={color}
-                    strokeWidth={8}
+                    strokeWidth={8 * Math.min(uiScale, 1.5)}
                     opacity={0.25}
                     lineCap="round"
                     lineJoin="round"
@@ -79,7 +83,7 @@ export const RulerLayer = memo(() => {
                 <Line
                     points={allPoints}
                     stroke={color}
-                    strokeWidth={3}
+                    strokeWidth={3 * Math.min(uiScale, 1.5)}
                     dash={RULER_DASH_PATTERN}
                     lineCap="round"
                     lineJoin="round"
@@ -88,7 +92,7 @@ export const RulerLayer = memo(() => {
                 <Circle
                     x={start.x}
                     y={start.y}
-                    radius={7}
+                    radius={7 * Math.min(uiScale, 1.5)}
                     fill={color}
                     stroke="#090a0f"
                     strokeWidth={2}
@@ -99,7 +103,7 @@ export const RulerLayer = memo(() => {
                         key={`wp-${i}`}
                         x={wp.x}
                         y={wp.y}
-                        radius={5.5}
+                        radius={5.5 * Math.min(uiScale, 1.5)}
                         fill="#3b82f6"
                         stroke="#090a0f"
                         strokeWidth={1.5}
@@ -109,39 +113,44 @@ export const RulerLayer = memo(() => {
                 <Circle
                     x={current.x}
                     y={current.y}
-                    radius={7.5}
+                    radius={7.5 * Math.min(uiScale, 1.5)}
                     fill="#10b981"
                     stroke="#090a0f"
                     strokeWidth={2}
                 />
 
-                <Group x={bubbleX} y={bubbleY}>
+                <Group x={bubbleX} y={bubbleY} scaleX={uiScale} scaleY={uiScale}>
                     <Rect
-                        width={120}
-                        height={32}
-                        fill="rgba(9, 10, 15, 0.95)"
-                        cornerRadius={7}
+                        width={154}
+                        height={46}
+                        fill="rgba(9, 10, 15, 0.96)"
+                        cornerRadius={10}
                         stroke={color}
-                        strokeWidth={1.5}
+                        strokeWidth={2}
                         shadowColor="#000000"
-                        shadowBlur={10}
+                        shadowBlur={12}
                     />
                     <Text
-                        x={8}
-                        y={5}
+                        x={0}
+                        y={6}
+                        width={154}
+                        align="center"
                         text={result.formattedText}
-                        fontSize={12}
+                        fontSize={16}
                         fontStyle="bold"
-                        fontFamily="Vazirmatn"
+                        fontFamily="Vazirmatn, monospace"
                         fill="#fbbf24"
                     />
                     <Text
-                        x={8}
-                        y={18}
+                        x={0}
+                        y={26}
+                        width={154}
+                        align="center"
                         text={`${result.gridUnits} خانه ${name ? `(${name})` : ""}`}
-                        fontSize={9}
+                        fontSize={11}
+                        fontStyle="bold"
                         fontFamily="Vazirmatn"
-                        fill="#a1a1aa"
+                        fill="#e4e4e7"
                     />
                 </Group>
             </Group>
@@ -163,3 +172,4 @@ export const RulerLayer = memo(() => {
 });
 
 RulerLayer.displayName = "RulerLayer";
+export default RulerLayer;

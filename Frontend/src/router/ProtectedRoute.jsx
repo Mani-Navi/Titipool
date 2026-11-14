@@ -18,7 +18,19 @@ export const ProtectedRoute = () => {
     }, [isAuthenticated, token, logout]);
 
     if (!isSessionValid) {
-        return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+        // ذخیره کد دعوت یا مسیر کامل مقصد در sessionStorage تا پس از لاگین/ثبت‌نام حفظ شود
+        try {
+            const params = new URLSearchParams(location.search);
+            const joinCode = params.get("join");
+            if (joinCode) {
+                sessionStorage.setItem("vtt_pending_join", joinCode.trim().toUpperCase());
+            } else if (location.pathname.startsWith("/room/")) {
+                sessionStorage.setItem("vtt_pending_room_path", location.pathname);
+            }
+        } catch {}
+
+        const fullTarget = `${location.pathname}${location.search || ""}`;
+        return <Navigate to="/login" state={{ from: fullTarget }} replace />;
     }
 
     return <Outlet />;
