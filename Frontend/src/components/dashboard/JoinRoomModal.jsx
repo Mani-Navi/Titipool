@@ -2,7 +2,7 @@ import React, { useState, useEffect, memo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { LogIn, Eye, EyeOff } from "lucide-react";
+import { LogIn, Eye, EyeOff, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../ui/Modal.jsx";
 import { Button } from "../ui/Button.jsx";
@@ -19,7 +19,7 @@ const FA_TO_EN_KEYBOARD_MAP = Object.freeze({
   'و': 'V', 'ژ': 'C', 'آ': 'H', 'ي': 'D', 'ك': 'K',
 });
 
-const normalizeRoomCode = (rawInput = "") => {
+export const normalizeRoomCode = (rawInput = "") => {
   let result = "";
   for (const char of String(rawInput || "")) {
     const faIndex = PERSIAN_DIGITS.indexOf(char);
@@ -51,10 +51,12 @@ const joinRoomSchema = z.object({
   roomPasscode: z.string().optional(),
 });
 
-export const JoinRoomModal = memo(({ isOpen, onClose }) => {
+export const JoinRoomModal = memo(({ isOpen, onClose, prefilledCode = "" }) => {
   const navigate = useNavigate();
   const [serverError, setServerError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  const hasLockedInviteCode = Boolean(prefilledCode && prefilledCode.length === 6);
 
   const {
     register,
@@ -72,14 +74,19 @@ export const JoinRoomModal = memo(({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (isOpen) {
+      const cleanPrefill = normalizeRoomCode(prefilledCode);
       reset({
-        inviteCode: "",
+        inviteCode: cleanPrefill || "",
         roomPasscode: "",
       });
-      setServerError("");
+      setServerError(
+          cleanPrefill
+              ? "این اتاق خصوصی است؛ لطفاً رمز عبور اتاق را برای ورود وارد کنید."
+              : ""
+      );
       setShowPassword(false);
     }
-  }, [isOpen, reset]);
+  }, [isOpen, prefilledCode, reset]);
 
   const handleClose = () => {
     reset();
@@ -90,14 +97,14 @@ export const JoinRoomModal = memo(({ isOpen, onClose }) => {
 
   const onSubmit = async (data) => {
     setServerError("");
-    const cleanedCode = normalizeRoomCode(data.inviteCode);
+    const cleanedCode = normalizeRoomCode(hasLockedInviteCode ? prefilledCode : data.inviteCode);
     try {
       const res = await roomApi.joinRoom(cleanedCode, data.roomPasscode || null);
       handleClose();
       navigate(`/room/${res.roomId || res.id}`);
     } catch (err) {
       if (err.response?.status === 401) {
-        setServerError("این اتاق دارای رمز عبور است یا رمز وارد شده اشتباه است.");
+        setServerError("رمز عبور وارد شده برای این اتاق اشتباه است.");
       } else if (err.response?.status === 404) {
         setServerError("اتاقی با این کد یافت نشد یا منقضی شده است.");
       } else {
@@ -110,8 +117,8 @@ export const JoinRoomModal = memo(({ isOpen, onClose }) => {
       <Modal
           isOpen={isOpen}
           onClose={handleClose}
-          title="Join Room"
-          titleFa="ورود به اتاق با کد دعوت"
+          title={hasLockedInviteCode ? "Protected Room" : "Join Room"}
+          titleFa={hasLockedInviteCode ? `ورود به اتاق خصوصی (${prefilledCode})` : "ورود به اتاق با کد دعوت"}
           maxWidth="sm"
       >
         <form
@@ -121,37 +128,43 @@ export const JoinRoomModal = memo(({ isOpen, onClose }) => {
             className="space-y-3.5 font-fa"
             dir="rtl"
         >
-          <Input
-              label="کد ۶ حرفی اتاق بازی (پشتیبانی از اعداد فارسی و انگلیسی)"
-              placeholder="مثلا: OWL772 یا ۷۵B4EE"
-              error={errors.inviteCode?.message}
-              disabled={isSubmitting}
-              dir="ltr"
-              autoComplete="off"
-              data-lpignore="true"
-              data-1p-ignore="true"
-              className="uppercase font-mono text-center tracking-widest text-base font-bold h-11"
-              {...register("inviteCode", {
-                onChange: (e) => {
-                  const cleaned = normalizeRoomCode(e.target.value);
-                  setValue("inviteCode", cleaned, { shouldValidate: true });
-                },
-              })}
-          />
+          {!hasLockedInviteCode ? (
+              <Input
+                  label="کد ۶ حرفی اتاق بازی (پشتیبانی از اعداد فارسی و انگلیسی)"
+                  placeholder="مثلا: OWL772 یا ۷۵B4EE"
+                  error={errors.inviteCode?.message}
+                  disabled={isSubmitting}
+                  dir="ltr"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  className="uppercase font-mono text-center tracking-widest text-base font-bold h-11"
+                  {...register("inviteCode", {
+                    onChange: (e) => {
+                      const cleaned = normalizeRoomCode(e.target.value);
+                      setValue("inviteCode", cleaned, { shouldValidate: true });
+                    },
+                  })}
+              />
+          ) : (
+              <input type="hidden" {...register("inviteCode")} />
+          )}
 
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-zinc-300">
-              رمز عبور اتاق (در صورت خصوصی بودن)
+            <label className="block text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-amber-400" />
+              <span>{hasLockedInviteCode ? "رمز عبور اتاق را وارد کنید:" : "رمز عبور اتاق (در صورت خصوصی بودن)"}</span>
             </label>
             <div className="relative">
               <input
                   type="text"
-                  placeholder="اگر اتاق رمز دارد، وارد کنید"
+                  dir="ltr"
+                  placeholder={hasLockedInviteCode ? "رمز عبور اتاق..." : "اگر اتاق رمز دارد، وارد کنید"}
                   autoComplete="off"
                   data-lpignore="true"
                   data-1p-ignore="true"
                   style={!showPassword ? { WebkitTextSecurity: "disc" } : undefined}
-                  className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-3.5 py-2.5 pl-10 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/30 transition-all h-10"
+                  className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-3.5 py-2.5 pl-10 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/30 transition-all h-10 text-left font-mono"
                   disabled={isSubmitting}
                   {...register("roomPasscode")}
               />
@@ -167,7 +180,7 @@ export const JoinRoomModal = memo(({ isOpen, onClose }) => {
           </div>
 
           {serverError && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs text-center font-medium animate-shake-subtle">
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs text-center font-medium animate-fade-in-up">
                 {serverError}
               </div>
           )}

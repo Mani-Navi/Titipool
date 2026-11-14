@@ -13,6 +13,8 @@ import { EmptyRooms } from "../../components/dashboard/EmptyRooms";
 import { RpgAvatar } from "../../components/profile/RpgAvatar";
 import { Button } from "../../components/ui/Button.jsx";
 import { Footer } from "../../components/layout/Footer.jsx";
+import { roomApi } from "../../api/room.api";
+import { normalizeRoomCode } from "../../components/dashboard/JoinRoomModal";
 import {
   Dices,
   Plus,
@@ -40,17 +42,42 @@ export const DashboardPage = () => {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [toastError, setToastError] = useState("");
+  const [prefilledJoinCode, setPrefilledJoinCode] = useState("");
 
   useEffect(() => {
-    const inviteCode = searchParams.get("join");
-    const actionParam = searchParams.get("action");
-    if (inviteCode || actionParam === "join") {
-      setIsJoinOpen(true);
+    const urlJoin = searchParams.get("join");
+    const storedJoin = sessionStorage.getItem("vtt_pending_join");
+    const rawInvite = urlJoin || storedJoin;
+
+    if (!rawInvite) return;
+
+    const cleanCode = normalizeRoomCode(rawInvite);
+    sessionStorage.removeItem("vtt_pending_join");
+
+    if (urlJoin) {
       searchParams.delete("join");
-      searchParams.delete("action");
       setSearchParams(searchParams, { replace: true });
     }
-  }, [searchParams, setSearchParams]);
+
+    if (!cleanCode || cleanCode.length !== 6) return;
+
+    // تلاش خودکار برای ورود مستقیم به اتاق با لینک دعوت
+    roomApi
+        .joinRoom(cleanCode, null)
+        .then((res) => {
+          navigate(`/room/${res.roomId || res.id}`, { replace: true });
+        })
+        .catch((err) => {
+          if (err.response?.status === 401) {
+            // اتاق دارای رمز عبور است -> باز کردن مودال فقط برای دریافت رمز عبور
+            setPrefilledJoinCode(cleanCode);
+            setIsJoinOpen(true);
+          } else {
+            setToastError(err.response?.data?.error || "اتاق مورد نظر یافت نشد یا غیرفعال است");
+            setTimeout(() => setToastError(""), 4000);
+          }
+        });
+  }, [searchParams, setSearchParams, navigate]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -425,7 +452,14 @@ export const DashboardPage = () => {
             onClose={() => setIsCreateOpen(false)}
             onCreate={handleCreateRoom}
         />
-        <JoinRoomModal isOpen={isJoinOpen} onClose={() => setIsJoinOpen(false)} />
+        <JoinRoomModal
+            isOpen={isJoinOpen}
+            prefilledCode={prefilledJoinCode}
+            onClose={() => {
+              setIsJoinOpen(false);
+              setPrefilledJoinCode("");
+            }}
+        />
         <EditRoomModal
             isOpen={!!roomToEdit}
             onClose={() => setRoomToEdit(null)}

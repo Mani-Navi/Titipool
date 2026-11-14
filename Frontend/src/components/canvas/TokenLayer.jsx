@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import Konva from "konva";
-import { Group, Circle, Text, Rect, Image as KonvaImage } from "react-konva";
+import { Group, Circle, Text, Rect, Image as KonvaImage, Transformer } from "react-konva";
 import { useCanvasStore } from "../../stores/canvas.store";
 import { useSceneStore } from "../../stores/scene.store";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -13,7 +13,6 @@ import { snapToGrid } from "../../utils/grid";
 import { WS_EVENTS } from "../../constants/wsEvents.js";
 import { isRpgAvatarId, loadRpgAvatarCanvasImage } from "../profile/RpgAvatar";
 
-// جلوگیری از حرکت ناخواسته توکن هنگام کلیک عادی (درگ فقط با کشیدن حداقل ۸ پیکسل فعال می‌شود)
 Konva.dragDistance = 8;
 Konva.dragButtons = [0];
 
@@ -31,6 +30,12 @@ const setCachedTokenImage = (url, img) => {
 };
 
 const TOKEN_SELECTION_DASH = Object.freeze([6, 4]);
+const TOKEN_RESIZE_ANCHORS = Object.freeze([
+    "top-left",
+    "top-right",
+    "bottom-left",
+    "bottom-right",
+]);
 const DEFAULT_CLUSTER_OFFSET = Object.freeze({ x: 0, y: 0 });
 const DEFAULT_CLUSTER_PARAM = Object.freeze({ offset: DEFAULT_CLUSTER_OFFSET, scale: 1 });
 const EMPTY_TOKENS = Object.freeze([]);
@@ -63,6 +68,7 @@ const SingleToken = memo(
          isSelected,
          canControl,
          canEdit,
+         canResize,
          isGM,
          fallbackUsername = "",
          fallbackAvatar = "cowboy",
@@ -74,11 +80,20 @@ const SingleToken = memo(
         const [imageObj, setImageObj] = useState(null);
         const [isDragging, setIsDragging] = useState(false);
         const moveToken = useSceneStore((state) => state.moveToken);
+        const updateToken = useSceneStore((state) => state.updateToken);
         const groupRef = useRef(null);
+        const trRef = useRef(null);
 
         const rawUrl = token.avatarUrl || token.assetUrl || (!token.isProp ? fallbackAvatar : "");
         const tokenPixelSize = (token.size || 1) * gridSize;
         const radius = Math.max(16, tokenPixelSize / 2);
+
+        useEffect(() => {
+            if (isSelected && canResize && trRef.current && groupRef.current) {
+                trRef.current.nodes([groupRef.current]);
+                trRef.current.getLayer()?.batchDraw();
+            }
+        }, [isSelected, canResize, token.size]);
 
         useEffect(() => {
             if (!rawUrl || rawUrl.trim() === "") {
@@ -88,7 +103,6 @@ const SingleToken = memo(
 
             let isMounted = true;
 
-            // ۱. اگر آواتار از نوع شناسه‌های شیت آواتار RPG پروفایل باشد (مثل cowboy, wizard, warrior)
             if (isRpgAvatarId(rawUrl)) {
                 loadRpgAvatarCanvasImage(rawUrl)
                     .then((croppedImg) => {
@@ -102,7 +116,6 @@ const SingleToken = memo(
                 };
             }
 
-            // ۲. اگر لینک تصویر معمولی یا آپلودی باشد
             if (rawUrl.length < 4) {
                 setImageObj(null);
                 return;
@@ -160,7 +173,6 @@ const SingleToken = memo(
         );
 
         const handleDragStart = useCallback((e) => {
-            // اگر دکمه چپ ماوس نگه داشته نشده است، درگ کاذب متوقف شود
             if (e?.evt && e.evt.buttons !== undefined && (e.evt.buttons & 1) === 0) {
                 e.target.stopDrag();
                 return;
@@ -172,7 +184,6 @@ const SingleToken = memo(
         }, []);
 
         const handleDragMove = useCallback((e) => {
-            // گارد قطعی ضد چسبندگی: اگر کاربر دکمه چپ ماوس را رها کرده باشد، بلافاصله درگ قطع شود
             if (e?.evt && e.evt.buttons !== undefined && (e.evt.buttons & 1) === 0) {
                 e.target.stopDrag();
                 setIsDragging(false);
@@ -221,6 +232,40 @@ const SingleToken = memo(
                 });
             },
             [gridSize, gridType, token.size, token.id, token.controlledBy, snapEnabled, moveToken, displayName, rawUrl]
+        );
+
+        const handleTransformEnd = useCallback(
+            (e) => {
+                if (e) e.cancelBubble = true;
+                const node = groupRef.current;
+                if (!node) return;
+
+                const scaleFactor = Math.max(Math.abs(node.scaleX()), Math.abs(node.scaleY()));
+                const baseSize = Number(token.size || 1);
+                const nextRawSize = baseSize * (scaleFactor / (clusterScale || 1));
+                const clampedSize = Number(Math.max(0.4, Math.min(6.0, nextRawSize)).toFixed(2));
+
+                node.scaleX(clusterScale || 1);
+                node.scaleY(clusterScale || 1);
+
+                const nextX = Math.round(node.x());
+                const nextY = Math.round(node.y());
+
+                updateToken(token.id, { size: clampedSize, x: nextX, y: nextY });
+
+                wsService.send(WS_EVENTS.TOKEN_MOVED || "TOKEN_MOVE", {
+                    tokenId: String(token.id),
+                    id: String(token.id),
+                    label: displayName,
+                    name: displayName,
+                    avatarUrl: rawUrl,
+                    controlledBy: token.controlledBy,
+                    size: clampedSize,
+                    x: nextX,
+                    y: nextY,
+                });
+            },
+            [token.id, token.size, token.controlledBy, clusterScale, updateToken, displayName, rawUrl]
         );
 
         const handleSelectClick = useCallback(
@@ -273,301 +318,325 @@ const SingleToken = memo(
         const currentScale = isDragging ? 1 : clusterScale;
 
         return (
-            <Group
-                ref={groupRef}
-                x={currentX}
-                y={currentY}
-                scaleX={currentScale}
-                scaleY={currentScale}
-                draggable={isDraggable}
-                opacity={token.isHidden ? 0.55 : 1}
-                onClick={handleSelectClick}
-                onTap={handleSelectClick}
-                onMouseDown={(e) => {
-                    if (e) e.cancelBubble = true;
-                }}
-                onContextMenu={handleOpenEdit}
-                onDblClick={handleOpenEdit}
-                onDblTap={handleOpenEdit}
-                onDragStart={handleDragStart}
-                onDragMove={handleDragMove}
-                onDragEnd={handleDragEnd}
-            >
-                {isSelected && (
-                    <Circle
-                        radius={radius + 5}
-                        stroke="#f59e0b"
-                        strokeWidth={3}
-                        dash={TOKEN_SELECTION_DASH}
-                        shadowColor="#f59e0b"
-                        shadowBlur={10}
-                        listening={false}
-                    />
-                )}
+            <Group>
+                <Group
+                    ref={groupRef}
+                    x={currentX}
+                    y={currentY}
+                    scaleX={currentScale}
+                    scaleY={currentScale}
+                    draggable={isDraggable}
+                    opacity={token.isHidden ? 0.55 : 1}
+                    onClick={handleSelectClick}
+                    onTap={handleSelectClick}
+                    onMouseDown={(e) => {
+                        if (e) e.cancelBubble = true;
+                    }}
+                    onContextMenu={handleOpenEdit}
+                    onDblClick={handleOpenEdit}
+                    onDblTap={handleOpenEdit}
+                    onDragStart={handleDragStart}
+                    onDragMove={handleDragMove}
+                    onDragEnd={handleDragEnd}
+                    onTransformEnd={handleTransformEnd}
+                >
+                    {isSelected && (
+                        <Circle
+                            radius={radius + 5}
+                            stroke="#f59e0b"
+                            strokeWidth={3}
+                            dash={TOKEN_SELECTION_DASH}
+                            shadowColor="#f59e0b"
+                            shadowBlur={10}
+                            listening={false}
+                        />
+                    )}
 
-                {showConditions && activeConditions.length > 0 && (
-                    <Group y={-radius - 12} listening={false}>
-                        {activeConditions.map((emoji, idx) => {
-                            const posX = startConditionX + idx * conditionSpacing;
-                            return (
-                                <Group key={`cond-${idx}`} x={posX} y={0}>
-                                    <Circle
-                                        radius={conditionBadgeRadius}
-                                        fill="#090a0f"
-                                        stroke="#f59e0b"
-                                        strokeWidth={1.5}
-                                        shadowColor="#000000"
-                                        shadowBlur={4}
-                                    />
-                                    <Text
-                                        text={emoji}
-                                        fontSize={11}
-                                        align="center"
-                                        verticalAlign="middle"
-                                        x={-conditionBadgeRadius}
-                                        y={-conditionBadgeRadius + 0.5}
-                                        width={conditionBadgeRadius * 2}
-                                        height={conditionBadgeRadius * 2}
-                                    />
-                                </Group>
-                            );
-                        })}
-                    </Group>
-                )}
+                    {showConditions && activeConditions.length > 0 && (
+                        <Group y={-radius - 12} listening={false}>
+                            {activeConditions.map((emoji, idx) => {
+                                const posX = startConditionX + idx * conditionSpacing;
+                                return (
+                                    <Group key={`cond-${idx}`} x={posX} y={0}>
+                                        <Circle
+                                            radius={conditionBadgeRadius}
+                                            fill="#090a0f"
+                                            stroke="#f59e0b"
+                                            strokeWidth={1.5}
+                                            shadowColor="#000000"
+                                            shadowBlur={4}
+                                        />
+                                        <Text
+                                            text={emoji}
+                                            fontSize={11}
+                                            align="center"
+                                            verticalAlign="middle"
+                                            x={-conditionBadgeRadius}
+                                            y={-conditionBadgeRadius + 0.5}
+                                            width={conditionBadgeRadius * 2}
+                                            height={conditionBadgeRadius * 2}
+                                        />
+                                    </Group>
+                                );
+                            })}
+                        </Group>
+                    )}
 
-                {isProp ? (
-                    <Group
-                        clipFunc={(ctx) => {
-                            ctx.beginPath();
-                            ctx.roundRect(-radius, -radius, radius * 2, radius * 2, 8);
-                            ctx.closePath();
-                        }}
-                    >
+                    {isProp ? (
+                        <Group
+                            clipFunc={(ctx) => {
+                                ctx.beginPath();
+                                ctx.roundRect(-radius, -radius, radius * 2, radius * 2, 8);
+                                ctx.closePath();
+                            }}
+                        >
+                            <Rect
+                                x={-radius}
+                                y={-radius}
+                                width={radius * 2}
+                                height={radius * 2}
+                                fill={token.tintColor || "#27272a"}
+                            />
+                            {imageObj && (
+                                <KonvaImage
+                                    image={imageObj}
+                                    x={-radius}
+                                    y={-radius}
+                                    width={radius * 2}
+                                    height={radius * 2}
+                                />
+                            )}
+                        </Group>
+                    ) : (
+                        <Group
+                            clipFunc={(ctx) => {
+                                ctx.beginPath();
+                                ctx.arc(0, 0, radius, 0, Math.PI * 2, false);
+                                ctx.closePath();
+                            }}
+                        >
+                            <Circle radius={radius} fill={token.tintColor || "#1e293b"} />
+                            {imageObj && (
+                                <KonvaImage
+                                    image={imageObj}
+                                    x={-radius}
+                                    y={-radius}
+                                    width={radius * 2}
+                                    height={radius * 2}
+                                />
+                            )}
+                        </Group>
+                    )}
+
+                    {isProp ? (
                         <Rect
                             x={-radius}
                             y={-radius}
                             width={radius * 2}
                             height={radius * 2}
-                            fill={token.tintColor || "#27272a"}
+                            cornerRadius={8}
+                            stroke={isSelected ? "#f59e0b" : "#3f3f46"}
+                            strokeWidth={2.5}
+                            listening={false}
                         />
-                        {imageObj && (
-                            <KonvaImage
-                                image={imageObj}
-                                x={-radius}
-                                y={-radius}
-                                width={radius * 2}
-                                height={radius * 2}
-                            />
-                        )}
-                    </Group>
-                ) : (
-                    <Group
-                        clipFunc={(ctx) => {
-                            ctx.beginPath();
-                            ctx.arc(0, 0, radius, 0, Math.PI * 2, false);
-                            ctx.closePath();
-                        }}
-                    >
-                        <Circle radius={radius} fill={token.tintColor || "#1e293b"} />
-                        {imageObj && (
-                            <KonvaImage
-                                image={imageObj}
-                                x={-radius}
-                                y={-radius}
-                                width={radius * 2}
-                                height={radius * 2}
-                            />
-                        )}
-                    </Group>
-                )}
-
-                {isProp ? (
-                    <Rect
-                        x={-radius}
-                        y={-radius}
-                        width={radius * 2}
-                        height={radius * 2}
-                        cornerRadius={8}
-                        stroke={isSelected ? "#f59e0b" : "#3f3f46"}
-                        strokeWidth={2.5}
-                        listening={false}
-                    />
-                ) : (
-                    <Circle
-                        radius={radius}
-                        stroke={isSelected ? "#f59e0b" : "#f59e0b"}
-                        strokeWidth={isSelected ? 3 : 2}
-                        shadowColor="#000000"
-                        shadowBlur={6}
-                        listening={false}
-                    />
-                )}
-
-                {!imageObj && (
-                    <Text
-                        text={initials}
-                        fontSize={Math.max(11, radius * 0.65)}
-                        fontStyle="bold"
-                        fill="#f8fafc"
-                        align="center"
-                        verticalAlign="middle"
-                        x={-radius}
-                        y={-radius + 1}
-                        width={radius * 2}
-                        height={radius * 2}
-                        listening={false}
-                    />
-                )}
-
-                {showAc && (
-                    <Group x={radius - 4} y={-radius + 4} listening={false}>
+                    ) : (
                         <Circle
-                            radius={9.5}
-                            fill="#1e3a8a"
-                            stroke="#60a5fa"
-                            strokeWidth={1.5}
+                            radius={radius}
+                            stroke={isSelected ? "#f59e0b" : "#f59e0b"}
+                            strokeWidth={isSelected ? 3 : 2}
                             shadowColor="#000000"
-                            shadowBlur={4}
+                            shadowBlur={6}
+                            listening={false}
                         />
+                    )}
+
+                    {!imageObj && (
                         <Text
-                            text={String(token.ac)}
-                            fontSize={9.5}
+                            text={initials}
+                            fontSize={Math.max(11, radius * 0.65)}
                             fontStyle="bold"
-                            fill="#ffffff"
+                            fill="#f8fafc"
                             align="center"
                             verticalAlign="middle"
-                            x={-9.5}
-                            y={-8.5}
-                            width={19}
-                            height={19}
+                            x={-radius}
+                            y={-radius + 1}
+                            width={radius * 2}
+                            height={radius * 2}
+                            listening={false}
                         />
-                    </Group>
-                )}
+                    )}
 
-                {showHp && (
-                    <Group y={radius + 4} listening={false}>
+                    {showAc && (
+                        <Group x={radius - 4} y={-radius + 4} listening={false}>
+                            <Circle
+                                radius={9.5}
+                                fill="#1e3a8a"
+                                stroke="#60a5fa"
+                                strokeWidth={1.5}
+                                shadowColor="#000000"
+                                shadowBlur={4}
+                            />
+                            <Text
+                                text={String(token.ac)}
+                                fontSize={9.5}
+                                fontStyle="bold"
+                                fill="#ffffff"
+                                align="center"
+                                verticalAlign="middle"
+                                x={-9.5}
+                                y={-8.5}
+                                width={19}
+                                height={19}
+                            />
+                        </Group>
+                    )}
+
+                    {showHp && (
+                        <Group y={radius + 4} listening={false}>
+                            <Rect
+                                x={-barWidth / 2}
+                                y={0}
+                                width={barWidth}
+                                height={barHeight}
+                                fill="#090a0f"
+                                cornerRadius={barHeight / 2}
+                                stroke="#27272a"
+                                strokeWidth={1.5}
+                            />
+                            <Rect
+                                x={-barWidth / 2 + 1.5}
+                                y={1.5}
+                                width={Math.max(0, (barWidth - 3) * hpRatio)}
+                                height={barHeight - 3}
+                                fill={hpBarColor}
+                                cornerRadius={(barHeight - 3) / 2}
+                            />
+                            <Text
+                                text={`${currentHp}/${maxHp}`}
+                                fontSize={8}
+                                fontStyle="bold"
+                                fontFamily="monospace"
+                                fill="#ffffff"
+                                align="center"
+                                verticalAlign="middle"
+                                x={-barWidth / 2}
+                                y={1}
+                                width={barWidth}
+                                height={barHeight - 1}
+                            />
+                        </Group>
+                    )}
+
+                    {isProp && (token.goldValue || token.xpValue) && (
+                        <Group y={radius + 4} listening={false}>
+                            <Rect
+                                x={-radius * 1.3}
+                                y={0}
+                                width={radius * 2.6}
+                                height={14}
+                                fill="rgba(15, 23, 42, 0.9)"
+                                cornerRadius={4}
+                                stroke="#eab308"
+                                strokeWidth={1}
+                            />
+                            <Text
+                                text={[
+                                    token.goldValue ? `${token.goldValue} GP` : null,
+                                    token.xpValue ? `${token.xpValue} XP` : null,
+                                ]
+                                    .filter(Boolean)
+                                    .join(" | ")}
+                                fontSize={8.5}
+                                fontStyle="bold"
+                                fill="#facc15"
+                                align="center"
+                                x={-radius * 1.3}
+                                y={1.5}
+                                width={radius * 2.6}
+                            />
+                        </Group>
+                    )}
+
+                    <Group
+                        y={
+                            showHp || (isProp && (token.goldValue || token.xpValue))
+                                ? radius + 4 + barHeight + 3
+                                : radius + 4
+                        }
+                        listening={false}
+                    >
                         <Rect
-                            x={-barWidth / 2}
+                            x={-Math.max(radius * 1.4, 42)}
                             y={0}
-                            width={barWidth}
-                            height={barHeight}
-                            fill="#090a0f"
-                            cornerRadius={barHeight / 2}
-                            stroke="#27272a"
-                            strokeWidth={1.5}
-                        />
-                        <Rect
-                            x={-barWidth / 2 + 1.5}
-                            y={1.5}
-                            width={Math.max(0, (barWidth - 3) * hpRatio)}
-                            height={barHeight - 3}
-                            fill={hpBarColor}
-                            cornerRadius={(barHeight - 3) / 2}
-                        />
-                        <Text
-                            text={`${currentHp}/${maxHp}`}
-                            fontSize={8}
-                            fontStyle="bold"
-                            fontFamily="monospace"
-                            fill="#ffffff"
-                            align="center"
-                            verticalAlign="middle"
-                            x={-barWidth / 2}
-                            y={1}
-                            width={barWidth}
-                            height={barHeight - 1}
-                        />
-                    </Group>
-                )}
-
-                {isProp && (token.goldValue || token.xpValue) && (
-                    <Group y={radius + 4} listening={false}>
-                        <Rect
-                            x={-radius * 1.3}
-                            y={0}
-                            width={radius * 2.6}
-                            height={14}
-                            fill="rgba(15, 23, 42, 0.9)"
-                            cornerRadius={4}
-                            stroke="#eab308"
-                            strokeWidth={1}
-                        />
-                        <Text
-                            text={[
-                                token.goldValue ? `${token.goldValue} GP` : null,
-                                token.xpValue ? `${token.xpValue} XP` : null,
-                            ]
-                                .filter(Boolean)
-                                .join(" | ")}
-                            fontSize={8.5}
-                            fontStyle="bold"
-                            fill="#facc15"
-                            align="center"
-                            x={-radius * 1.3}
-                            y={1.5}
-                            width={radius * 2.6}
-                        />
-                    </Group>
-                )}
-
-                <Group
-                    y={
-                        showHp || (isProp && (token.goldValue || token.xpValue))
-                            ? radius + 4 + barHeight + 3
-                            : radius + 4
-                    }
-                    listening={false}
-                >
-                    <Rect
-                        x={-Math.max(radius * 1.4, 42)}
-                        y={0}
-                        width={Math.max(radius * 2.8, 84)}
-                        height={16}
-                        fill="rgba(9, 10, 15, 0.95)"
-                        cornerRadius={5}
-                        stroke="rgba(245, 158, 11, 0.4)"
-                        strokeWidth={1}
-                    />
-                    <Text
-                        text={displayName}
-                        fontSize={10}
-                        fontStyle="bold"
-                        fill="#fef08a"
-                        align="center"
-                        verticalAlign="middle"
-                        x={-Math.max(radius * 1.4, 42)}
-                        y={1.5}
-                        width={Math.max(radius * 2.8, 84)}
-                        height={13}
-                        ellipsis={true}
-                    />
-                </Group>
-
-                {showNotes && isGM && (
-                    <Group y={radius + 4 + barHeight + 22} listening={false}>
-                        <Rect
-                            x={-radius * 1.5}
-                            y={0}
-                            width={radius * 3}
+                            width={Math.max(radius * 2.8, 84)}
                             height={16}
-                            fill="rgba(39, 39, 42, 0.95)"
-                            cornerRadius={4}
-                            stroke="#f59e0b"
+                            fill="rgba(9, 10, 15, 0.95)"
+                            cornerRadius={5}
+                            stroke="rgba(245, 158, 11, 0.4)"
                             strokeWidth={1}
                         />
                         <Text
-                            text={`📝 ${token.gmNotes}`}
-                            fontSize={8.5}
+                            text={displayName}
+                            fontSize={10}
+                            fontStyle="bold"
                             fill="#fef08a"
                             align="center"
                             verticalAlign="middle"
-                            x={-radius * 1.5}
+                            x={-Math.max(radius * 1.4, 42)}
                             y={1.5}
-                            width={radius * 3}
+                            width={Math.max(radius * 2.8, 84)}
                             height={13}
                             ellipsis={true}
                         />
                     </Group>
+
+                    {showNotes && isGM && (
+                        <Group y={radius + 4 + barHeight + 22} listening={false}>
+                            <Rect
+                                x={-radius * 1.5}
+                                y={0}
+                                width={radius * 3}
+                                height={16}
+                                fill="rgba(39, 39, 42, 0.95)"
+                                cornerRadius={4}
+                                stroke="#f59e0b"
+                                strokeWidth={1}
+                            />
+                            <Text
+                                text={`📝 ${token.gmNotes}`}
+                                fontSize={8.5}
+                                fill="#fef08a"
+                                align="center"
+                                verticalAlign="middle"
+                                x={-radius * 1.5}
+                                y={1.5}
+                                width={radius * 3}
+                                height={13}
+                                ellipsis={true}
+                            />
+                        </Group>
+                    )}
+                </Group>
+
+                {isSelected && canResize && (
+                    <Transformer
+                        ref={trRef}
+                        rotateEnabled={false}
+                        keepRatio={true}
+                        enabledAnchors={TOKEN_RESIZE_ANCHORS}
+                        anchorFill="#f59e0b"
+                        anchorStroke="#090a0f"
+                        anchorCornerRadius={3}
+                        anchorSize={9}
+                        borderStroke="#f59e0b"
+                        borderDash={TOKEN_SELECTION_DASH}
+                        boundBoxFunc={(oldBox, newBox) => {
+                            if (Math.abs(newBox.width) < 24 || Math.abs(newBox.height) < 24) {
+                                return oldBox;
+                            }
+                            return newBox;
+                        }}
+                    />
                 )}
             </Group>
         );
@@ -699,6 +768,10 @@ export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
                 const isOwner = Boolean(isGM || isMyToken);
                 const canControl = Boolean(isGM || isOwner);
                 const canEdit = Boolean(isGM || isOwner || permissions?.canEditToken);
+                const canResize = Boolean(
+                    !token.isLocked &&
+                    (isGM || ((isOwner || permissions?.canEditToken) && token.allowPlayerSize !== false))
+                );
 
                 const clusterParam = clusterParamsMap.get(String(token.id)) || DEFAULT_CLUSTER_PARAM;
 
@@ -716,6 +789,7 @@ export const TokenLayer = memo(({ gridSize = 60, isGM: propIsGM }) => {
                         isSelected={isSelected}
                         canControl={canControl}
                         canEdit={canEdit}
+                        canResize={canResize}
                         isGM={isGM}
                         fallbackUsername={currentUser?.username || "بازیکن"}
                         fallbackAvatar={isMyToken ? (currentUser?.avatarUrl || "cowboy") : "cowboy"}
