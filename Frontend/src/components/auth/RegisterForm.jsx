@@ -16,7 +16,11 @@ const registerSchema = z
             .min(3, "حداقل ۳ کاراکتر")
             .max(50, "حداکثر ۵۰ کاراکتر")
             .regex(/^[a-zA-Z0-9_]+$/, "فقط حروف انگلیسی، عدد و _"),
-        email: z.string().email("فرمت ایمیل معتبر نیست").refine(isValidRealEmail, { message: REAL_EMAIL_ERROR_MSG }),        password: z.string().min(8, "حداقل ۸ کاراکتر").max(72, "حداکثر ۷۲ کاراکتر"),
+        email: z
+            .string()
+            .email("ایمیل معتبر وارد کنید")
+            .refine(isValidRealEmail, { message: REAL_EMAIL_ERROR_MSG }),
+        password: z.string().min(8, "حداقل ۸ کاراکتر").max(72, "حداکثر ۷۲ کاراکتر"),
         confirmPassword: z.string(),
         acceptTerms: z.boolean().refine((val) => val === true, {
             message: "پذیرش قوانین و مقررات الزامی است",
@@ -43,6 +47,11 @@ export const RegisterForm = ({ onSuccess }) => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [serverError, setServerError] = useState("");
     const googleButtonRef = useRef(null);
+    const onSuccessRef = useRef(onSuccess);
+
+    useEffect(() => {
+        onSuccessRef.current = onSuccess;
+    }, [onSuccess]);
 
     const {
         register,
@@ -72,15 +81,15 @@ export const RegisterForm = ({ onSuccess }) => {
     useEffect(() => {
         if (!ENV.GOOGLE_CLIENT_ID) return;
 
-        const handleCredentialResponse = async (response) => {
+        window.__vttGoogleCallback = async (response) => {
             try {
                 setServerError("");
                 await loginWithGoogle(response.credential);
-                onSuccess?.();
+                onSuccessRef.current?.();
             } catch (err) {
                 const errorMsg =
-                    err.response?.data?.message ||
                     err.response?.data?.error ||
+                    err.response?.data?.message ||
                     "خطا در ثبت‌نام با حساب گوگل.";
                 setServerError(errorMsg);
             }
@@ -89,11 +98,14 @@ export const RegisterForm = ({ onSuccess }) => {
         const renderGoogleButton = () => {
             if (!window.google?.accounts?.id || !googleButtonRef.current) return;
 
-            window.google.accounts.id.initialize({
-                client_id: ENV.GOOGLE_CLIENT_ID,
-                callback: handleCredentialResponse,
-                auto_select: false,
-            });
+            if (!window.__vttGsiInitialized) {
+                window.google.accounts.id.initialize({
+                    client_id: ENV.GOOGLE_CLIENT_ID,
+                    callback: (res) => window.__vttGoogleCallback?.(res),
+                    auto_select: false,
+                });
+                window.__vttGsiInitialized = true;
+            }
 
             const containerWidth = googleButtonRef.current.offsetWidth || 320;
             const validWidth = Math.min(Math.max(containerWidth, 230), 400);
@@ -124,17 +136,18 @@ export const RegisterForm = ({ onSuccess }) => {
                 document.body.appendChild(script);
             } else {
                 existingScript.addEventListener("load", renderGoogleButton);
+                return () => existingScript.removeEventListener("load", renderGoogleButton);
             }
         }
-    }, [loginWithGoogle, onSuccess]);
+    }, [loginWithGoogle]);
 
     const onSubmit = async (data) => {
         setServerError("");
         try {
             await registerUser(data.username, data.email, data.password);
-            onSuccess?.();
+            onSuccessRef.current?.();
         } catch (err) {
-            const serverMsg = err.response?.data?.message || err.response?.data?.error;
+            const serverMsg = err.response?.data?.error || err.response?.data?.message;
             if (err.response?.status === 409) {
                 setServerError(serverMsg || "این ایمیل یا نام کاربری قبلاً ثبت شده است.");
             } else if (err.response?.status === 400 && serverMsg) {
@@ -177,10 +190,12 @@ export const RegisterForm = ({ onSuccess }) => {
 
                 <Input
                     label="نام کاربری (Username)"
-                    placeholder="مثلا: dungeon_master"
+                    dir="ltr"
+                    autoComplete="username"
+                    placeholder="dungeon_master"
                     error={errors.username?.message}
                     disabled={isSubmitting}
-                    className="h-9 sm:h-9.5 text-xs sm:text-sm"
+                    className="h-9 sm:h-9.5 text-xs sm:text-sm text-left font-mono"
                     aria-required="true"
                     aria-invalid={!!errors.username}
                     {...register("username")}
@@ -189,10 +204,12 @@ export const RegisterForm = ({ onSuccess }) => {
                 <Input
                     label="ایمیل"
                     type="email"
-                    placeholder="name@example.com"
+                    dir="ltr"
+                    autoComplete="email"
+                    placeholder="name@gmail.com"
                     error={errors.email?.message}
                     disabled={isSubmitting}
-                    className="h-9 sm:h-9.5 text-xs sm:text-sm"
+                    className="h-9 sm:h-9.5 text-xs sm:text-sm text-left font-mono"
                     aria-required="true"
                     aria-invalid={!!errors.email}
                     {...register("email")}
@@ -203,10 +220,12 @@ export const RegisterForm = ({ onSuccess }) => {
                         <Input
                             label="رمز عبور"
                             type={showPassword ? "text" : "password"}
+                            dir="ltr"
+                            autoComplete="new-password"
                             placeholder="••••••••"
                             error={errors.password?.message}
                             disabled={isSubmitting}
-                            className="h-9 sm:h-9.5 text-xs sm:text-sm pl-10"
+                            className="h-9 sm:h-9.5 text-xs sm:text-sm pl-10 text-left font-mono"
                             aria-required="true"
                             aria-invalid={!!errors.password}
                             {...register("password")}
@@ -276,10 +295,12 @@ export const RegisterForm = ({ onSuccess }) => {
                     <Input
                         label="تکرار رمز عبور"
                         type={showConfirmPassword ? "text" : "password"}
+                        dir="ltr"
+                        autoComplete="new-password"
                         placeholder="••••••••"
                         error={errors.confirmPassword?.message}
                         disabled={isSubmitting}
-                        className="h-9 sm:h-9.5 text-xs sm:text-sm pl-10"
+                        className="h-9 sm:h-9.5 text-xs sm:text-sm pl-10 text-left font-mono"
                         aria-required="true"
                         aria-invalid={!!errors.confirmPassword}
                         {...register("confirmPassword")}
@@ -295,7 +316,6 @@ export const RegisterForm = ({ onSuccess }) => {
                     </button>
                 </div>
 
-                {/* چک‌باکس رضایت صریح به قوانین و مقررات */}
                 <div className="pt-1 space-y-2">
                     <div className="flex items-start gap-2">
                         <input
@@ -325,7 +345,6 @@ export const RegisterForm = ({ onSuccess }) => {
                         </p>
                     )}
 
-                    {/* چک‌باکس رضایت صریح به سیاست حریم خصوصی */}
                     <div className="flex items-start gap-2">
                         <input
                             type="checkbox"

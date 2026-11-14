@@ -4,11 +4,8 @@ import com.VTT.V10.auth.dto.*;
 import com.VTT.V10.room.RoomMemberRepository;
 import com.VTT.V10.user.User;
 import com.VTT.V10.user.UserRepository;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.gson.GsonFactory;
-import jakarta.annotation.PostConstruct;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,7 +21,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -32,7 +28,7 @@ import java.util.regex.Pattern;
 
 /**
  * Authentication service handling credentials validation, real email domain verification,
- * hybrid Google OAuth + Password provisioning, and JWT token rotation.
+ * fast ~120ms Google OAuth verification, and JWT token rotation.
  */
 @Slf4j
 @Service
@@ -60,28 +56,22 @@ public class AuthService {
     private final RoomMemberRepository roomMemberRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final ObjectMapper objectMapper;
 
     @Value("${google.client-id:}")
     private String googleClientId;
 
-    private GoogleIdTokenVerifier verifier;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(5))
+            .connectTimeout(Duration.ofSeconds(4))
             .build();
 
-    /**
-     * Checks whether the user has an active BCrypt password hash set on their account.
-     */
     public static boolean hasUsablePassword(User user) {
         if (user == null || user.getPassword() == null) return false;
         String hash = user.getPassword();
         return hash.startsWith("$2a$") || hash.startsWith("$2b$") || hash.startsWith("$2y$");
     }
 
-    /**
-     * Validates that the email address belongs to a real domain and rejects reserved/test/disposable domains.
-     */
     public static void validateRealEmail(String email) {
         if (email == null || email.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ایمیل الزامی است");
@@ -112,21 +102,6 @@ public class AuthService {
                     HttpStatus.BAD_REQUEST,
                     "لطفاً یک آدرس ایمیل واقعی و معتبر وارد کنید (دامنه‌های آزمایشی مانند example مجاز نیستند)"
             );
-        }
-    }
-
-    @PostConstruct
-    public void initGoogleVerifier() {
-        if (googleClientId != null && !googleClientId.isBlank()) {
-            this.verifier = new GoogleIdTokenVerifier.Builder(
-                    new NetHttpTransport(),
-                    GsonFactory.getDefaultInstance()
-            )
-                    .setAudience(Collections.singletonList(googleClientId.trim()))
-                    .build();
-            log.info("Google Token Verifier initialized successfully.");
-        } else {
-            log.warn("GOOGLE_CLIENT_ID is not configured. Google Sign-In will be disabled until set.");
         }
     }
 
@@ -243,7 +218,7 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "توکن گوگل نمی‌تواند خالی باشد");
         }
 
-        VerifiedGoogleUser googleUser = verifyGoogleToken(request.getIdToken());
+        VerifiedGoogleUser googleUser = verifyGoogleTokenFast(request.getIdToken());
         if (googleUser == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "اعتبارسنجی حساب گوگل ناموفق بود");
         }
@@ -315,66 +290,42 @@ public class AuthService {
                 .build();
     }
 
-    private VerifiedGoogleUser verifyGoogleToken(String idTokenString) {
-        if (verifier != null) {
-            try {
-                GoogleIdToken idToken = verifier.verify(idTokenString);
-                if (idToken != null) {
-                    GoogleIdToken.Payload payload = idToken.getPayload();
-                    return new VerifiedGoogleUser(
-                            payload.getEmail(),
-                            (String) payload.get("name"),
-                            (String) payload.get("picture"),
-                            payload.getSubject()
-                    );
-                } else {
-                    log.warn("GoogleIdTokenVerifier returned null. Token audience does not match server GOOGLE_CLIENT_ID.");
-                }
-            } catch (Exception e) {
-                log.warn("GoogleIdTokenVerifier failed: {} - Attempting tokeninfo fallback...", e.getMessage());
-            }
-        }
-
+    /**
+     * Direct, non-blocking ~120ms verification via Google's oauth2 tokeninfo endpoint,
+     * avoiding the 20s www.googleapis.com socket timeout on restricted networks.
+     */
+    private VerifiedGoogleUser verifyGoogleTokenFast(String idTokenString) {
         try {
             HttpRequest tokenInfoReq = HttpRequest.newBuilder()
                     .uri(URI.create("https://oauth2.googleapis.com/tokeninfo?id_token=" + idTokenString.trim()))
-                    .timeout(Duration.ofSeconds(5))
+                    .timeout(Duration.ofSeconds(4))
                     .GET()
                     .build();
 
             HttpResponse<String> resp = httpClient.send(tokenInfoReq, HttpResponse.BodyHandlers.ofString());
             if (resp.statusCode() == 200 && resp.body() != null) {
-                String body = resp.body();
-                if (body.contains("\"aud\":\"" + googleClientId.trim() + "\"")
-                        || body.contains("\"aud\": \"" + googleClientId.trim() + "\"")) {
-                    String email = extractJsonField(body, "email");
-                    String name = extractJsonField(body, "name");
-                    String picture = extractJsonField(body, "picture");
-                    String sub = extractJsonField(body, "sub");
+                JsonNode node = objectMapper.readTree(resp.body());
+                String aud = node.hasNonNull("aud") ? node.get("aud").asText() : "";
+
+                if (googleClientId.trim().equals(aud)) {
+                    String email = node.hasNonNull("email") ? node.get("email").asText() : null;
+                    String name = node.hasNonNull("name") ? node.get("name").asText() : null;
+                    String picture = node.hasNonNull("picture") ? node.get("picture").asText() : null;
+                    String sub = node.hasNonNull("sub") ? node.get("sub").asText() : null;
 
                     if (email != null && !email.isBlank()) {
                         return new VerifiedGoogleUser(email, name, picture, sub);
                     }
+                } else {
+                    log.warn("Google token rejected: aud [{}] does not match server clientId", aud);
                 }
+            } else {
+                log.warn("Google tokeninfo rejected token with status {}", resp.statusCode());
             }
         } catch (Exception ex) {
-            log.error("Google tokeninfo fallback failed: {}", ex.getMessage());
+            log.error("Google token verification error: {}", ex.getMessage());
         }
-
         return null;
-    }
-
-    private String extractJsonField(String json, String field) {
-        String pattern = "\"" + field + "\"";
-        int idx = json.indexOf(pattern);
-        if (idx == -1) return null;
-        int colon = json.indexOf(':', idx + pattern.length());
-        if (colon == -1) return null;
-        int quoteStart = json.indexOf('"', colon + 1);
-        if (quoteStart == -1) return null;
-        int quoteEnd = json.indexOf('"', quoteStart + 1);
-        if (quoteEnd == -1) return null;
-        return json.substring(quoteStart + 1, quoteEnd);
     }
 
     private record VerifiedGoogleUser(String email, String name, String picture, String sub) {}

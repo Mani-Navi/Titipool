@@ -72,7 +72,7 @@ public class SecurityConfig {
                         )
                         .addHeaderWriter(new StaticHeadersWriter(
                                 "Cross-Origin-Opener-Policy",
-                                "same-origin-allow-popups"
+                                "unsafe-none"
                         ))
                         .addHeaderWriter(new StaticHeadersWriter(
                                 "Permissions-Policy",

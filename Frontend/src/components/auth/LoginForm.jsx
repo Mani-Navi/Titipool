@@ -18,6 +18,11 @@ export const LoginForm = ({ onSuccess }) => {
     const [serverError, setServerError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const googleButtonRef = useRef(null);
+    const onSuccessRef = useRef(onSuccess);
+
+    useEffect(() => {
+        onSuccessRef.current = onSuccess;
+    }, [onSuccess]);
 
     const {
         register,
@@ -32,15 +37,15 @@ export const LoginForm = ({ onSuccess }) => {
             return;
         }
 
-        const handleCredentialResponse = async (response) => {
+        window.__vttGoogleCallback = async (response) => {
             try {
                 setServerError("");
                 await loginWithGoogle(response.credential);
-                onSuccess?.();
+                onSuccessRef.current?.();
             } catch (err) {
                 const errorMsg =
-                    err.response?.data?.message ||
                     err.response?.data?.error ||
+                    err.response?.data?.message ||
                     "خطا در ورود با حساب گوگل.";
                 setServerError(errorMsg);
             }
@@ -49,11 +54,14 @@ export const LoginForm = ({ onSuccess }) => {
         const renderGoogleButton = () => {
             if (!window.google?.accounts?.id || !googleButtonRef.current) return;
 
-            window.google.accounts.id.initialize({
-                client_id: ENV.GOOGLE_CLIENT_ID,
-                callback: handleCredentialResponse,
-                auto_select: false,
-            });
+            if (!window.__vttGsiInitialized) {
+                window.google.accounts.id.initialize({
+                    client_id: ENV.GOOGLE_CLIENT_ID,
+                    callback: (res) => window.__vttGoogleCallback?.(res),
+                    auto_select: false,
+                });
+                window.__vttGsiInitialized = true;
+            }
 
             const containerWidth = googleButtonRef.current.offsetWidth || 320;
             const validWidth = Math.min(Math.max(containerWidth, 230), 400);
@@ -84,23 +92,26 @@ export const LoginForm = ({ onSuccess }) => {
                 document.body.appendChild(script);
             } else {
                 existingScript.addEventListener("load", renderGoogleButton);
+                return () => existingScript.removeEventListener("load", renderGoogleButton);
             }
         }
-    }, [loginWithGoogle, onSuccess]);
+    }, [loginWithGoogle]);
 
     const onSubmit = async (data) => {
         setServerError("");
         try {
             await login(data.email, data.password);
-            onSuccess?.();
+            onSuccessRef.current?.();
         } catch (err) {
-            if (err.response?.status === 401) {
+            const errorMsg = err.response?.data?.error || err.response?.data?.message;
+            if (errorMsg) {
+                setServerError(errorMsg);
+            } else if (err.response?.status === 401) {
                 setServerError("ایمیل یا رمز عبور اشتباه است.");
             } else if (err.response?.status === 429) {
                 setServerError("تعداد درخواست‌ها بیش از حد مجاز است — لطفاً کمی صبر کنید.");
             } else {
-                const errorMsg = err.response?.data?.message || err.response?.data?.error;
-                setServerError(errorMsg || "خطا در برقراری ارتباط با سرور.");
+                setServerError("خطا در برقراری ارتباط با سرور.");
             }
         }
     };
@@ -114,19 +125,21 @@ export const LoginForm = ({ onSuccess }) => {
             <div className="relative flex items-center justify-center my-3">
                 <div className="h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent w-full" />
                 <span className="bg-zinc-950 px-3.5 text-[11px] text-zinc-500 font-medium shrink-0">
-          یا ورود با ایمیل
-        </span>
+                    یا ورود با ایمیل
+                </span>
                 <div className="h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent w-full" />
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
                 <Input
                     label="ایمیل حساب کاربری"
                     type="email"
-                    placeholder="name@example.com"
+                    dir="ltr"
+                    autoComplete="username"
+                    placeholder="name@gmail.com"
                     error={errors.email?.message}
                     disabled={isSubmitting}
-                    className="h-11 sm:h-10 text-sm transition-colors duration-150"
+                    className="h-11 sm:h-10 text-sm transition-colors duration-150 text-left font-mono"
                     {...register("email")}
                 />
 
@@ -134,10 +147,12 @@ export const LoginForm = ({ onSuccess }) => {
                     <Input
                         label="رمز عبور"
                         type={showPassword ? "text" : "password"}
+                        dir="ltr"
+                        autoComplete="current-password"
                         placeholder="••••••••"
                         error={errors.password?.message}
                         disabled={isSubmitting}
-                        className="h-11 sm:h-10 text-sm pl-11 transition-colors duration-150"
+                        className="h-11 sm:h-10 text-sm pl-11 transition-colors duration-150 text-left font-mono"
                         {...register("password")}
                     />
                     <button
@@ -148,9 +163,9 @@ export const LoginForm = ({ onSuccess }) => {
                         aria-label="تغییر وضعیت نمایش رمز"
                     >
                         {showPassword ? (
-                            <EyeOff className="w-4 h-4 transition-transform duration-200 rotate-0 scale-100" />
+                            <EyeOff className="w-4 h-4 transition-transform duration-200" />
                         ) : (
-                            <Eye className="w-4 h-4 transition-transform duration-200 rotate-0 scale-100" />
+                            <Eye className="w-4 h-4 transition-transform duration-200" />
                         )}
                     </button>
                 </div>
