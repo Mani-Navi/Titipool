@@ -25,6 +25,7 @@ ENV JAVA_OPTS="-XX:+UseG1GC \
                -XX:MaxRAMPercentage=75.0 \
                -XX:InitialRAMPercentage=35.0 \
                -XX:+ExitOnOutOfMemoryError \
+               -Djava.net.preferIPv4Stack=true \
                -Dfile.encoding=UTF-8 \
                -Djava.security.egd=file:/dev/./urandom"
 
