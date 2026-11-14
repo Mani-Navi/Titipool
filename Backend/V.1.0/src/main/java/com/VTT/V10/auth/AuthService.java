@@ -6,8 +6,6 @@ import com.VTT.V10.user.User;
 import com.VTT.V10.user.UserRepository;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.google.api.client.googleapis.auth.oauth2.GooglePublicKeysManager;
-import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import jakarta.annotation.PostConstruct;
@@ -28,11 +26,13 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 
 /**
- * Authentication service supporting hybrid Email/Password and Google OAuth accounts.
+ * Authentication service handling credentials validation, real email domain verification,
+ * hybrid Google OAuth + Password provisioning, and JWT token rotation.
  */
 @Slf4j
 @Service
@@ -40,6 +40,21 @@ import java.util.concurrent.CompletableFuture;
 public class AuthService {
 
     public static final String OAUTH_NO_PASSWORD_MARKER = "OAUTH_NO_PASSWORD";
+
+    private static final Pattern STRICT_EMAIL_PATTERN =
+            Pattern.compile("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,15}$");
+
+    private static final Set<String> BLOCKED_EMAIL_DOMAINS = Set.of(
+            "example.com", "example.org", "example.net", "example.edu",
+            "test.com", "test.org", "test.ir", "localhost", "invalid.com",
+            "tempmail.com", "temp-mail.org", "mailinator.com", "guerrillamail.com",
+            "10minutemail.com", "yopmail.com", "trashmail.com", "fakeinbox.com",
+            "sharklasers.com", "getnada.com", "maildrop.cc", "dispostable.com"
+    );
+
+    private static final Set<String> BLOCKED_TLDS = Set.of(
+            "example", "test", "invalid", "localhost", "local"
+    );
 
     private final UserRepository userRepository;
     private final RoomMemberRepository roomMemberRepository;
@@ -50,42 +65,68 @@ public class AuthService {
     private String googleClientId;
 
     private GoogleIdTokenVerifier verifier;
-    private GooglePublicKeysManager publicKeysManager;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(4))
+            .connectTimeout(Duration.ofSeconds(5))
             .build();
 
+    /**
+     * Checks whether the user has an active BCrypt password hash set on their account.
+     */
     public static boolean hasUsablePassword(User user) {
         if (user == null || user.getPassword() == null) return false;
         String hash = user.getPassword();
         return hash.startsWith("$2a$") || hash.startsWith("$2b$") || hash.startsWith("$2y$");
     }
 
+    /**
+     * Validates that the email address belongs to a real domain and rejects reserved/test/disposable domains.
+     */
+    public static void validateRealEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ایمیل الزامی است");
+        }
+        String clean = email.trim().toLowerCase();
+        if (!STRICT_EMAIL_PATTERN.matcher(clean).matches()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "فرمت ایمیل نامعتبر است");
+        }
+
+        int atIdx = clean.lastIndexOf('@');
+        if (atIdx < 2 || atIdx >= clean.length() - 4) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "آدرس ایمیل وارد شده معتبر نیست");
+        }
+
+        String domain = clean.substring(atIdx + 1);
+        if (domain.startsWith(".") || domain.endsWith(".") || domain.contains("..")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "دامنه ایمیل نامعتبر است");
+        }
+
+        String[] segments = domain.split("\\.");
+        String sld = segments[0];
+        String tld = segments[segments.length - 1];
+
+        if (BLOCKED_EMAIL_DOMAINS.contains(domain)
+                || BLOCKED_TLDS.contains(tld)
+                || BLOCKED_TLDS.contains(sld)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "لطفاً یک آدرس ایمیل واقعی و معتبر وارد کنید (دامنه‌های آزمایشی مانند example مجاز نیستند)"
+            );
+        }
+    }
+
     @PostConstruct
     public void initGoogleVerifier() {
         if (googleClientId != null && !googleClientId.isBlank()) {
-            HttpTransport transport = new NetHttpTransport.Builder().build();
-            this.publicKeysManager = new GooglePublicKeysManager.Builder(
-                    transport,
+            this.verifier = new GoogleIdTokenVerifier.Builder(
+                    new NetHttpTransport(),
                     GsonFactory.getDefaultInstance()
-            ).build();
-
-            this.verifier = new GoogleIdTokenVerifier.Builder(this.publicKeysManager)
+            )
                     .setAudience(Collections.singletonList(googleClientId.trim()))
                     .build();
-
-            // Pre-warm Google public keys in background on startup to avoid cold-start latency on first login
-            CompletableFuture.runAsync(() -> {
-                try {
-                    this.publicKeysManager.refresh();
-                    log.info("Google OAuth public certificates pre-warmed and cached in memory.");
-                } catch (Exception e) {
-                    log.warn("Could not pre-warm Google certificates on startup: {}", e.getMessage());
-                }
-            });
+            log.info("Google Token Verifier initialized successfully.");
         } else {
-            log.warn("GOOGLE_CLIENT_ID is not configured.");
+            log.warn("GOOGLE_CLIENT_ID is not configured. Google Sign-In will be disabled until set.");
         }
     }
 
@@ -93,6 +134,8 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         String email = request.getEmail().trim().toLowerCase();
         String username = request.getUsername().trim();
+
+        validateRealEmail(email);
 
         if (userRepository.existsByEmail(email)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "این ایمیل قبلاً ثبت شده است");
@@ -229,6 +272,7 @@ public class AuthService {
             if (shouldUpdate) {
                 user = userRepository.save(user);
             }
+            log.info("Google Sign-In: Existing account logged in for [{}]", email);
         } else {
             String baseUsername = (googleUser.name() != null
                     ? googleUser.name().replaceAll("[^a-zA-Z0-9_]", "_").toLowerCase()
@@ -256,6 +300,7 @@ public class AuthService {
                     .build();
 
             user = userRepository.save(newUser);
+            log.info("Google Sign-In: New account created for [{}], username [{}]", email, generatedUsername);
         }
 
         String token = jwtService.generateToken(user);
@@ -282,6 +327,8 @@ public class AuthService {
                             (String) payload.get("picture"),
                             payload.getSubject()
                     );
+                } else {
+                    log.warn("GoogleIdTokenVerifier returned null. Token audience does not match server GOOGLE_CLIENT_ID.");
                 }
             } catch (Exception e) {
                 log.warn("GoogleIdTokenVerifier failed: {} - Attempting tokeninfo fallback...", e.getMessage());
@@ -291,14 +338,15 @@ public class AuthService {
         try {
             HttpRequest tokenInfoReq = HttpRequest.newBuilder()
                     .uri(URI.create("https://oauth2.googleapis.com/tokeninfo?id_token=" + idTokenString.trim()))
-                    .timeout(Duration.ofSeconds(4))
+                    .timeout(Duration.ofSeconds(5))
                     .GET()
                     .build();
 
             HttpResponse<String> resp = httpClient.send(tokenInfoReq, HttpResponse.BodyHandlers.ofString());
             if (resp.statusCode() == 200 && resp.body() != null) {
                 String body = resp.body();
-                if (body.contains("\"aud\":\"" + googleClientId.trim() + "\"") || body.contains("\"aud\": \"" + googleClientId.trim() + "\"")) {
+                if (body.contains("\"aud\":\"" + googleClientId.trim() + "\"")
+                        || body.contains("\"aud\": \"" + googleClientId.trim() + "\"")) {
                     String email = extractJsonField(body, "email");
                     String name = extractJsonField(body, "name");
                     String picture = extractJsonField(body, "picture");
